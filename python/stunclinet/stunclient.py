@@ -25,6 +25,8 @@
 
 import socket, struct, time, re
 import sys
+import random
+import datetime
 class STUNError(Exception):
     pass
 
@@ -622,15 +624,35 @@ class STUNClient:
         elif t == self.NET_TYPE_UDP_BLOCKED:
             return 'Blocked(%d)' % self.NET_TYPE_UDP_BLOCKED
 
+def StunConnect(server,port=0):
+	try:
+		sc = STUNClient()
+		sc.setServerAddr(server)
+		sc.createSocket(port)
+		print server,' NAT TYPE:',sc.natType2String(sc.getNatType())
+		print 'MAPPED ADDRESS:', sc.getMappedAddr()
+		sc.close()
+	except:
+		print("Get %s port %d error"%(server,port))
+
 
 if __name__ == '__main__':
-    sc = STUNClient()
-    sc.setServerAddr('stun.ekiga.net')
-    #sc.setServerAddr('stun.l.google.com', 19302)
-    port = 0
-    if len(sys.argv) > 1 :
-        port = int(sys.argv[1])
-    sc.createSocket(port)
-    print 'NAT TYPE:', sc.natType2String(sc.getNatType())
-    print 'MAPPED ADDRESS:', sc.getMappedAddr()
-    sc.close()
+	port = 0
+	if len(sys.argv) > 2 :
+		port = int(sys.argv[2])
+	elif len(sys.argv) > 1:
+		port = int(sys.argv[1])
+	count = 0
+	stunservers=('stun.counterpath.net','provserver.televolution.net','stun1.voiceeclipse.net','stun.callwithus.com',
+			'stun.endigovoip.com','stun.ekiga.net','stun.internetcalls.com','stun.noc.ams-ix.net','stun.phonepower.com',
+			'stun.phoneserve.com','stun.rnktel.com','stunserver.org','stun.sipgate.net','stun.stunprotocol.org',
+			'stun.voip.aebc.com')
+	stuns = len(stunservers)
+	random.seed(datetime.datetime.now().second)
+	while count < 3:
+		i = random.randint(0,stuns-1)
+		if len(sys.argv) > 2:		
+			StunConnect(sys.argv[1],port)
+		else:
+			StunConnect(stunservers[i],port)			
+		count += 1
