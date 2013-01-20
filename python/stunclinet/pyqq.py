@@ -2,6 +2,7 @@
 #coding:utf-8
 
 import httplib
+import re
 
 class PyQQException(Exception):
 	pass
@@ -81,5 +82,38 @@ class PyQQ:
 		b1con = self.httpRequest('get','http://q32.3g.qq.com/g/s?aid=nqqchatMain&sid='+self.sid)
 		if b1con.find('alt="¡ƒÃÏ"/>(') != -1:
 			b2con = self.httpRequest('get','http://q32.3g.qq.com/g/s?sid='+ self.sid + '&aid=nqqChat&saveURL=0&r=1310115753&g_f=1653&on=1')
-			
+
+			_tmpqq=self.GetContent('num" value="','"/>')
+			if _tmpqq is None:
+				return users ,messages
+			_tmpmsg=self.GetContent('saveURL=0">Ã· æ</a>)','<input name="msg"')
+			# now we should match whether it is the message or qq we met
+			if len(peeruser) > 0 or len(content) > 0:
+				addto = 0
+				userre = None
+				conre = None
+				if len(peeruser) > 0 :
+					userre = re.compile(peeruser)
+				if len(content) > 0:
+					conre = re.compile(content)
+				if userre :
+					if userre.match(_tmpqq):
+						addto = 1
+					else:
+						addto = 0
+				if conre :
+					if conre.match(_tmpmsg):
+						addto = 1
+					else:
+						addto = 0
+				# if we have match this ,so add to it
+				if addto == 1:
+					users.append(_tmpqq)
+					messages.append(_tmpmsg)
+				
+			else:
+				users.append(_tmpqq)
+				messages.append(_tmpmsg)
+
+		return users,messages
 
