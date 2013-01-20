@@ -36,3 +36,23 @@ class PyQQ:
 			self.httpBody = ''
 		return self.httpBody
 
+	def GetContent(self,start,end):
+		idx = self.httpBody.find(start)
+		if idx == -1:
+			return None
+		tmp = self.httpBody.split(start)
+		eidx = tmp[1].find(end)
+		if eidx == -1:
+			return tmp[1][0:]
+		else:
+			return tmp[1][0:eidx]
+
+	def GetField(self,field):
+		keystart = '<postfield name="' + str(field) + '" value="'
+		return self.GetContent(keystart,'"/>')
+
+	def Login(self,user,pwd):
+		self.user = user
+		self.pwd = pwd
+		
+
