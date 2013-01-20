@@ -3,7 +3,7 @@
 import os
 #os.path.append(".")
 
-import PyQQ
+from PyQQ import *
 import sys
 from optparse import OptionParser
 
@@ -30,8 +30,8 @@ if __name__ == '__main__':
 	try:
 		qq1 = PyQQ()
 		qq2 = PyQQ()
-		qq1.login(options.qqs[0],options.pwds[0])
-		qq2.login(options.qqs[1],options.pwds[1])
+		qq1.Login(options.qqs[0],options.pwds[0])
+		qq2.Login(options.qqs[1],options.pwds[1])
 	except PyQQException as e:
 		sys.stderr.write("Error %s\n"%(str(e)))
 		sys.exit(3)

@@ -12,7 +12,7 @@ class PyQQ:
 		self.httpBody = ''
 		self.sid = None
 
-	def Request(self,method,url,data={}):
+	def httpRequest(self,method,url,data={}):
 		try:
 			_url = httplib.urlsplit(url)
 			_server,_port = _url.netloc.split(':')
@@ -57,7 +57,7 @@ class PyQQ:
 		return self.GetContent(keystart,'"/>')
 
 	def Login(self,user,pwd):
-		self.user = user
+		self.qq = user
 		self.pwd = pwd
 		b1Con = self.httpRequest('post','http://pt.3g.qq.com/handleLogin',{'r':'324525157','qq':self.qq,'pwd':self.pwd,'toQQchat':'true','q_from':'','modifySKey':0,'loginType':1})
 		self.sid = self.GetContent('sid=','&')
