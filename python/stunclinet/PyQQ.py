@@ -12,7 +12,7 @@ class PyQQ:
 		self.httpBody = ''
 		self.sid = None
 
-	def Request(self,method,url,data={})
+	def Request(self,method,url,data={}):
 		try:
 			_url = httplib.urlsplit(url)
 			_server,_port = _url.netloc.split(':')

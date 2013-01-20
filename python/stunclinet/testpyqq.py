@@ -1,5 +1,8 @@
 #! python
 
+import os
+#os.path.append(".")
+
 import PyQQ
 import sys
 from optparse import OptionParser
