@@ -6,7 +6,7 @@ import os
 from PyQQ import *
 import sys
 from optparse import OptionParser
-
+import logging
 def Usage(opt,exitcode,msg=None):
 	fp = sys.stderr
 	if exitcode == 0:
@@ -18,6 +18,7 @@ def Usage(opt,exitcode,msg=None):
 	
 
 if __name__ == '__main__':
+	logging.basicConfig(level=logging.INFO,format="%(levelname)-8s %(asctime)-12s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
 	oparse = OptionParser()
 	oparse.add_option('-q','--qq',action="append",dest="qqs",help="qq number set")
 	oparse.add_option('-p','--password',action="append",dest="pwds",help="qq password to set,please append it immediate after the -q or --qq")

@@ -2,8 +2,9 @@
 #coding:utf-8
 
 import httplib
+import urllib
 import re
-
+import logging
 class PyQQException(Exception):
 	pass
 
@@ -15,28 +16,51 @@ class PyQQ:
 	def httpRequest(self,method,url,data={}):
 		try:
 			_url = httplib.urlsplit(url)
-			_server,_port = _url.netloc.split(':')
-			if _port is None:
+			logging.info("type %s type netloc %s %s\n"%(type(_url),type(_url.netloc),_url.netloc))
+			try:
+				_server,_port = _url.netloc.split(':')
+			except:
+				_server = _url.netloc
 				_port = 80
+			logging.info("server %s port %d\n"%(_server,_port))
 			_conn = httplib.HTTPConnection(_server,_port,True,3)
+			logging.info("\n")
 			_conn.connect()
+			logging.info("\n")
 			data = urllib.urlencode(data)
+			logging.info("\n")
 			if method == 'get':
+				logging.info("\n")
 				_conn.putrequest("GET",url,None)
+				logging.info("\n")
 				_conn.putheader("Content-Length",'0')
+				logging.info("\n")
 			elif method == 'post':
+				logging.info("\n")
 				_conn.putrequest("POST",url)
+				logging.info("\n")
 				_conn.putheader("Content-Length", str(len(data)))
+				logging.info("\n")
 				_conn.putheader("Content-Type", "application/x-www-form-urlencoded")
+				logging.info("\n")
 			_conn.putheader("Connection", "close")
+			logging.info("\n")
 			_conn.endheaders()
+			logging.info("\n")
 
 			if len(data) > 0:
+				logging.info("\n")
 				_conn.send(data)
+				logging.info("\n")
+			logging.info("\n")
 			f = _conn.getresponse()
+			logging.info("\n")
 			self.httpBody = f.read().encode('gbk')
+			logging.info("\n")
 			f.close()
+			logging.info("\n")
 			_conn.close()
+			logging.info("\n")
 		except:
 			self.httpBody = ''
 		return self.httpBody
@@ -59,6 +83,7 @@ class PyQQ:
 	def Login(self,user,pwd):
 		self.qq = user
 		self.pwd = pwd
+		logging.info("++++++++++++++++\n")
 		b1Con = self.httpRequest('post','http://pt.3g.qq.com/handleLogin',{'r':'324525157','qq':self.qq,'pwd':self.pwd,'toQQchat':'true','q_from':'','modifySKey':0,'loginType':1})
 		self.sid = self.GetContent('sid=','&')
 		if self.sid is None:
