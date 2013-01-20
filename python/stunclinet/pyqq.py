@@ -117,3 +117,19 @@ class PyQQ:
 
 		return users,messages
 
+	def SendMsg(self,user,content):
+		if self.sid is None:
+			raise PyQQException('Not connect right')
+		_tmpmsg=unicode(content,'gbk').encode('utf8')
+		_data={'sid':self.sid,'on':'1','saveURL':'0','saveURL':'0','u':user,'msg':str(_tmpmsg)}
+		s1con = self.httpRequest('post','http://q16.3g.qq.com/g/s?sid='+ self.sid +'&aid=sendmsg&tfor=qq',postData)
+		return 0
+
+	def KeepAlive(self):
+		if self.sid is None:
+			# we do not raise
+			raise PyQQException('Not connect right')
+		s1con = self.httpRequest('get','http://pt5.3g.qq.com/s?aid=nLogin3gqqbysid&3gqqsid='+self.sid)
+		return 0
+		
+
