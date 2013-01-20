@@ -3,9 +3,13 @@
 
 import httplib
 
+class PyQQException(Exception):
+	pass
+
 class PyQQ:
 	def __init__(self):
-		pass
+		self.httpBody = ''
+		self.sid = None
 
 	def Request(self,method,url,data={})
 		try:
@@ -54,5 +58,28 @@ class PyQQ:
 	def Login(self,user,pwd):
 		self.user = user
 		self.pwd = pwd
-		
+		b1Con = self.httpRequest('post','http://pt.3g.qq.com/handleLogin',{'r':'324525157','qq':self.qq,'pwd':self.pwd,'toQQchat':'true','q_from':'','modifySKey':0,'loginType':1})
+		self.sid = self.GetContent('sid=','&')
+		if self.sid is None:
+			raise PyQQException('can not login %s with %s get %s'%(user,pwd,str(self.httpBody)))
+		return 0
+
+	def GetMessage(self,peeruser,content):
+		'''
+			Function : 
+			      @param self      : the PyQQ struct
+			      @param peeruser  : peer user pattern ,if '' it will return all
+			      @param content   : the pattern for message to filter
+
+			return value:
+			      list of messages : contain (user,message)
+		'''
+		if self.sid is None:
+			raise PyQQException('not set sid ok')
+		users=[]
+		messages=[]
+		b1con = self.httpRequest('get','http://q32.3g.qq.com/g/s?aid=nqqchatMain&sid='+self.sid)
+		if b1con.find('alt="ÁÄÌì"/>(') != -1:
+			b2con = self.httpRequest('get','http://q32.3g.qq.com/g/s?sid='+ self.sid + '&aid=nqqChat&saveURL=0&r=1310115753&g_f=1653&on=1')
+			
 
