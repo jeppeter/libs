@@ -3,6 +3,7 @@
 import httplib,urllib,os,threading,re
 import sys 
 import logging
+import traceback
 reload(sys) 
 sys.setdefaultencoding('utf8') 
 class PYQQ:
@@ -15,37 +16,25 @@ class PYQQ:
             _urld = httplib.urlsplit(url)
             conn = httplib.HTTPConnection(_urld.netloc,80,True,3)
             conn.connect()
-            logging.info("server %s port 80\n"%(_urld.netloc))
             data = urllib.urlencode(data)
-            logging.info("data %s\n"%(str(data)))
             if method=='get':
-            	logging.info("url %s\n"%(str(url)))
                 conn.putrequest("GET", url, None)
-                logging.info("\n")
                 conn.putheader("Content-Length",'0')
-                logging.info("\n")
             elif method=='post':
-            	logging.info("\n")
                 conn.putrequest("POST", url)
-                logging.info("url %s\n"%(str(url)))
                 conn.putheader("Content-Length", str(len(data)))
                 conn.putheader("Content-Type", "application/x-www-form-urlencoded")
 
-            logging.info("\n")
             conn.putheader("Connection", "close")
             conn.endheaders()
-            logging.info("\n")
             if len(data)>0:
-            	logging.info("len %d\n"%(len(data)))
                 conn.send(data)
-            logging.info("\n")
             f = conn.getresponse()
-            logging.info("\n")
             self.httpBody = f.read().encode('gbk')
-            logging.info("\n")
             f.close()
             conn.close()
         except:
+            traceback.print_exc(sys.stderr)
             self.httpBody=''
         return self.httpBody
     #HTTP请求的pycurl版本，和上面的程序选一即可
@@ -142,11 +131,12 @@ class PYQQ:
             for _data in _msg:
                 self.getMsg({'qq':_fromQQ,'nick':_fromName,'time':_data[0],'msg':str(_data[1]).strip()})
         
-        if self.reqIndex>=30:
+        if self.reqIndex>=10:
             #保持在线
             _url = 'http://pt5.3g.qq.com/s?aid=nLogin3gqqbysid&3gqqsid='+self.sid
             self.httpRequest('get',_url)
             self.reqIndex = 0
+            logging.info("get keepalive %s"%(self.httpBody))
         t = threading.Timer(2.0,self.getMsgFun)
         t.start()    
     #发送消息

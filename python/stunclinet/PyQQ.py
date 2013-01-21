@@ -159,6 +159,7 @@ class PyQQ:
 			# we do not raise
 			raise PyQQException('Not connect right')
 		s1con = self.httpRequest('get','http://pt5.3g.qq.com/s?aid=nLogin3gqqbysid&3gqqsid='+self.sid)
+		logging.info('keep alive return %s'%(s1con))
 		return 0
 		
 

@@ -56,6 +56,8 @@ if __name__ == '__main__':
 		if msgget is None:
 			raise PyQQException('can not get message from %s'%(qq1num))
 		logging.info("get %s message %s"%(userget,msgget))
+		qq1.KeepAlive()
+		qq2.KeepAlive()
 	except PyQQException as e:
 		sys.stderr.write("Error %s\n"%(str(e)))
 		sys.exit(3)
