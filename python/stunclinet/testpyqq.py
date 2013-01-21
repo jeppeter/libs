@@ -7,6 +7,8 @@ from PyQQ import *
 import sys
 from optparse import OptionParser
 import logging
+import random
+import time
 def Usage(opt,exitcode,msg=None):
 	fp = sys.stderr
 	if exitcode == 0:
@@ -28,11 +30,32 @@ if __name__ == '__main__':
 		Usage(oparse,3,"Must specify two qqs")
 	if options.pwds is None or len(options.pwds) != len(options.qqs):
 		Usage(oparse,3,"passwords must according to qqs")
+	qq1num =options.qqs[0]
+	qq1pwds = options.pwds[0]
+	qq2num = options.qqs[1]
+	qq2pwds = options.pwds[1]
 	try:
 		qq1 = PyQQ()
 		qq2 = PyQQ()
-		qq1.Login(options.qqs[0],options.pwds[0])
-		qq2.Login(options.qqs[1],options.pwds[1])
+		qq1.Login(qq1num,qq1pwds)
+		qq2.Login(qq2num,qq2pwds)
+
+		# now to send message 
+		qq1.SendMsg(qq2num,"Send Hello World\nA new line\n\n")
+		tries = 0
+		userget = None
+		msgget = None
+		while tries < 3:
+			user,msg = qq2.GetMessage('','')
+			userget= user.pop()
+			if userget :
+				msgget = msg.pop()
+				break
+			tries += 1
+			time.sleep(3)
+		if msgget is None:
+			raise PyQQException('can not get message from %s'%(qq1num))
+		logging.info("get %s message %s"%(userget,msgget))
 	except PyQQException as e:
 		sys.stderr.write("Error %s\n"%(str(e)))
 		sys.exit(3)

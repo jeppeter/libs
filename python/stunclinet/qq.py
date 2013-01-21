@@ -2,6 +2,7 @@
 #基于python2.6版本开发
 import httplib,urllib,os,threading,re
 import sys 
+import logging
 reload(sys) 
 sys.setdefaultencoding('utf8') 
 class PYQQ:
@@ -14,22 +15,34 @@ class PYQQ:
             _urld = httplib.urlsplit(url)
             conn = httplib.HTTPConnection(_urld.netloc,80,True,3)
             conn.connect()
+            logging.info("server %s port 80\n"%(_urld.netloc))
             data = urllib.urlencode(data)
+            logging.info("data %s\n"%(str(data)))
             if method=='get':
+            	logging.info("url %s\n"%(str(url)))
                 conn.putrequest("GET", url, None)
+                logging.info("\n")
                 conn.putheader("Content-Length",'0')
+                logging.info("\n")
             elif method=='post':
+            	logging.info("\n")
                 conn.putrequest("POST", url)
+                logging.info("url %s\n"%(str(url)))
                 conn.putheader("Content-Length", str(len(data)))
                 conn.putheader("Content-Type", "application/x-www-form-urlencoded")
-            
+
+            logging.info("\n")
             conn.putheader("Connection", "close")
             conn.endheaders()
-            
+            logging.info("\n")
             if len(data)>0:
+            	logging.info("len %d\n"%(len(data)))
                 conn.send(data)
+            logging.info("\n")
             f = conn.getresponse()
+            logging.info("\n")
             self.httpBody = f.read().encode('gbk')
+            logging.info("\n")
             f.close()
             conn.close()
         except:
@@ -148,5 +161,6 @@ class PYQQ:
     def getMsg(self,data):
         print data['time'],"收到",data['nick'],"(",data['qq'],")的新消息"
         self.sendMsgFun(data['qq'],data['nick']+'，我收到了你的消息：'+ data['msg'])
+logging.basicConfig(level=logging.INFO,format="%(levelname)-8s %(asctime)-12s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
 QQ = PYQQ()
 QQ.login()

@@ -5,6 +5,8 @@ import httplib
 import urllib
 import re
 import logging
+import traceback
+import sys
 class PyQQException(Exception):
 	pass
 
@@ -16,52 +18,35 @@ class PyQQ:
 	def httpRequest(self,method,url,data={}):
 		try:
 			_url = httplib.urlsplit(url)
-			logging.info("type %s type netloc %s %s\n"%(type(_url),type(_url.netloc),_url.netloc))
+			#logging.info("method %s type %s type netloc %s %s\n"%(method,type(_url),type(_url.netloc),_url.netloc))
 			try:
 				_server,_port = _url.netloc.split(':')
 			except:
 				_server = _url.netloc
 				_port = 80
-			logging.info("server %s port %d\n"%(_server,_port))
 			_conn = httplib.HTTPConnection(_server,_port,True,3)
-			logging.info("\n")
 			_conn.connect()
-			logging.info("\n")
 			data = urllib.urlencode(data)
-			logging.info("\n")
+			#logging.info("data %s\n"%(data))
 			if method == 'get':
-				logging.info("\n")
 				_conn.putrequest("GET",url,None)
-				logging.info("\n")
 				_conn.putheader("Content-Length",'0')
-				logging.info("\n")
 			elif method == 'post':
-				logging.info("\n")
 				_conn.putrequest("POST",url)
-				logging.info("\n")
 				_conn.putheader("Content-Length", str(len(data)))
-				logging.info("\n")
 				_conn.putheader("Content-Type", "application/x-www-form-urlencoded")
-				logging.info("\n")
 			_conn.putheader("Connection", "close")
-			logging.info("\n")
 			_conn.endheaders()
-			logging.info("\n")
 
 			if len(data) > 0:
-				logging.info("\n")
 				_conn.send(data)
-				logging.info("\n")
-			logging.info("\n")
 			f = _conn.getresponse()
-			logging.info("\n")
-			self.httpBody = f.read().encode('gbk')
-			logging.info("\n")
+			self.httpBody = f.read().decode('utf8').encode('gbk')
 			f.close()
-			logging.info("\n")
 			_conn.close()
-			logging.info("\n")
+			#logging.info("response %s"%(str(self.httpBody)))
 		except:
+			traceback.print_exc(sys.stderr)
 			self.httpBody = ''
 		return self.httpBody
 
@@ -83,7 +68,6 @@ class PyQQ:
 	def Login(self,user,pwd):
 		self.qq = user
 		self.pwd = pwd
-		logging.info("++++++++++++++++\n")
 		b1Con = self.httpRequest('post','http://pt.3g.qq.com/handleLogin',{'r':'324525157','qq':self.qq,'pwd':self.pwd,'toQQchat':'true','q_from':'','modifySKey':0,'loginType':1})
 		self.sid = self.GetContent('sid=','&')
 		if self.sid is None:
@@ -112,6 +96,26 @@ class PyQQ:
 			if _tmpqq is None:
 				return users ,messages
 			_tmpmsg=self.GetContent('saveURL=0">Ã· æ</a>)','<input name="msg"')
+			'''
+				code in the message is like 
+				<br/>
+				<br/>
+				Ã˝»À«„Àﬂ: &nbsp;
+				16:48:01<br/>
+				Send Hello World <br/>
+				so we should do extract this
+			'''
+			if _tmpmsg :
+				# now to get this
+				try:
+					_messages = _tmpmsg.split('<br/>')
+					# now we should get the line of 
+					if len(_messages) > 3:
+						_tmpmsg = "\n".join(_messages[3:-2])
+						_tmpmsg = _tmpmsg.replace('\r\n','')
+				except:
+					# we just get the original message
+					pass
 			# now we should match whether it is the message or qq we met
 			if len(peeruser) > 0 or len(content) > 0:
 				addto = 0
@@ -145,8 +149,8 @@ class PyQQ:
 	def SendMsg(self,user,content):
 		if self.sid is None:
 			raise PyQQException('Not connect right')
-		_tmpmsg=unicode(content,'gbk').encode('utf8')
-		_data={'sid':self.sid,'on':'1','saveURL':'0','saveURL':'0','u':user,'msg':str(_tmpmsg)}
+		_tmpmsg=content.encode('utf8')
+		postData={'sid':self.sid,'on':'1','saveURL':'0','saveURL':'0','u':user,'msg':str(_tmpmsg)}
 		s1con = self.httpRequest('post','http://q16.3g.qq.com/g/s?sid='+ self.sid +'&aid=sendmsg&tfor=qq',postData)
 		return 0
 
