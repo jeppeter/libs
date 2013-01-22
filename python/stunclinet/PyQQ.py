@@ -126,12 +126,12 @@ class PyQQ:
 				if len(content) > 0:
 					conre = re.compile(content)
 				if userre :
-					if userre.match(_tmpqq):
+					if userre.search(_tmpqq):
 						addto = 1
 					else:
 						addto = 0
 				if conre :
-					if conre.match(_tmpmsg):
+					if conre.search(_tmpmsg):
 						addto = 1
 					else:
 						addto = 0
@@ -161,5 +161,6 @@ class PyQQ:
 		s1con = self.httpRequest('get','http://pt5.3g.qq.com/s?aid=nLogin3gqqbysid&3gqqsid='+self.sid)
 		logging.info('keep alive return %s'%(s1con))
 		return 0
-		
+	def GetUser(self):
+		return self.qq
 

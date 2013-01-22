@@ -18,6 +18,35 @@ def Usage(opt,exitcode,msg=None):
 	opt.print_help(fp)
 	sys.exit(exitcode)
 	
+def TestSendAndReceive(qq1,qq2,msg,fuser='',fmsg='',mustsucc=1):
+	try:
+		qq1.SendMsg(qq2.GetUser(),msg)
+		_count = 0
+		_rmsg = None
+		_ruser = None
+		while _count < 3:
+			guser,gmsg = qq2.GetMessage(fuser,fmsg)
+			if len(guser) > 0:
+				_ruser = guser.pop()
+				_rmsg = gmsg.pop()
+				break
+			time.sleep(3)
+			_count += 1
+		if _rmsg is None and mustsucc == 1:
+			raise PyQQException('Can Get %s message'%(str(fuser)))
+		elif mustsucc == 0 and _rmsg is not None:
+			raise PyQQException('Receive Message %s'%(str(_rmsg)))
+		elif mustsucc == 0:
+			logging.info('send %s message %s  fuser %s fmsg %s receive message none'%(qq2.GetUser(),msg,fuser,fmsg))
+			return
+		logging.info('receive user %s message %s '%(_ruser,_rmsg))
+	except PyQQException as e:
+		if mustsucc == 1:
+			logging.error('send %s msg %s get  fuser %s fmsg %s error %s'%(qq2.GetUser(),msg,fuser,fmsg,str(e)))
+		else:
+			logging.error('send %s msg %s get  fuser %s fmsg %s error %s'%(qq2.GetUser(),msg,fuser,fmsg,str(e)))
+	return 	
+
 
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO,format="%(levelname)-8s %(asctime)-12s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
@@ -39,27 +68,14 @@ if __name__ == '__main__':
 		qq2 = PyQQ()
 		qq1.Login(qq1num,qq1pwds)
 		qq2.Login(qq2num,qq2pwds)
-
-		# now to send message 
-		qq1.SendMsg(qq2num,"Send Hello World\nA new line\n\n")
-		tries = 0
-		userget = None
-		msgget = None
-		while tries < 3:
-			user,msg = qq2.GetMessage('','')
-			userget= user.pop()
-			if userget :
-				msgget = msg.pop()
-				break
-			tries += 1
-			time.sleep(3)
-		if msgget is None:
-			raise PyQQException('can not get message from %s'%(qq1num))
-		logging.info("get %s message %s"%(userget,msgget))
-		qq1.KeepAlive()
-		qq2.KeepAlive()
 	except PyQQException as e:
 		sys.stderr.write("Error %s\n"%(str(e)))
 		sys.exit(3)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','',1)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','[\d]+','',1)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','[a-z]+','',0)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','Hello',1)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','Hello_NoSuch',0)
+	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','a line',1)
 
 	
