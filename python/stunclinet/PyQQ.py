@@ -88,7 +88,7 @@ class PyQQ:
 			raise PyQQException('not set sid ok')
 		users=[]
 		messages=[]
-		b1con = self.httpRequest('get','http://q32.3g.qq.com/g/s?aid=nqqchatMain&sid='+self.sid)
+		b1con = self.httpRequest('get','http://q32.3g.qq.com/g/s?aid=nqqchatMain&sid='+self.sid)		
 		if b1con.find('alt="ÁÄÌì"/>(') != -1:
 			b2con = self.httpRequest('get','http://q32.3g.qq.com/g/s?sid='+ self.sid + '&aid=nqqChat&saveURL=0&r=1310115753&g_f=1653&on=1')
 
@@ -108,11 +108,22 @@ class PyQQ:
 			if _tmpmsg :
 				# now to get this
 				try:
-					_messages = _tmpmsg.split('<br/>')
+					_messages = _tmpmsg.split('<br/>')				
+					#logging.info("_tmpmsg %s (%s)len(%d) _messages[3:-2] (%s)"%(_tmpmsg,repr(_messages),len(_messages),repr(_messages[3:-1])))
 					# now we should get the line of 
-					if len(_messages) > 3:
+					if len(_messages) > 5:
 						_tmpmsg = "\n".join(_messages[3:-2])
+						#logging.info("_tmpmsg %s"%(_tmpmsg))
 						_tmpmsg = _tmpmsg.replace('\r\n','')
+						#logging.info("_tmpmsg %s"%(_tmpmsg))
+					elif len(_messages) > 3:
+						_tmpmsg = "\n".join(_messages[3:])
+						#logging.info("_tmpmsg %s"%(_tmpmsg))
+						_tmpmsg = _tmpmsg.replace('\r\n','')
+						#logging.info("_tmpmsg %s"%(_tmpmsg))
+					else:
+						# nothing to modify
+						pass
 				except:
 					# we just get the original message
 					pass
@@ -121,6 +132,7 @@ class PyQQ:
 				addto = 0
 				userre = None
 				conre = None
+				#logging.info('peeruser %s len(%d) content  %s len(%d)'%(peeruser,len(peeruser),content,len(content)))
 				if len(peeruser) > 0 :
 					userre = re.compile(peeruser)
 				if len(content) > 0:

@@ -49,7 +49,7 @@ def TestSendAndReceive(qq1,qq2,msg,fuser='',fmsg='',mustsucc=1):
 
 
 if __name__ == '__main__':
-	logging.basicConfig(level=logging.INFO,format="%(levelname)-8s %(asctime)-12s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
+	logging.basicConfig(level=logging.ERROR,format="%(levelname)-8s %(asctime)-12s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
 	oparse = OptionParser()
 	oparse.add_option('-q','--qq',action="append",dest="qqs",help="qq number set")
 	oparse.add_option('-p','--password',action="append",dest="pwds",help="qq password to set,please append it immediate after the -q or --qq")
@@ -77,5 +77,6 @@ if __name__ == '__main__':
 	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','Hello',1)
 	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','Hello_NoSuch',0)
 	TestSendAndReceive(qq1,qq2,'Hello World New\na line\n','','a line',1)
+	TestSendAndReceive(qq1,qq2,'hello','','',1)
 
 	
