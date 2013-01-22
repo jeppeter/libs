@@ -16,7 +16,9 @@ def SigHandler(signo,frame):
 	return
 
 def HandleMessage(qq,user,msg):
-	pass
+	logging.info("Handle %s msg %s"%(user,msg))
+	
+	return
 
 def MessageListen(user,pwd):
 	_lasttime = time.time()
@@ -30,23 +32,27 @@ def MessageListen(user,pwd):
 		return
 		
 	try:
-		users,msgs = qqlisten.GetMessage('','')
-		while len(users) > 0:
-			_tmpuser = users.pop()
-			_tmpmsg = msgs.pop()
-			HandleMessage(qqlisten,_tmpuser,_tmpmsg)			
-		_curtime = time.time()
-		# we keep the alive in 60 times
-		# or we have the time changed
-		if ( _curtime - _lasttime ) > 60 or (_curtime < _lasttime):
-			if (_curtime < _lasttime):
-				logging.warning("time changed _cur(%s)  _last(%s)"%(str(_curtime),str(_lasttime)))
-			qqlisten.KeepAlive()
-			_lasttime = _curtime
-		# we sleep for a while
-		time.sleep(2)
+		global Running
+		# we exit when running is not set
+		while Running == 1:
+			users,msgs = qqlisten.GetMessage('','')
+			while len(users) > 0:
+				_tmpuser = users.pop()
+				_tmpmsg = msgs.pop()
+				HandleMessage(qqlisten,_tmpuser,_tmpmsg)			
+			_curtime = time.time()
+			# we keep the alive in 60 times
+			# or we have the time changed
+			if ( _curtime - _lasttime ) > 60 or (_curtime < _lasttime):
+				if (_curtime < _lasttime):
+					logging.warning("time changed _cur(%s)  _last(%s)"%(str(_curtime),str(_lasttime)))
+				qqlisten.KeepAlive()
+				_lasttime = _curtime
+			# we sleep for a while
+			time.sleep(2)
 	except:
 		traceback.print_exc(sys.stderr)
+	qqlisten = None
 	return
 
 def Usage(opt,exitcode,msg=None):
