@@ -1,5 +1,8 @@
 #! perl
 
+use Getopt::Std;
+use vars qw ($opt_h);
+
 
 sub DecodeFunc($)
 {
@@ -130,8 +133,36 @@ sub GetAddrFuncOffset($$$)
 	return $str;
 }
 
-my ($f)= shift @ARGV;
+sub Usage
+{
+	my ($exitcode)=shift @_;
+	my ($msg) = shift @_;
+	my ($fp)=*STDERR;
+	if ($exitcode == 0)
+	{
+		$fp = *STDOUT;
+	}
+
+	if (defined($msg))
+	{
+		print $fp "$msg\n";
+	}
+
+	print $fp "$0 LOGFILE\n";
+	print $fp "\tobjdump file is from STDIN\n";
+	exit($exitcode);
+}
+
+my ($f);
 my (@fn,@addrs);
+
+getopts("h");
+
+if (defined($opt_h))
+{
+	Usage(0);
+}
+$f = shift @ARGV;
 
 GetFuncAddrs($f,\@fn,\@addrs);
 
