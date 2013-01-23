@@ -16,7 +16,41 @@ def SigHandler(signo,frame):
 	Running = 0
 	return
 
+def HandleConnectStun(cmds):
+	resp = ''
+	return resp
+
+def HandleListenPort(cmds):
+	resp = ''
+	return resp
+
+def HandleSendUDP(cmds):
+	resp = ''
+	return resp
+
 def HandleMessage(qq,user,msg):
+	'''
+		function : to handle message and handle the
+		it will start with 
+		OPENVPN REQUEST##...##...##
+		the split characters is ##
+	'''
+	if msg.startswith('OPENVPN REQUEST##'):
+		# ok we should handle this
+		response = 'OPENVPN RESPONSE##'
+		cmds = msg.split('##')
+		if len(cmds) >= 2:
+			# ok ,this is the commands
+			if cmds[1] == 'CONNECTSTUN':
+				response += HandleConnectStun(cmds[2:])				
+			elif cmds[1] == 'LISTENPORT':
+				response += HandleListenPort(cmds[2:])
+			elif cmds[1] == 'SENDUDP':
+				response += HandleSendUDP(cmds[2:])
+			else:
+				response += 'Unknow request (%s)'%(msg)
+				logging.warning('can not parse request (%s)'%(msg))
+		qq.SendMsg(user,response)
 	logging.info("Handle %s msg %s"%(user,msg))	
 	return
 
