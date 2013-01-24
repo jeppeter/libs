@@ -35,7 +35,8 @@ def HandleMessage(qq,user,msg):
 		OPENVPN REQUEST##...##...##
 		the split characters is ##
 	'''
-	if msg.startswith('OPENVPN REQUEST##'):
+	msg = msg.lower()
+	if msg.startswith('openvpn request##'):
 		# ok we should handle this
 		response = 'OPENVPN RESPONSE##'
 		cmds = msg.split('##')
