@@ -38,7 +38,7 @@ def HandleMessage(qq,user,msg):
 	msg = msg.lower()
 	if msg.startswith('openvpn request##'):
 		# ok we should handle this
-		response = 'OPENVPN RESPONSE##'
+		response = 'openvpn response##'
 		cmds = msg.split('##')
 		if len(cmds) >= 2:
 			# ok ,this is the commands

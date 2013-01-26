@@ -7,7 +7,14 @@
 class MessageHandleException(Exception):
 	pass
 
-
+__CmdHelpDict = {
+	'version' : 'version 1.0',
+	'connectstun' : 'connect [stunserver] local_bind_port' ,
+	'sendudp' : 'send local_bind_port remote_ip remote_port [send_message] default message is "openvpn verify message"',
+	'startcmd' : 'start args [...] run the command',
+	'localudpproxy' : 'proxy local_listen_port [local_ip] local_forward_port ; in the middle of the proxy of udp',
+	'help' : 'to display total cmd help message',
+}
 
 class MessageHandle:
 	def __init__(self):
@@ -17,17 +24,20 @@ class MessageHandle:
 	def GetResponse(self):
 		return self._resp
 
-	def __Version(self,cmds):
-		self._resp = 'version 1.0'
-		return
 	def __HelpCmd(self,cmdname):
-		
+		if cmdname in __CmdHelpDict.keys():
+			self._resp += __CmdHelpDict[cmdname]
+		else:
+			raise MessageHandleException('unknown command name %s'%(cmdname))
+		return self._resp
 	
 	def __Help(self,cmds):
-		if len(cmds) > 1:
-			self.__HelpCmd(cmds[1])
+		if 'help' in cmds:
+			for c in __CmdHelpDict.keys():
+				if c != 'help':
+					self.__HelpCmd(c)
 		else:
-			for 
+			return self.__HelpCmd(cmds[1])
 			
 
 	def ProcessHandler(self,cmds=None):
