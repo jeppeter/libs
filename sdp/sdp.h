@@ -157,8 +157,6 @@ struct sdp_media
 struct sdp_payload
 {
     char *_payload;
-	int alloc_size;
-	int len_size;
     unsigned char proto_version;
     struct sdp_origin origin;
     char *session_name;
@@ -192,7 +190,7 @@ extern "C"
 #endif
 struct sdp_payload *sdp_parse(const char *payload);
 void sdp_destroy(struct sdp_payload *sdp);
-void sdp_dump(struct sdp_payload *sdp);
+int sdp_dump(struct sdp_payload *sdp,char**ppRetString,int *pLen);
 
 char *sdp_get_attr(char **attr, size_t nattr, char *key);
 int sdp_has_flag_attr(char **attr, size_t nattr, char *flag);
