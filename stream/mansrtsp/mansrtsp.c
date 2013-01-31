@@ -1,7 +1,12 @@
-
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <assert.h>
 #include "mansrtsp.h"
 
-#define STEP(ptr)
+#define STEP(ptr) \
 do\
 {\
 	ptr ++;\
@@ -21,14 +26,14 @@ do\
 #define MARK_END_AND_STEP(ptr) \
 do\
 {\
-	*ptr = '\0';\
+	*(ptr) = '\0';\
 	STEP(ptr);\
 }while(0)
 
 #define MAKE_SURE_PTR(ptr,c) \
 do\
 {\
-	if ((*ptr) != c)\
+	if ((*(ptr)) != c)\
 	{\
 		return NULL;\
 	}\
@@ -37,7 +42,7 @@ do\
 #define MAKE_SURE_STR(ptr,str,n) \
 do\
 {\
-	if (strncmp((ptr),(str),(n)) != 0)\
+	if (strncasecmp((ptr),(str),(n)) != 0)\
 	{\
 		return NULL;\
 	}\
@@ -45,7 +50,7 @@ do\
 
 static char* load_action(char* p,char** action,char**version)
 {
-	char* pc=p,pe;
+	char* pc=p,*pe;
 	char* pa=NULL,*pv=NULL;
 	char c;
 
@@ -74,7 +79,8 @@ static char* load_action(char* p,char** action,char**version)
 	while( 1 )
 	{
 		c = *pc;
-		if ( c >= 'A' && c <= 'Z')
+		if ( (c >= 'A' && c <= 'Z')
+			|| (c >= 'a' && c <= 'z'))
 		{			
 			pc ++;
 			continue;
@@ -100,8 +106,8 @@ static char* load_action(char* p,char** action,char**version)
 
 static char* load_value_key(char* p,char**key,char**value)
 {
-	char* pc=p;
-	char* pe,pf;
+	char *pc=p;
+	char *pe,*pf;
 	char *pk=NULL,*pv=NULL;
 
 	pe = strchr(pc,'\r');
@@ -144,7 +150,7 @@ static char* split_value(char* p,char* fmt,...)
 {
 	char* pc,*pe,*fc,*pp;
 	va_list va;
-	char* s;
+	char** s;
 
 	pc = p;
 	pe = pc + strlen(pc);
@@ -189,6 +195,7 @@ static int mans_range_parse(struct mans_rtsp* pMans,char* p)
 	char* pnpt,*pstart,*pend;
 	char* pret;
 
+	/*the range format is like npt=0- this kind*/
 	pret = split_value(p,"s=s-s",&pnpt,&pstart,&pend);
 	if (pret == NULL)
 	{
@@ -230,11 +237,11 @@ static int check_mans(struct mans_rtsp* pMans)
 struct mans_rtsp* mans_parse(char* line)
 {
 	struct mans_rtsp* pMans=NULL;
-	char* pk,*pv,*pa;
+	char* pk,*pv,*pa,*pe;
 	char* p;
 	int ret;
 
-	pMans = (struct mans_rtsp*)calloc(sizeof(*pMans));
+	pMans = (struct mans_rtsp*)calloc(1,sizeof(*pMans));
 	if (pMans == NULL)
 	{
 		goto fail;
@@ -248,6 +255,7 @@ struct mans_rtsp* mans_parse(char* line)
 
 	pMans->scale = 1.0;
 
+	p = pMans->_payload;
 	p = load_action(p,&pa,&pv);
 	if (p == NULL)
 	{
@@ -268,7 +276,7 @@ struct mans_rtsp* mans_parse(char* line)
 
 		if (strcasecmp(pk,"cseq")==0)
 		{
-			pMans->seq = atoi(pv);
+			pMans->seq = strtoull(pv,&pe,10);
 		}
 		else if (strcasecmp(pk,"scale")==0)
 		{
@@ -327,16 +335,16 @@ static int __dump_mans_rtsp(struct mans_rtsp* pMans,char* pBuf,int len)
 	int ret;
 
 	BUFFER_SNPRINTF("%s MANSRTSP/%s\n",pMans->action,pMans->version);
-	BUFFER_SNPRINTF("CSeq:%d\n",pMans->seq);
-	BUFFER_SNPRINTF("Scale:%f\n",pMans->scale);
+	BUFFER_SNPRINTF("CSeq:%lld\n",pMans->seq);
+	BUFFER_SNPRINTF("Scale:%.1f\n",pMans->scale);
 	if (pMans->stop_time != 0.0)
 	{
-		BUFFER_SNPRINTF("Range:npt=%f-%f\n",pMans->start_time,pMans->stop_time);
+		BUFFER_SNPRINTF("Range:npt=%.1f-%.1f\n",pMans->start_time,pMans->stop_time);
 	}
 	else 
 	{
 		/*stop_time == 0.0*/
-		BUFFER_SNPRINTF("Range:npt=%f-\n",pMans->start_time);
+		BUFFER_SNPRINTF("Range:npt=%.1f-\n",pMans->start_time);
 	}
 	return retsize;
 }
@@ -367,7 +375,7 @@ int dump_mans_rtsp(struct mans_rtsp* pMans,char** ppBuf,int *pLen)
 		{
 			retbuflen = 512;
 		}
-		pRetBuf = (char*)calloc(retbuflen);
+		pRetBuf = (char*)calloc(1,retbuflen);
 		if (pRetBuf==NULL)
 		{
 			ret = -ENOMEM;
@@ -386,7 +394,7 @@ int dump_mans_rtsp(struct mans_rtsp* pMans,char** ppBuf,int *pLen)
 			{
 				free(pRetBuf);
 			}
-			pRetBuf = (char*)calloc(retbuflen);
+			pRetBuf = (char*)calloc(1,retbuflen);
 			if (pRetBuf == NULL)
 			{
 				ret = -ENOMEM;
