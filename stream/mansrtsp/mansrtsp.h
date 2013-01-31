@@ -19,7 +19,7 @@ struct mans_rtsp
 {
 	char* _payload;
 	char* action;
-	int version;
+	char* version;
 	float start_time;
 	float stop_time;
 	long long int seq;

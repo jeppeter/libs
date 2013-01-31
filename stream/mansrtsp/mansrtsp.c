@@ -140,11 +140,91 @@ static char* load_value_key(char* p,char**key,char**value)
 	return pe;		
 }
 
-static char* split_value(char* p,int sep,char**key,char**value)
+static char* split_value(char* p,char* fmt,...)
 {
+	char* pc,*pe,*fc,*pp;
+	va_list va;
+	char* s;
+
+	pc = p;
+	pe = pc + strlen(pc);
+	fc = fmt;
+	va_start(va,fmt);
+
+	while(1)
+	{
+		if (*fc == '\0')
+		{
+			break;
+		}
+
+		switch(*fc)
+		{
+			case 's':
+				s = va_arg(va,char**);
+				*s = pc;
+				break;
+			default:
+				pp = strchr(pc,*fc);
+				if (pp)
+				{
+					pc = pp+1;
+					*pp = '\0';
+				}
+				else
+				{
+					return NULL;
+				}
+				break;
+		}
+
+		fc ++;
+	}
+	return pe;
 }
 
 
+static int mans_range_parse(struct mans_rtsp* pMans,char* p)
+{
+	char* pnpt,*pstart,*pend;
+	char* pret;
+
+	pret = split_value(p,"s=s-s",&pnpt,&pstart,&pend);
+	if (pret == NULL)
+	{
+		return -1;
+	}
+
+	if (strcasecmp(pnpt,"npt")!=0)
+	{
+		return -1;
+	}
+
+	pMans->start_time = atof(pstart);
+	pMans->stop_time = atof(pend);
+
+	return 0;
+}
+
+static int check_mans(struct mans_rtsp* pMans)
+{
+	if (pMans->action == NULL)
+	{
+		return 0;
+	}
+
+	if (pMans->version == NULL)
+	{
+		return 0;
+	}
+
+	if (pMans->seq == 0)
+	{
+		return 0;
+	}
+
+	return 1;
+}
 	
 
 struct mans_rtsp* mans_parse(char* line)
@@ -152,6 +232,7 @@ struct mans_rtsp* mans_parse(char* line)
 	struct mans_rtsp* pMans=NULL;
 	char* pk,*pv,*pa;
 	char* p;
+	int ret;
 
 	pMans = (struct mans_rtsp*)calloc(sizeof(*pMans));
 	if (pMans == NULL)
@@ -160,10 +241,12 @@ struct mans_rtsp* mans_parse(char* line)
 	}
 
 	pMans->_payload = strdup(line);
-	if (pMans->_payload)
+	if (pMans->_payload == NULL)
 	{
 		goto fail;
 	}
+
+	pMans->scale = 1.0;
 
 	p = load_action(p,&pa,&pv);
 	if (p == NULL)
@@ -173,7 +256,7 @@ struct mans_rtsp* mans_parse(char* line)
 
 	/*now to give the action*/
 	pMans->action = pa;
-	pMans->version = atof(pv);
+	pMans->version = pv;
 
 	while(1)
 	{
@@ -193,12 +276,22 @@ struct mans_rtsp* mans_parse(char* line)
 		}
 		else if (strcasecmp(pk,"range")==0)
 		{
-			
+			ret = mans_range_parse(pMans,pv);
+			if (ret < 0)
+			{
+				goto fail;
+			}
 		}
 		else
 		{
 			goto fail;
 		}
+	}
+
+	ret = check_mans(pMans);
+	if (ret == 0)
+	{
+		goto fail;
 	}
 	
 
@@ -208,8 +301,121 @@ fail:
 	return NULL;
 }
 
+#define BUFFER_SNPRINTF(...) \
+do\
+{\
+	ret = snprintf(pCurPtr,leftlen,__VA_ARGS__);\
+	if (ret < 0)\
+	{\
+		return -2;\
+	}\
+	if (ret == leftlen)\
+	{\
+		return -1;\
+	}\
+	retsize += ret;\
+	pCurPtr += ret;\
+	leftlen -= ret;\
+}while(0)
+
+
+static int __dump_mans_rtsp(struct mans_rtsp* pMans,char* pBuf,int len)
+{
+	char* pCurPtr = pBuf;
+	int leftlen = len;
+	int retsize = 0;
+	int ret;
+
+	BUFFER_SNPRINTF("%s MANSRTSP/%s\n",pMans->action,pMans->version);
+	BUFFER_SNPRINTF("CSeq:%d\n",pMans->seq);
+	BUFFER_SNPRINTF("Scale:%f\n",pMans->scale);
+	if (pMans->stop_time != 0.0)
+	{
+		BUFFER_SNPRINTF("Range:npt=%f-%f\n",pMans->start_time,pMans->stop_time);
+	}
+	else 
+	{
+		/*stop_time == 0.0*/
+		BUFFER_SNPRINTF("Range:npt=%f-\n",pMans->start_time);
+	}
+	return retsize;
+}
+
 int dump_mans_rtsp(struct mans_rtsp* pMans,char** ppBuf,int *pLen)
 {
+	char* pRetBuf=NULL;
+	int retbuflen=0;
+	int retsize;
+	int setsize;
+	int getsize;
+	int ret;
+
+	ret = check_mans(pMans);
+	if (ret == 0)
+	{
+		ret = -EINVAL;
+		goto fail;
+	}
+
+	pRetBuf = *ppBuf;
+	retbuflen = *pLen;
+
+	if (pRetBuf==NULL||
+		retbuflen == 0)
+	{
+		if (retbuflen == 0)
+		{
+			retbuflen = 512;
+		}
+		pRetBuf = (char*)calloc(retbuflen);
+		if (pRetBuf==NULL)
+		{
+			ret = -ENOMEM;
+			goto fail;
+		}
+	}
+
+	do
+	{
+		setsize = retbuflen;
+		getsize = __dump_mans_rtsp( pMans,pRetBuf,retbuflen);
+		if (getsize == -1)
+		{
+			retbuflen <<=1;
+			if (pRetBuf && pRetBuf != *ppBuf)
+			{
+				free(pRetBuf);
+			}
+			pRetBuf = (char*)calloc(retbuflen);
+			if (pRetBuf == NULL)
+			{
+				ret = -ENOMEM;
+				goto fail;
+			}
+		}
+	}while(getsize == -1);
+
+	if (getsize < 0)
+	{
+		ret = -errno ? -errno: -EIO;
+		goto fail;
+	}
+
+	retsize = getsize;
+	*pLen = retbuflen;
+	*ppBuf = pRetBuf;
+
+	return retsize;
+
+fail:
+	if (pRetBuf && pRetBuf != *ppBuf)
+	{
+		free(pRetBuf);
+	}
+	pRetBuf = NULL;
+	retbuflen = 0;
+	assert(ret < 0);
+	return ret;	
 }
 
 
