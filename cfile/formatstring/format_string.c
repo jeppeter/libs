@@ -1,7 +1,11 @@
 
-#include "format.h"
+#include "format_string.h"
 
 #include <stdlib.h>
+#include <errno.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 
 int vformat_string(char**ppBuf,int* pLen,const char* fmt,va_list ap)

@@ -1,5 +1,10 @@
 #include "format_string.h"
-
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+#include "testformat_def.h"
 #define INT_VALUE        1
 #define LONG_VALUE       2
 #define U_LONG_VALUE     3
@@ -9,10 +14,11 @@
 #define U_CHAR_VALUE     7
 #define LL_VALUE         8
 #define U_LL_VALUE       9
+#define DOUBLE_VALUE     10
+#define FLOAT_VALUE      11
 
 #define N_VALUE          0xff
 
-#include "format_def.h"
 
 
 typedef union
@@ -26,6 +32,8 @@ typedef union
 	unsigned char ucharv;
 	long long llv;
 	unsigned long long ullv;
+	float fv;
+	double dv;
 } uv_t;
 
 
@@ -45,23 +53,17 @@ typedef struct __test_args_v
 }test_args_v_t;
 
 
-
-static args_v_t args1[]=
+void free_args(test_args_v_t *pArgs)
 {
-	{.type : U_INT_VALUE ,.u.uintv : 100},
-	{.type : STR_VALUE , .u.strv : "world"},
-	{.type : N_VALUE   , .u.strv : NULL},
-};
+	if (pArgs->args)
+	{
+		free(pArgs->args);
+	}
+	memset(pArgs,0,sizeof(*pArgs));
+	return ;
+}
 
-static test_args_v_t test1=
-{
-	.fmt : "hello %d %s",
-	.result : "hello 100 world",
-	.numargs : 3,
-	.args   : args1,
-};
-
-#include "test_format_func.c"
+#include "testformat_func.c"
 
 
 static void Usage(int exitcode,const char* msg)
@@ -75,15 +77,14 @@ static void Usage(int exitcode,const char* msg)
 
 	if (msg)
 	{
-		fprintf(fp,msg);
-		fprintf(fp,"\n");
-		fflush(fp);
+		fprintf(fp,"%s\n",msg);
 	}
 
-	fprintf(fp,"testformat [OPTIONS]\n",);
+	fprintf(fp,"testformat [OPTIONS]\n");
 	fprintf(fp,"\t-h|--help                        : to display this help information\n");
-	fprintf(fp,"\t-i|--int  intvalue               : to format \n");
 	fprintf(fp,"\t-f|--format fmtstr               : the format string\n");
+	fprintf(fp,"\t-r|--result resultvalue          : result string to compare\n");
+	fprintf(fp,"\t-i|--int  intvalue               : to format \n");
 	fprintf(fp,"\t-l|--long longvalue              : the long value\n");
 	fprintf(fp,"\t-ul|--ulong ulongvalue           : the unsigned long value\n");
 	fprintf(fp,"\t-c|--char charvalue              : the char value\n");
@@ -91,17 +92,220 @@ static void Usage(int exitcode,const char* msg)
 	fprintf(fp,"\t-ll|--longlong longlongvalue     : to long long value\n");
 	fprintf(fp,"\t-ull| --ulonglong ulonglongvalue : unsigned long long value\n");
 	fprintf(fp,"\t-s|--string stringvalue          : string value\n");
-	fprintf(fp,"\t\n");
-	fprintf(fp,"\t\n");
-	fprintf(fp,"\t\n");
+	fprintf(fp,"\t-f|--float floatvalue            : float value\n");
+	fprintf(fp,"\t-d|--double doubldvalue          : double value\n");
+	fprintf(fp,"\toutput string current max value is %d\n",MAX_FORMAT_ARGS);
 	fprintf(fp,"\t\n");
 
 	exit(exitcode);	
 }
 
+int check_for_args(test_args_v_t *args)
+{
+	if (args->fmt == NULL)
+	{
+		return 0;
+	}
+	if (args->result == NULL)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+
+static int add_args(test_args_v_t* args,const char* str,int type)
+{
+	args_v_t *pnewArgs=NULL;
+	int numargs=0;
+	char* pend;
+	int ret;
+	numargs = args->numargs;
+	numargs ++;
+	pnewArgs = (args_v_t*)calloc(numargs,sizeof(*pnewArgs));
+	if (pnewArgs== NULL)
+	{
+		return -ENOMEM;
+	}
+	if (args->args)
+	{
+		memcpy(pnewArgs,args->args,args->numargs*sizeof(*pnewArgs));
+	}
+
+	switch(type)
+	{
+		case INT_VALUE:
+			pnewArgs[numargs-1].type = INT_VALUE;
+			pnewArgs[numargs-1].u.intv = atoi(str);
+			break;
+		case LONG_VALUE:
+			pnewArgs[numargs-1].type = LONG_VALUE;
+			pnewArgs[numargs-1].u.longv = strtol(str,&pend,10);
+			break;
+		case U_LONG_VALUE:
+			pnewArgs[numargs-1].type = U_LONG_VALUE;
+			pnewArgs[numargs-1].u.ulongv = strtoul(str,&pend,10);
+			break;
+		case U_INT_VALUE:
+			pnewArgs[numargs-1].type = U_INT_VALUE;
+			pnewArgs[numargs-1].u.uintv = atoi(str);			
+			break;
+		case STR_VALUE:
+			pnewArgs[numargs-1].type = STR_VALUE;
+			pnewArgs[numargs-1].u.strv = (char*)str;
+			break;
+		case CHAR_VALUE:
+			pnewArgs[numargs-1].type = CHAR_VALUE;
+			pnewArgs[numargs-1].u.charv = str[0];
+			break;
+		case U_CHAR_VALUE:
+			pnewArgs[numargs-1].type = U_CHAR_VALUE;
+			pnewArgs[numargs-1].u.charv = (unsigned char)str[0];			
+			break;
+		case LL_VALUE:
+			pnewArgs[numargs-1].type = LL_VALUE;
+			pnewArgs[numargs-1].u.llv = strtoll(str,&pend,10);
+			break;
+		case U_LL_VALUE:
+			pnewArgs[numargs-1].type = U_LL_VALUE;
+			pnewArgs[numargs-1].u.ullv = strtoull(str,&pend,10);
+			break;
+		case DOUBLE_VALUE:
+			pnewArgs[numargs-1].type = DOUBLE_VALUE;
+			pnewArgs[numargs-1].u.dv = atof(str);
+			break;
+		case FLOAT_VALUE:
+			pnewArgs[numargs-1].type = FLOAT_VALUE;
+			pnewArgs[numargs-1].u.fv = atof(str);
+			break;
+		default:
+			assert(0!=0);
+			break;
+	}
+
+	ret = 0;
+	if (args->args)
+	{
+		free(args->args);
+	}
+	args->args = pnewArgs;
+	args->numargs = numargs;
+
+	return ret;
+}
+
+
+#define CHECK_FOR_ARGS(notice) \
+do\
+{\
+	if ((i+1)>=argc)\
+	{\
+		Usage(3,notice);\
+	}\
+}while(0)
+
+#define ADD_ARGS(notice,type,errormsg) \
+do\
+{\
+	if ((i+1)>=argc)\
+	{\
+		Usage(3,notice);\
+	}\
+	i ++;\
+	ret = add_args(args,argv[i],type);\
+	if (ret < 0)\
+	{\
+		Usage(3,errormsg);\
+	}\
+}while(0)
+
+
 int parse_param(int argc,char* argv[],test_args_v_t *args)
 {
-	
+	int i;
+	int ret;
+	for (i=1;i<argc;i++)
+	{
+		if (strcmp(argv[i],"-h")==0||
+			strcmp(argv[i],"--help")==0)
+		{
+			Usage(0,NULL);
+		}
+		else if (strcmp(argv[i],"-f") == 0 || 
+			strcmp(argv[i],"--format")==0)
+		{
+			CHECK_FOR_ARGS("-f|--format need args");
+			i ++;
+			args->fmt = argv[i];
+		}
+		else if (strcmp(argv[i],"-r") == 0 || 
+			strcmp(argv[i],"--result")==0)
+		{
+			CHECK_FOR_ARGS("-r|--result need args");
+			i ++;
+			args->result = argv[i];
+		}
+		else if (strcmp(argv[i],"-i") == 0 || 
+			strcmp(argv[i],"--int")==0)
+		{
+			ADD_ARGS("-i|--int need args",INT_VALUE,"parse -i|--int error");
+		}
+		else if (strcmp(argv[i],"-l") == 0 || 
+			strcmp(argv[i],"--long")==0)
+		{
+			ADD_ARGS("-l|--long need args",LONG_VALUE,"parse -l|--long error");
+		}
+		else if (strcmp(argv[i],"-ul") == 0 || 
+			strcmp(argv[i],"--ulong")==0)
+		{
+			ADD_ARGS("-ul|--ulong need args",U_LONG_VALUE,"parse -ul|--ulong error");
+		}
+		else if (strcmp(argv[i],"-s") == 0 || 
+			strcmp(argv[i],"--string")==0)
+		{
+			ADD_ARGS("-s|--string need args",STR_VALUE,"parse -s|--string error");
+		}
+		else if (strcmp(argv[i],"-c") == 0 || 
+			strcmp(argv[i],"--char")==0)
+		{
+			ADD_ARGS("-c|--char need args",CHAR_VALUE,"parse -c|--char error");
+		}
+		else if (strcmp(argv[i],"-uc") == 0 || 
+			strcmp(argv[i],"--uchar")==0)
+		{
+			ADD_ARGS("-uc|--uchar need args",U_CHAR_VALUE,"parse -uc|--uchar error");
+		}
+		else if (strcmp(argv[i],"-ll") == 0 || 
+			strcmp(argv[i],"--longlong")==0)
+		{
+			ADD_ARGS("-ll|--longlong need args",LL_VALUE,"parse -ll|--longlong error");
+		}
+		else if (strcmp(argv[i],"-ull") == 0 || 
+			strcmp(argv[i],"--ulonglong")==0)
+		{
+			ADD_ARGS("-ull|--ulonglong need args",U_LL_VALUE,"parse -ull|--ulonglong error");
+		}
+		else if (strcmp(argv[i],"-d") == 0 || 
+			strcmp(argv[i],"--double")==0)
+		{
+			ADD_ARGS("-d|--double need args",DOUBLE_VALUE,"parse -d|--double error");
+		}
+		else if (strcmp(argv[i],"-f") == 0 || 
+			strcmp(argv[i],"--float")==0)
+		{
+			ADD_ARGS("-f|--float need args",U_LL_VALUE,"parse -f|--float error");
+		}
+		else 
+		{
+		}
+	}
+
+	if (check_for_args(args)==0)
+	{
+		Usage(3,NULL);
+	}
+	return 0;
 }
 
 
@@ -110,8 +314,15 @@ int parse_param(int argc,char* argv[],test_args_v_t *args)
 
 int main(int argc,char* argv[])
 {
-	int i=0;
-	while(all_tests[i])
+	test_args_v_t args;
+	int ret;
+	memset(&args,0,sizeof(args));
+	ret = parse_param(argc,argv,&args);
+	if (ret < 0)
 	{
+		return ret;
 	}
+	ret = FactoryFunc(&args);
+	free_args(&args);
+	return ret;
 }

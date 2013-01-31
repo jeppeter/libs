@@ -15,6 +15,8 @@
 #ifndef __FORMAT_STRING_H__
 #define __FORMAT_STRING_H__
 
+#include <stdarg.h>
+
 #ifdef __cplusplus
 extern "C"
 {

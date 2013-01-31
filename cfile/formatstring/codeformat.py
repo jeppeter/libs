@@ -15,68 +15,155 @@ def GetBinary(num,fl):
 	return s
 
 
-def CaseCodeShiftFormat(num,nshift):
-	bstr = GetBinary(num,nshift)
-	str = '\tcase '
-	str += 'MLL_%s:\n'%(bstr)
-	str += '\t\tret = format_string(&pResult,&resultnum,args->fmt'
-	i = 0
-	while i < nshift:
-		if bstr[i] == '0':
-			str += ',vv[%d]'%(i)
-		else:
+def CaseCodeFloatShiftFormat(ntabs,numll,numff,nshift):
+	fstr = GetBinary(numff,nshift)
+	bstr = GetBinary(numll,nshift)
+	str = ' ' * (ntabs * 4)	
+	str += 'case MLL_%s:\n'%(fstr)
+	str += ' ' * (ntabs + 1)*4
+	str += 'ret = format_string(&pResult,&resultnum,args->fmt'
+	for i in xrange(0,nshift):
+		if bstr[i] == '1':
 			str += ',ullv[%d]'%(i)
-		i += 1
+		elif fstr[i] == '1':
+			str += ',fv[%d]'%(i)
+		else:
+			str += ',vv[%d]'%(i)
 	str += ');\n'
-	str += '\t\tbreak;\n'
+	str += ' ' * (ntabs + 1)*4
+	str += 'if (ret < 0)\n'
+	str += ' ' * (ntabs + 1)*4
+	str += '{\n'
+	str += ' ' * (ntabs + 2)*4
+	str += 'goto out;\n'
+	str += ' ' * (ntabs + 1)*4
+	str += '}\n'
+	str += ' ' * (ntabs + 1)*4
+	str += 'break;\n'
 	return str
 
-def CaseCodeFormat(nshift):
+def CaseCodeFloatFormat(ntabs,numll,nshift):
+	str = ' ' * (ntabs * 4)
+	str += 'switch(setff)\n'
+	str += ' ' * (ntabs * 4)
+	str += '{\n'
+	maxnum = (1 << nshift)
+	for i in xrange(0,maxnum):
+		fstr = GetBinary(i,nshift)
+		bstr = GetBinary(numll,nshift)
+		usecase = 1
+		for j in xrange(0,nshift):
+			if fstr[j] == '1' and bstr[j] =='1':
+				#if we have the both set ,it can not set,so omit it
+				usecase = 0
+				break
+		if usecase == 1:
+			str += CaseCodeFloatShiftFormat(ntabs + 1,numll,i,nshift)
+
+	str += ' '*(ntabs+1)*4
+	str += 'default:\n'
+	str += ' '*(ntabs + 2)*4
+	str += 'assert(0!=0);\n'
+	str += ' '*(ntabs + 2)*4
+	str += 'break;\n'
+	str += ' ' * (ntabs)*4
+	str += '}\n'
+	return str
+
+def CaseCodeShiftFormat(ntabs,num,nshift):
+	bstr = GetBinary(num,nshift)
+	str = ' ' * ntabs*4
+	str += 'case MLL_%s:\n'%(bstr)
+	str += CaseCodeFloatFormat(ntabs+1,num,nshift)
+	str += ' ' * (ntabs+1)*4
+	str += 'break;\n'
+	return str
+
+def CaseCodeFormat(ntabs,nshift):
 	maxnum = (1 << nshift)
 	i = 0
 	str = ''
-	while i < maxnum:
-		str += CaseCodeShiftFormat(i,nshift)
-		i += 1
+	for i in xrange(0,maxnum):
+		str += CaseCodeShiftFormat(ntabs,i,nshift)
 	return str
 
 def FormatCode(nshift):
+	ntabs = 1
 	if nshift < 1:
-		return ''
+		str = '''static int test0_format(test_args_v_t* args)
+{
+	char* pResult=NULL;
+	int resultnum=0;
+	int ret;
+	ret = format_string(&pResult,&resultnum,args->fmt);
+	if (ret < 0)
+	{
+		goto out;
+	}
+
+	if (strcmp(pResult,args->result)!=0)
+	{
+		ret = -EINVAL;
+		fprintf(stderr,"result (%s) not valid (%s)\\n",pResult,args->result);
+	}
+out:
+	if (pResult)
+	{
+		free(pResult);
+	}
+	pResult = NULL;
+	resultnum = 0;
+	return ret;
+}'''
+		return str
 	str = 'static int test%d_format(test_args_v_t* args)\n'%(nshift)
 	str += '{\n'
-	str += '\tchar* pResult=NULL;\n'
-	str += '\tint resultnum=0;\n\tint ret=0;\n\tassert(args.numargs == %d);\n'%(nshift)
-	str += '\tint setll=0;\n'
-	str += '\tint i=0;\n'
-	str += '\tvoid *vv[%d];\n'%(nshift)
-	str += '\tunsigned long long ull[%d];\n'%(nshift)
+	str += ' ' * ntabs*4
+	str += 'char* pResult=NULL;\n'
+	str += ' ' * ntabs*4
+	str += 'int resultnum=0;\n'
+	str += ' ' * ntabs*4
+	str += 'int ret=0;\n'
+	str += ' ' * ntabs*4
+	str += 'assert(args->numargs == %d);\n'%(nshift)
+	str += ' ' * ntabs*4
+	str += 'int setll=0;\n'
+	str += ' ' * ntabs*4
+	str += 'int setff=0;\n'
+	str += ' ' * ntabs*4
+	str += 'int i=0;\n'
+	str += ' ' * ntabs*4
+	str += 'unsigned long vv[%d];\n'%(nshift)
+	str += ' ' * ntabs*4
+	str += 'unsigned long long ullv[%d];\n'%(nshift)
+	str += ' ' * ntabs*4
+	str += 'float fv[%d];\n'%(nshift)
 	str += '''	for (i=0;i<args->numargs;i++)
 	{
-		args_v_t pv = args->args;
+		args_v_t *pv = args->args;
 
 		switch(pv[i].type)
 		{
 		case INT_VALUE:
-			vv[i] = (void*)pv[i].u.intv;
+			vv[i] = (unsigned long)pv[i].u.intv;
 			break;
 		case LONG_VALUE:
-			vv[i] = (void*)pv[i].u.longv;
+			vv[i] = (unsigned long)pv[i].u.longv;
 			break;
 		case U_LONG_VALUE:
-			vv[i] = (void*)pv[i].u.ulongv;
+			vv[i] = (unsigned long)pv[i].u.ulongv;
 			break;
 		case U_INT_VALUE:
-			vv[i] = (void*)pv[i].u.uintv;
+			vv[i] = (unsigned long)pv[i].u.uintv;
 			break;
 		case STR_VALUE:
-			vv[i] = (void*)pv[i].u.strv;
+			vv[i] = (unsigned long)pv[i].u.strv;
 			break;
 		case CHAR_VALUE:
-			vv[i] = (void*)pv[i].u.charv;
+			vv[i] = (unsigned long)pv[i].u.charv;
 			break;
 		case U_CHAR_VALUE:
-			vv[i] = (void*)pv[i].u.ucharv;
+			vv[i] = (unsigned long)pv[i].u.ucharv;
 			break;			
 		case LL_VALUE:
 			ullv[i] = (unsigned long long)pv[i].u.llv;
@@ -86,6 +173,14 @@ def FormatCode(nshift):
 			ullv[i] = (unsigned long long)pv[i].u.ullv;
 			setll |= (1 << i);
 			break;
+		case FLOAT_VALUE:
+			fv[i] =  pv[i].u.fv;
+			setff |= (1 << i);			
+			break;
+		case DOUBLE_VALUE:
+			fv[i] = pv[i].u.dv;
+			setff |= (1 << i);
+			break;
 		default:
 			assert(0!=0);
 			break;
@@ -94,12 +189,19 @@ def FormatCode(nshift):
 '''
 
 	str += '\n\n'
-	str += '\tswitch(setll)\n'
-	str += '\t{\n'
-	str += CaseCodeFormat(nshift)
-	str += '\tdefault:\n'
-	str += '\t\tbreak;\n'
-	str += '\t}\n'
+	str += ' ' * ntabs*4
+	str += 'switch(setll)\n'
+	str += ' ' * ntabs*4
+	str += '{\n'
+	str += CaseCodeFormat(ntabs + 1,nshift)
+	str += ' ' * ntabs*4
+	str += 'default:\n'
+	str += ' ' * (ntabs + 1)*4
+	str += 'assert(0!=0);\n'
+	str += ' ' * (ntabs+1)*4
+	str += 'break;\n'
+	str += ' ' * ntabs*4
+	str += '}\n'
 	str += '\n\n'
 	str += '''	if (ret < 0)
 	{
@@ -120,30 +222,47 @@ out:
 }'''
 	return str
 
-def FactoryCodeCaseGen(num):	
-	str = '\tcase %d:\n'%(num)
-	str += '\t\tret=test%d_format(args);\n'%(num)
-	str += '\t\tbreak;\n'
+def FactoryCodeCaseGen(ntabs,num):	
+	str = ' ' * ntabs*4
+	str += 'case %d:\n'%(num)
+	str += ' ' * (ntabs+1)*4
+	str += 'ret=test%d_format(args);\n'%(num)
+	str += ' ' * (ntabs+1)*4
+	str += 'break;\n'
 	return str
 	
 
 def FactoryCodeGen(nshift):
+	ntabs = 1
 	str = 'static int FactoryFunc(test_args_v_t* args)\n'
 	str += '{\n'
-	str += '\tint num=args->numargs,ret=0;\n'
-	str += '\tif (num >= %d)\n'%(nshift)
-	str += '\t{\n'
-	str += '\t\tfprintf(stderr,"args more than %d\\n");\n'%(nshift)
-	str += '\t\treturn -EINVAL;\n'
-	str += '\t}\n'
-	str += '\tswitch(num)\n'
-	str += '\t{\n'
-	for i in xrange(1,nshift):
-		str += FactoryCodeCaseGen(i)
-	str += '\tdefault:\n'
-	str += '\t\tassert(0!=0);\n'
-	str += '\t}\n'
+	str += ' ' * ntabs*4
+	str += 'int num=args->numargs,ret=0;\n'
+	str += ' ' * ntabs*4
+	str += 'if (num >= %d)\n'%(nshift)
+	str += ' ' * ntabs*4
+	str += '{\n'
+	str += ' ' * (ntabs+1)*4
+	str += 'fprintf(stderr,"args more than %d\\n");\n'%(nshift)
+	str += ' ' * (ntabs+1)*4
+	str += 'return -EINVAL;\n'
+	str += ' ' * ntabs*4
+	str += '}\n'
+	str += ' ' * ntabs*4
+	str += 'switch(num)\n'
+	str += ' ' * ntabs*4
+	str += '{\n'
+	for i in xrange(0,nshift):
+		str += FactoryCodeCaseGen(ntabs + 1,i)
+	str += ' ' * (ntabs+1)*4
+	str += 'default:\n'
+	str += ' ' * (ntabs+2)*4
+	str += 'assert(0!=0);\n'
+	str += ' ' * ntabs*4
+	str += '}\n'
 	str += '\n\n'
+	str += ' ' * ntabs* 4
+	str += 'return ret;\n'
 	str += '}\n'
 	return str
 
