@@ -230,6 +230,21 @@ static int check_mans(struct mans_rtsp* pMans)
 		return 0;
 	}
 
+	if (pMans->start_time < 0.0 || 
+		pMans->stop_time < 0.0)
+	{
+		return 0;
+	}
+
+	if (pMans->start_time != 0.0 && 
+		pMans->stop_time != 0.0)
+	{
+		if (pMans->start_time >= pMans->stop_time )
+		{
+			return 0;
+		}
+	}
+
 	return 1;
 }
 	
@@ -354,7 +369,6 @@ int dump_mans_rtsp(struct mans_rtsp* pMans,char** ppBuf,int *pLen)
 	char* pRetBuf=NULL;
 	int retbuflen=0;
 	int retsize;
-	int setsize;
 	int getsize;
 	int ret;
 
@@ -385,7 +399,6 @@ int dump_mans_rtsp(struct mans_rtsp* pMans,char** ppBuf,int *pLen)
 
 	do
 	{
-		setsize = retbuflen;
 		getsize = __dump_mans_rtsp( pMans,pRetBuf,retbuflen);
 		if (getsize == -1)
 		{
