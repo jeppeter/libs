@@ -66,9 +66,10 @@ void free_args(test_args_v_t *pArgs)
 #include "testformat_func.c"
 
 
-static void Usage(int exitcode,const char* msg)
+static void Usage(int exitcode,const char* msg,...)
 {
 	FILE* fp=stderr;
+	va_list ap;
 
 	if (exitcode == 0)
 	{
@@ -77,7 +78,9 @@ static void Usage(int exitcode,const char* msg)
 
 	if (msg)
 	{
-		fprintf(fp,"%s\n",msg);
+		va_start(ap,msg);
+		vfprintf(fp,msg,ap);
+		fprintf(fp,"\n");
 	}
 
 	fprintf(fp,"testformat [OPTIONS]\n");
@@ -92,7 +95,7 @@ static void Usage(int exitcode,const char* msg)
 	fprintf(fp,"\t-ll|--longlong longlongvalue     : to long long value\n");
 	fprintf(fp,"\t-ull| --ulonglong ulonglongvalue : unsigned long long value\n");
 	fprintf(fp,"\t-s|--string stringvalue          : string value\n");
-	fprintf(fp,"\t-f|--float floatvalue            : float value\n");
+	fprintf(fp,"\t-F|--float floatvalue            : float value\n");
 	fprintf(fp,"\t-d|--double doubldvalue          : double value\n");
 	fprintf(fp,"\toutput string current max value is %d\n",MAX_FORMAT_ARGS);
 	fprintf(fp,"\t\n");
@@ -138,46 +141,58 @@ static int add_args(test_args_v_t* args,const char* str,int type)
 		case INT_VALUE:
 			pnewArgs[numargs-1].type = INT_VALUE;
 			pnewArgs[numargs-1].u.intv = atoi(str);
+			fprintf(stderr,"INT_VALUE %s (%d)\n",str,pnewArgs[numargs-1].u.intv);
 			break;
 		case LONG_VALUE:
 			pnewArgs[numargs-1].type = LONG_VALUE;
 			pnewArgs[numargs-1].u.longv = strtol(str,&pend,10);
+			fprintf(stderr,"LONG_VALUE %s (%ld)\n",str,pnewArgs[numargs-1].u.longv);
 			break;
 		case U_LONG_VALUE:
+			fprintf(stderr,"U_LONG_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = U_LONG_VALUE;
 			pnewArgs[numargs-1].u.ulongv = strtoul(str,&pend,10);
 			break;
 		case U_INT_VALUE:
+			fprintf(stderr,"U_INT_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = U_INT_VALUE;
 			pnewArgs[numargs-1].u.uintv = atoi(str);			
 			break;
 		case STR_VALUE:
+			fprintf(stderr,"STR_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = STR_VALUE;
 			pnewArgs[numargs-1].u.strv = (char*)str;
 			break;
 		case CHAR_VALUE:
+			fprintf(stderr,"CHAR_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = CHAR_VALUE;
 			pnewArgs[numargs-1].u.charv = str[0];
 			break;
 		case U_CHAR_VALUE:
+			fprintf(stderr,"U_CHAR_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = U_CHAR_VALUE;
 			pnewArgs[numargs-1].u.charv = (unsigned char)str[0];			
 			break;
 		case LL_VALUE:
+			fprintf(stderr,"LL_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = LL_VALUE;
 			pnewArgs[numargs-1].u.llv = strtoll(str,&pend,10);
 			break;
 		case U_LL_VALUE:
+			fprintf(stderr,"U_LL_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = U_LL_VALUE;
 			pnewArgs[numargs-1].u.ullv = strtoull(str,&pend,10);
 			break;
 		case DOUBLE_VALUE:
+			fprintf(stderr,"DOUBLE_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = DOUBLE_VALUE;
 			pnewArgs[numargs-1].u.dv = atof(str);
 			break;
 		case FLOAT_VALUE:
+			
 			pnewArgs[numargs-1].type = FLOAT_VALUE;
 			pnewArgs[numargs-1].u.fv = atof(str);
+			fprintf(stderr,"FLOAT_VALUE %s (%f)\n",str,pnewArgs[numargs-1].u.fv);
 			break;
 		default:
 			assert(0!=0);
@@ -227,6 +242,7 @@ int parse_param(int argc,char* argv[],test_args_v_t *args)
 	int ret;
 	for (i=1;i<argc;i++)
 	{
+		fprintf(stderr,"argv[%d] %s\n",i,argv[i]);
 		if (strcmp(argv[i],"-h")==0||
 			strcmp(argv[i],"--help")==0)
 		{
@@ -291,13 +307,14 @@ int parse_param(int argc,char* argv[],test_args_v_t *args)
 		{
 			ADD_ARGS("-d|--double need args",DOUBLE_VALUE,"parse -d|--double error");
 		}
-		else if (strcmp(argv[i],"-f") == 0 || 
+		else if (strcmp(argv[i],"-F") == 0 || 
 			strcmp(argv[i],"--float")==0)
 		{
-			ADD_ARGS("-f|--float need args",U_LL_VALUE,"parse -f|--float error");
+			ADD_ARGS("-F|--float need args",FLOAT_VALUE,"parse -F|--float error");
 		}
 		else 
 		{
+			Usage(3,"not reconize args %s",argv[i]);
 		}
 	}
 
@@ -316,13 +333,38 @@ int main(int argc,char* argv[])
 {
 	test_args_v_t args;
 	int ret;
+	int i;
 	memset(&args,0,sizeof(args));
 	ret = parse_param(argc,argv,&args);
 	if (ret < 0)
 	{
+		fprintf(stderr,"format ");
+		for (i=1;i<argc;i++)
+		{
+			fprintf(stderr," (%s)",argv[i]);
+		}
+		fprintf(stderr,"\nerror %d\n",ret);
 		return ret;
 	}
 	ret = FactoryFunc(&args);
+	if (ret == 0)
+	{
+		fprintf(stderr,"format ");
+		for (i=1;i<argc;i++)
+		{
+			fprintf(stderr," (%s)",argv[i]);
+		}
+		fprintf(stderr,"\nsuccess\n");		
+	}
+	else
+	{
+		fprintf(stderr,"format ");
+		for (i=1;i<argc;i++)
+		{
+			fprintf(stderr," (%s)",argv[i]);
+		}
+		fprintf(stderr,"\nerror %d\n",ret);
+	}
 	free_args(&args);
 	return ret;
 }

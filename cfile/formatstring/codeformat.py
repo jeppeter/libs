@@ -19,13 +19,17 @@ def CaseCodeFloatShiftFormat(ntabs,numll,numff,nshift):
 	fstr = GetBinary(numff,nshift)
 	bstr = GetBinary(numll,nshift)
 	str = ' ' * (ntabs * 4)	
-	str += 'case MLL_%s:\n'%(fstr)
+	str += 'case MFF_%s:\n'%(fstr)
+	str += ' ' * (ntabs + 1)*4
+	str += 'fprintf(stderr,"[%%s:%%d]\tUSE setll MLL_%s setff MFF_%s\\n",__FILE__,__LINE__);\n'%(bstr,fstr)
 	str += ' ' * (ntabs + 1)*4
 	str += 'ret = format_string(&pResult,&resultnum,args->fmt'
 	for i in xrange(0,nshift):
-		if bstr[i] == '1':
+		j = nshift - i - 1
+		# we use this for the value
+		if bstr[j] == '1':
 			str += ',ullv[%d]'%(i)
-		elif fstr[i] == '1':
+		elif fstr[j] == '1':
 			str += ',fv[%d]'%(i)
 		else:
 			str += ',vv[%d]'%(i)
@@ -101,6 +105,7 @@ def FormatCode(nshift):
 		goto out;
 	}
 
+	ret = 0;
 	if (strcmp(pResult,args->result)!=0)
 	{
 		ret = -EINVAL;
@@ -211,7 +216,7 @@ out:
 	ret = 0;
 	if (strcmp(pResult,args->result)!=0)
 	{
-		fprintf(stderr,"compare (%s) != (%s)\\n",pResult,args->result);
+		fprintf(stderr,"[%s:%d]compare (%s) != (%s)\\n",__FILE__,__LINE__,pResult,args->result);
 		ret = -1;
 	}
 out:
