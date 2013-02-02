@@ -18,12 +18,18 @@ import ctypes
 class RandomValue:
 	def __init__(self):
 		self._functable = {
-			'-i' : self.IntValue
+			'-i' : RandomValue.IntValue,
+			'-ui' : RandomValue.UIntValue,
+			'-l' : RandomValue.LongValue,
+			'-ul' : RandomeValue.ULongValue,
 		}
 
 	def IntValue(self,maxvalue):
 		random.seed(time.time())		
 		return random.randint(0,maxvalue)
+
+	def UIntValue(self,maxvalue):
+		pass
 
 	def LongValue(self,maxvalue):
 		random.seed(time.time())		
