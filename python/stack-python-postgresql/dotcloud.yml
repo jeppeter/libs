@@ -1,0 +1,5 @@
+www:
+    type: python
+    postinstall: ./app/postgresql.py
+db:
+    type: postgresql
