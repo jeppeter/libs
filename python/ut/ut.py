@@ -4,10 +4,29 @@ from optparse import OptionParser
 
 class TestHelpSpot(unittest.TestCase):
     @classmethod
+    def TestSpot_Opt_Parse_CallBack(cls,option, opt_str, value, parser):
+        print 'option %s opt_str %s value %s parser %s'%(repr(option), repr(opt_str), repr(value), repr(parser))
+        if opt_str == '-r' or opt_str == '--remote':
+        	if value is None:
+        		raise Exception('need more args for %s'%(opt_str))
+        	cls._remote = value
+        elif opt_str == '-P' or opt_str == '--play_timeout':
+        	if value is None:
+        		raise Exception('need more args for %s'%(opt_str))
+        	cls._play_timeout = int(value)
+        elif opt_str == '-S' or opt_str == '--setup_timeout':
+        	if value is None:
+        		raise Exception('need more args for %s'%(opt_str))
+        	cls._setup_timeout = int(value)
+        else:
+        	raise Exception('can not parse %s'%(opt_str))
+    @classmethod
     def AddArgs(cls,parser):
-        parser.add_option('-P','--play_timeout',type="int",nargs=1,dest='TestHelpSport_play_timeout')
-        parser.add_option('-S','--setup_timeout',type="int",nargs=1,dest='TestHelpSport_setup_timeout')
-        parser.add_option('-r','--remote',type="string",nargs=1,dest='TestHelpSport_remote')
+        parser.add_option('-P','--play_timeout',type="int",nargs=1,action='callback',callback=TestHelpSpot.TestSpot_Opt_Parse_CallBack,help='Set play timeout value ')
+        parser.add_option('-S','--setup_timeout',type="int",nargs=1,action='callback',callback=TestHelpSpot.TestSpot_Opt_Parse_CallBack,help='Set setup timeout value ')
+        parser.add_option('-r','--remote',type="string",nargs=1,action='callback',callback=TestHelpSpot.TestSpot_Opt_Parse_CallBack,help='Set remote value')
+        cls._setup_timeout = 20
+        cls._play_timeout = 60
         return
     @classmethod
     def ParseArgs(cls,argv):
@@ -27,7 +46,6 @@ class TestHelpSpot(unittest.TestCase):
     def setUpClass(cls):
         print "CTest Start class %s type(%s)"%(repr(cls),type(cls))
         cls._v = 6
-        TestHelpSpot.ParseArgs(sys.argv)
         if hasattr(cls,'_remote'):
         	print "remote %s"%(cls._remote)
         pass
@@ -90,11 +108,11 @@ def Unittest_Args_Callback(option, opt_str, value, parser):
 		if value :
 			parser.values.unittest_args.append(value)
 def Unittest_Args_Add(args):
-	args.add_option('-v','--verbose',action="callback",callback=Unittest_Args_Callback,nargs=0)
-	args.add_option('-q','--quiet',action="callback",callback=Unittest_Args_Callback,nargs=0)
-	args.add_option('-f','--failfast',action="callback",callback=Unittest_Args_Callback,nargs=0)
-	args.add_option('-c','--catch',action="callback",callback=Unittest_Args_Callback,nargs=0)
-	args.add_option('-b','--buffer',action="callback",callback=Unittest_Args_Callback,nargs=0)
+	args.add_option('-v','--verbose',action="callback",callback=Unittest_Args_Callback,nargs=0,help='verbose mode')
+	args.add_option('-q','--quiet',action="callback",callback=Unittest_Args_Callback,nargs=0,help='quiet mode')
+	args.add_option('-f','--failfast',action="callback",callback=Unittest_Args_Callback,nargs=0,help='fast fail')
+	args.add_option('-c','--catch',action="callback",callback=Unittest_Args_Callback,nargs=0,help='catch interrupt from interactive')
+	args.add_option('-b','--buffer',action="callback",callback=Unittest_Args_Callback,nargs=0,help='buffer stdout and stderr')
 	return 
 
 
