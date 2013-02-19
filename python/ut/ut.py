@@ -119,7 +119,7 @@ def Unittest_Args_Add(args):
 def TestCaseStart():
 	args = OptionParser()
 	Unittest_Args_Add(args)
-	TestHelpSpot.AddArgs(args)	
+	TestHelpSpot.AddArgs(args)
 	opt,nargs = args.parse_args(sys.argv[1:])	
 	uargs = hasattr(opt,'unittest_args') and opt.unittest_args or [sys.argv[0]]
 	for a in nargs :
