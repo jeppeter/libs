@@ -56,9 +56,9 @@ class FormatGenDouble(FormatGenBase):
 class FormatGenLongLong(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
-			maxv = 2**64-1
+			maxv = 2**64
 			curv = int(value)
-			if curv > maxv :
+			if curv >= maxv :
 				curv %= maxv
 			m = re.match('\%llx',fmt)
 			if  m:
@@ -75,9 +75,9 @@ class FormatGenLongLong(FormatGenBase):
 class FormatGenULongLong(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
-			maxv = 2**63-1
+			maxv = 2**64
 			curv = int(value)
-			if curv > maxv:
+			if curv >= maxv:
 				curv %= maxv
 			m = re.match('%llx',fmt)
 			if m:
