@@ -56,7 +56,7 @@ class FormatGenDouble(FormatGenBase):
 class FormatGenLongLong(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
-			maxv = 2**63-1
+			maxv = 2**64-1
 			curv = int(value)
 			if curv > maxv :
 				curv %= maxv
