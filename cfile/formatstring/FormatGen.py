@@ -10,10 +10,9 @@ class FormatGenBase(object):
 class FormatGenInt(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
-			maxv = 2*32 - 1
-			
+			maxv = 2**32			
 			iv = int(value):
-			if iv > maxv:
+			if iv >= maxv:
 				iv %= maxv
 			sv = fmt%(iv)
 			return sv
@@ -88,3 +87,34 @@ class FormatGenULongLong(FormatGenBase):
 			return sv
 		except:
 			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
+
+import unittest
+import random
+import time
+
+class FormatGenUnittest(unittest.TestCase):
+	def test_String1(self):
+		f = FormatGenString()
+		svi = 'ssvvddd'
+		v = f.GenerateResult('%s',svi)
+		self.assertEqual(svi,v)
+
+	def test_String2(self):
+		f = FormatGenString()
+		svi = 'cccfffvv%s'%('eevvee')
+		v = f.GenerateResult('%s',svi)
+		self.assertEqual(svi,v)
+
+	def test_LongLong1(self):
+		ll = 2**63+1
+		maxv = 
+	def test_LongLong2(self):
+	def test_Int1(self):
+	def test_Int2(self):
+	def test_Double1(self):
+	def test_Double2(self):
+
+	def test_Float1(self):
+	def test_Float2(self):
+	def test_ULongLong1(self):
+	def test_ULongLong2(self):
