@@ -109,6 +109,41 @@ class FormatGenULongLong(FormatGenBase):
 		except:
 			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
 
+class FormatGenLong(FormatGenBase):
+	def GenerateResult(self,fmt,value):
+		try:
+			maxv = 2**32
+			maxhv = 2**31
+			curv = long(value)
+			if curv >= maxv:
+				curv %= maxv
+			rpat = re.compile('%%lx')
+			if rpat.search(fmt):
+				sv = '%x'%(curv)
+			else:
+				if curv >= maxhv:
+					curv = curv - maxv
+				sv = '%d'%(curv)
+			return sv
+		except:
+			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
+
+class FormatGenULong(FormatGenBase):
+	def GenerateResult(self,fmt,value):
+		try:
+			maxv = 2**32
+			curv = long(value)
+			if curv >= maxv:
+				curv %= maxv
+			rpat = re.compile('%%lx')
+			if rpat.search(fmt):
+				sv = '%x'%(curv)
+			else:
+				sv = '%d'%(curv)
+			return sv
+		except:
+			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
+		
 
 import random
 import time
@@ -119,6 +154,10 @@ NumberUse='0123456789'
 class RandomFormatGen:
 	def __init__(self):
 		random.seed(time.time())
+		self.__fmt = None
+		self.__opts = None
+		self.__sv = None
+		self.__argv = None
 		return
 
 	def GenValue(self):
@@ -193,7 +232,23 @@ class RandomFormatGen:
 			assert(0!=0)
 
 		sv = f.GenerateResult(fmt,s)
-		return sfmt,s,sv
+		self.__fmt = fmt
+		self.__opts = sfmt
+		self.__argv = s
+		self.__sv = sv
+		return
+
+	def GetFmt(self):
+		return self.__fmt
+
+	def GetOpt(self):
+		return self.__opts
+
+	def GetArgv(self):
+		return self.__argv
+
+	def GetSv(self):
+		return self.__sv
 
 	def __del__(self):
 		pass
@@ -401,6 +456,69 @@ class FormatGenUnittest(unittest.TestCase):
 		v = f.GenerateResult(fmt,ll)
 		self.assertEqual(v,svll)
 		return
+
+	def test_Long1(self):
+		f = FormatGenLong()
+		maxv = 2**32
+		l = 2**32 + 13
+		lv = l
+		if l >= maxv :
+			lv = l %maxv
+		slv = '%x'%(lv)
+		fmt = '%%lx'
+		sv = f.GenerateResult(fmt,l)
+		self.assertEqual(slv,sv)
+		return
+
+	def test_Long2(self):
+		f = FormatGenLong()
+		maxv = 2**32
+		maxhv = 2**31
+		l = 2**32 - 13
+		lv = l
+		if l >= maxv :
+			lv = l %maxv
+
+		if lv >= maxhv:
+			lv = lv - maxv
+		slv = '%d'%(lv)
+		fmt = '%%ld'
+		sv = f.GenerateResult(fmt,l)
+		self.assertEqual(slv,sv)
+		return
+
+	def test_Long3(self):
+		f = FormatGenLong()
+		maxv = 2**32
+		maxhv = 2**31
+		l = 2**32 - 13
+		lv = l
+		if l >= maxv :
+			lv = l %maxv
+
+		slv = '%x'%(lv)
+		fmt = '%%lx'
+		sv = f.GenerateResult(fmt,l)
+		self.assertEqual(slv,sv)
+		return
+
+
+	def test_ULong1(self):
+		f = FormatGenULong()
+		maxv = 2**32
+		maxhv = 2**31
+		l = 2**32 - 13
+		lv = l
+		if l >= maxv :
+			lv = l %maxv
+
+		slv = '%d'%(lv)
+		fmt = '%%ld'
+		sv = f.GenerateResult(fmt,l)
+		self.assertEqual(slv,sv)
+		return
+		
+
 
 
 def Unittest_Args_Callback(option, opt_str, value, parser):
