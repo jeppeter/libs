@@ -98,8 +98,8 @@ class FormatGenULongLong(FormatGenBase):
 			maxv = 2**64
 			curv = int(value)
 			if curv >= maxv:
-				curv %= maxv
-			m = re.match('%llx',fmt)
+				curv %= maxv			
+			m = re.match('%%llx',fmt)
 			if m:
 				# it is %llx format
 				sv = '%x'%(curv)
@@ -108,6 +108,8 @@ class FormatGenULongLong(FormatGenBase):
 			return sv
 		except:
 			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
+
+
 
 import unittest
 import random
@@ -272,9 +274,47 @@ class FormatGenUnittest(unittest.TestCase):
 		self.assertEqual(ok,1)
 		return
 	def test_ULongLong1(self):
-		pass
+		f = FormatGenULongLong()
+		ll = 2**63+1
+		svll = '%d'%(ll)
+		fmt = '%%lld'
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(v,svll)
+		return
 	def test_ULongLong2(self):
-		pass
+		f = FormatGenULongLong()
+		maxv = 2**64
+		ll = 2**64+1
+		llv = ll
+		if ll >= maxv :
+			llv = ll - maxv
+		svll = '%d'%(llv)
+		fmt = '%%lld'
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(v,svll)
+		return
+
+	def test_ULongLong3(self):
+		f = FormatGenULongLong()
+		ll = 2**63+1
+		svll = '%x'%(ll)
+		fmt = '%%llx'
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(v,svll)
+		return
+		
+	def test_ULongLong4(self):
+		f = FormatGenULongLong()
+		maxv = 2**64
+		ll = 2**64+1
+		llv = ll
+		if ll >= maxv :
+			llv = ll - maxv
+		svll = '%x'%(llv)
+		fmt = '%%llx'
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(v,svll)
+		return
 
 
 def Unittest_Args_Callback(option, opt_str, value, parser):
