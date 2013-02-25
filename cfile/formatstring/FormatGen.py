@@ -41,7 +41,7 @@ class FormatGenFloat(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
 			fv = float(value)
-			m = re.match(r'\%\.([\d]+)f',fmt)
+			m = re.match(r'%%\.([\d]+)f',fmt)
 			if m and m.group(1):
 				n  = int(m.group(1))
 				if n <= 0 or n>=5:
@@ -57,7 +57,7 @@ class FormatGenDouble(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
 			fv = float(value)
-			m = re.match(r'\%\.([\d]+)g',fmt)
+			m = re.match(r'%%.([\d]+)g',fmt)
 			if m and m.group(1):
 				n = int(m.group(1))
 				if n <= 0 or n >= 5:
@@ -162,7 +162,7 @@ class RandomFormatGen:
 
 	def GenValue(self):
 		global CharacterUse
-		k = random.randint(0,6)		
+		k = random.randint(0,5)		
 		if k == 0:
 			f = FormatGenInt()
 			v = random.randint(0,2**33)
@@ -191,6 +191,7 @@ class RandomFormatGen:
 						s += '0'
 					s += '.'
 					j = 0
+					dot = 1
 					
 				s += NumberUse[j]
 			i = random.randint(1,4)
@@ -199,7 +200,7 @@ class RandomFormatGen:
 			f = FormatGenFloat()
 			dot = 0			
 			s = ''
-			sfmt = '-F'
+			sfmt = '-F'			
 			for i in xrange(30):
 				j = random.randint(0,10)
 				if j == 10 and dot == 1:
@@ -208,7 +209,8 @@ class RandomFormatGen:
 					if len(s) == 0:
 						s += '0'
 					s += '.'
-					j = 0					
+					j = 0
+					dot = 1
 				s += NumberUse[j]
 			i = random.randint(1,4)
 			fmt = '%%\.%df'%(i)			
@@ -229,6 +231,7 @@ class RandomFormatGen:
 				s += NumberUse[j]
 			fmt = random.randint(0,1) and '%llx' or '%lld'
 		else:
+			logging.error('k (%d)'%(k))
 			assert(0!=0)
 
 		sv = f.GenerateResult(fmt,s)

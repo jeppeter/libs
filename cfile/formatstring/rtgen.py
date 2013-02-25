@@ -11,53 +11,33 @@
 #
 #
 ###########################
-import random
-import time
-import ctypes
+import FormatGen
+import logging
 
-class RandomValue:
-	def __init__(self):
-		self._functable = {
-			'-i' : RandomValue.IntValue,
-			'-ui' : RandomValue.UIntValue,
-			'-l' : RandomValue.LongValue,
-			'-ul' : RandomeValue.ULongValue,
-		}
-
-	def IntValue(self,maxvalue):
-		random.seed(time.time())		
-		return random.randint(0,maxvalue)
-
-	def UIntValue(self,maxvalue):
-		pass
-
-	def LongValue(self,maxvalue):
-		random.seed(time.time())		
-		return random.randint(0,maxvalue)
-
-	def UIntValue(self,maxvalue):
-		random.seed(time.time())		
-		return random.randint(0,maxvalue)
-		
-CharacterUse='abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\"\'='
-GenrateFuncs={
-	'-i' : GenerateInteger,
-	
-}
-
-def GenRandomChar(numchars,charsetuse):
-	random.seed(time.time())
+import sys
+def RandomGen(arglist,times=10):
+	rf = FormatGen.RandomFormatGen()
 	s = ''
-	for i in xrange(0,numchars):		
-		s += charsetuse[random.randint(0,len(charsetuse)-1)]
-	return s
+	r = ''
+	for i in xrange(times):
+		rf.GenValue()
+		s += rf.GetFmt()
+		arglist.append(rf.GetOpt())
+		arglist.append(rf.GetArgv())
+		r += rf.GetSv()
+	return s ,r
 
-def GenRndCase(maxargs):
-	# now to give the case use
-	random.seed(time.time())
-	fmt = ''
-	numargs = random.randint(0,maxargs-1)
-	for i in xrange(0,numargs):
-		
+arglist = list()
+(sfmt,sres)=RandomGen(arglist,int(sys.argv[1]))
 
-print GenRandomChar(30,CharacterUse)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')
+s = ''
+s += '-f %s'%(sfmt)
+s += ' '
+s += ' -r %s '%(sres)
+for arg in arglist:
+	s += ' '
+	s += '%s'%(arg)
+
+print s
+
