@@ -106,9 +106,47 @@ class FormatGenUnittest(unittest.TestCase):
 		self.assertEqual(svi,v)
 
 	def test_LongLong1(self):
-		ll = 2**63+1
-		maxv = 
+		f = FormatGenLongLong()
+		ll = 2**64+1
+		maxv = 2**64
+		llv = ll
+		if ll > maxv :
+			llv = ll % maxv
+		svi = '%d'%(llv)
+		v = f.GenerateResult('%lld',ll)
+		self.assertEqual(svi,v)
+
+		return 
 	def test_LongLong2(self):
+		f = FormatGenLongLong()
+		ll = 2**63 + 1
+		maxhv = 2**63
+		maxv = 2**64
+		llv = ll
+		fmt = '%lld'
+		if ll >= maxhv and ll < maxv:
+			llv = ll - maxv
+		elif ll >= maxv:
+			llv = ll % maxv
+			if llv >= maxhv :
+				llv = llv - maxv
+		svi = '%d'%(llv)
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(v,svi)
+		return
+	def test_LongLong3(self):
+		f = FormatGenLongLong()
+		ll = 2**63+1
+		maxv = 2**64
+		llv = ll
+		fmt = '%llx'
+		if ll >= maxv :
+			llv = ll % maxv
+		svi = '%x'%(llv)
+		v = f.GenerateResult(fmt,ll)
+		self.assertEqual(svi,v)
+		return
+		
 	def test_Int1(self):
 	def test_Int2(self):
 	def test_Double1(self):
