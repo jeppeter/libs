@@ -110,10 +110,96 @@ class FormatGenULongLong(FormatGenBase):
 			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
 
 
-
-import unittest
 import random
 import time
+
+CharacterUse='abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\"\'='
+NumberUse='0123456789'
+
+class RandomFormatGen:
+	def __init__(self):
+		random.seed(time.time())
+		return
+
+	def GenValue(self):
+		global CharacterUse
+		k = random.randint(0,6)		
+		if k == 0:
+			f = FormatGenInt()
+			v = random.randint(0,2**33)
+			fmt = random.randint(0,1) and '%d' or '%x'
+			sfmt = '-i'
+		elif k == 1:
+			f = FormatGenString()
+			l = len(CharacterUse) -1
+			fmt = '%s'
+			v = ''
+			smft = '-s'
+			for i in xrange(35):
+				j = random.randint(0,l)
+				v += CharacterUse[j]
+		elif k == 2:
+			f = FormatGenDouble()
+			dot = 0			
+			s = ''
+			sfmt = '-d'
+			for i in xrange(30):
+				j = random.randint(0,10)
+				if j == 10 and dot == 1:
+					j = 0
+				elif j == 10:
+					if len(s) == 0:
+						s += '0'
+					s += '.'
+					j = 0
+					
+				s += NumberUse[j]
+			i = random.randint(1,4)
+			fmt = '%%\.%dg'%(i)			
+		elif k == 3:
+			f = FormatGenFloat()
+			dot = 0			
+			s = ''
+			sfmt = '-F'
+			for i in xrange(30):
+				j = random.randint(0,10)
+				if j == 10 and dot == 1:
+					j = 0
+				elif j == 10:
+					if len(s) == 0:
+						s += '0'
+					s += '.'
+					j = 0					
+				s += NumberUse[j]
+			i = random.randint(1,4)
+			fmt = '%%\.%df'%(i)			
+		elif k == 4:
+			f = FormatGenLongLong()
+			s = ''
+			sfmt = '-ll'
+			for i in xrange(50):
+				j = random.randint(0,9)
+				s += NumberUse[j]
+			fmt = random.randint(0,1) and '%llx' or '%lld'
+		elif k == 5:
+			f = FormatGenULongLong()
+			s = ''
+			sfmt = '-ull'
+			for i in xrange(50):
+				j = random.randint(0,9)
+				s += NumberUse[j]
+			fmt = random.randint(0,1) and '%llx' or '%lld'
+		else:
+			assert(0!=0)
+
+		sv = f.GenerateResult(fmt,s)
+		return sfmt,s,sv
+
+	def __del__(self):
+		pass
+
+
+import unittest
 
 class FormatGenUnittest(unittest.TestCase):
 	def test_String1(self):
