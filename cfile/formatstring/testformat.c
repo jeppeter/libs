@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
 #include "testformat_def.h"
 #define INT_VALUE        1
 #define LONG_VALUE       2
@@ -32,7 +33,7 @@ typedef union
 	unsigned char ucharv;
 	long long llv;
 	unsigned long long ullv;
-	float fv;
+	double fv;
 	double dv;
 } uv_t;
 
@@ -117,6 +118,118 @@ int check_for_args(test_args_v_t *args)
 	return 1;
 }
 
+static double ParseFloat(const char* str)
+{
+	double ret = 0.0;
+	char* pCur=(char*)str;
+	int dotted=0;
+	double base=0.1;
+	
+
+	while(1)
+	{
+		if (isdigit(*pCur))
+		{
+			if (dotted == 0)
+			{
+				ret *= 10;
+				ret += (*pCur - '0');
+			}
+			else
+			{
+				int bnum = *pCur - '0';
+				double f = (base*bnum);
+				ret += f;
+				/*we should add base to 1/10*/
+				base *= 0.1;
+			}
+		}
+		else if (*pCur == '.' && dotted == 0)
+		{
+			dotted = 1;
+		}
+		else
+		{
+			break;
+		}
+
+		pCur ++ ;
+	}
+	return ret;
+}
+
+static double ParseDouble(const char* str)
+{
+	double ret = 0.0;
+	char* pCur=(char*)str;
+	int dotted=0;
+	double base=0.1;
+
+	while(1)
+	{
+		if (isdigit(*pCur))
+		{
+			if (dotted == 0)
+			{
+				ret *= 10;
+				ret += (*pCur - '0');
+			}
+			else
+			{
+				int bnum = *pCur - '0';
+				ret += (base * bnum);
+				/*we should add base to 1/10*/
+				base *= 0.1;
+			}
+		}
+		else if (*pCur == '.' && dotted == 0)
+		{
+			dotted = 1;
+		}
+		else
+		{
+			break;
+		}
+
+		pCur ++ ;
+	}
+	return ret;
+}
+
+static long long ParseLongLong(const char* str)
+{
+	long long ret=0;
+	char* pCur = (char*)str;
+	int minus = 0;
+	if (*pCur == '-')
+	{
+		minus = 1;
+		pCur ++;
+	}
+	while(isdigit(*pCur))
+	{
+		ret *= 10;
+		ret += *pCur - '0';
+		pCur ++;
+	}
+
+
+	return minus ? -ret : ret;
+}
+
+static unsigned long long ParseULongLong(const char* str)
+{
+	unsigned long long ret=0;
+	char* pCur =(char*) str;
+	while(isdigit(*pCur))
+	{
+		ret *= 10;
+		ret += *pCur - '0';
+		pCur ++;
+	}
+	return  ret;
+}
+
 
 static int add_args(test_args_v_t* args,const char* str,int type)
 {
@@ -175,23 +288,23 @@ static int add_args(test_args_v_t* args,const char* str,int type)
 			break;
 		case LL_VALUE:
 			pnewArgs[numargs-1].type = LL_VALUE;
-			pnewArgs[numargs-1].u.llv = strtoll(str,&pend,10);
+			pnewArgs[numargs-1].u.llv = ParseLongLong(str);
 			fprintf(stderr,"LL_VALUE %s (%lld)\n",str,pnewArgs[numargs-1].u.llv);
 			break;
 		case U_LL_VALUE:
 			pnewArgs[numargs-1].type = U_LL_VALUE;
-			pnewArgs[numargs-1].u.ullv = strtoull(str,&pend,10);
-			fprintf(stderr,"U_LL_VALUE %s (%lld)\n",str,pnewArgs[numargs-1].u.ullv);
+			pnewArgs[numargs-1].u.ullv = ParseULongLong(str);
+			fprintf(stderr,"U_LL_VALUE %s (%llu)\n",str,pnewArgs[numargs-1].u.ullv);
 			break;
 		case DOUBLE_VALUE:
 			pnewArgs[numargs-1].type = DOUBLE_VALUE;
-			pnewArgs[numargs-1].u.dv = atof(str);
+			pnewArgs[numargs-1].u.dv = ParseDouble(str);
 			fprintf(stderr,"DOUBLE_VALUE %s (%g)\n",str,pnewArgs[numargs-1].u.dv);
 			break;
 		case FLOAT_VALUE:
 			
 			pnewArgs[numargs-1].type = FLOAT_VALUE;
-			pnewArgs[numargs-1].u.fv = atof(str);
+			pnewArgs[numargs-1].u.fv = ParseFloat(str);
 			fprintf(stderr,"FLOAT_VALUE %s (%f)\n",str,pnewArgs[numargs-1].u.fv);
 			break;
 		default:

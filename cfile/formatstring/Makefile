@@ -21,7 +21,7 @@ testformat_func.c:codeformat.py
 %.o:%.c
 	$(GCC) $(CFLAGS) -c $< -o $@
 testcase.sh:rtgen.py LocalException.py FormatGen.py
-	python rtgen.py 1 $(NUM_ARGS)  >$@
+	python rtgen.py 1 5  >$@
 	chmod u+x $@
 
 
