@@ -25,7 +25,7 @@ class FormatGenInt(FormatGenBase):
 				iv %= maxv
 
 			if iv >= maxhv and isx == 0:
-				iv = iv - maxv
+				iv = maxhv - 1
 			if isx == 1:
 				sv = '%x'%(iv)
 			else:
