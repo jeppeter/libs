@@ -15,8 +15,9 @@ import FormatGen
 import logging
 import re
 import sys
-def RandomGen(arglist,times=10):
-	rf = FormatGen.RandomFormatGen()
+import time
+def RandomGen(arglist,seed=None,times=10):
+	rf = FormatGen.RandomFormatGen(seed)
 	s = ''
 	r = ''
 	for i in xrange(times):
@@ -29,8 +30,10 @@ def RandomGen(arglist,times=10):
 	
 def QuoteBlank(s):
 	rpat = re.compile('[\s]+')
+	qpat = re.compile('\"')
+	q2pat = re.compile('\'')
 	res = s
-	if rpat.search(s):
+	if rpat.search(s) or qpat.search(s) or q2pat.search(s):
 		res = '\"'
 		for c in s:
 			if c == '\'':
@@ -41,11 +44,12 @@ def QuoteBlank(s):
 				res += c
 		res += '\"'
 	return res
-def MakeShellFormat(n,prefix='test_format_string',times=10):
-	print '#! python'
+def MakeShellFormat(n,prefix='./testformat',times=10):
+	print '#! /bin/sh'
+	seed = time.time()
 	for i in xrange(n):
-		arglist = list()
-		(sfmt,sres)=RandomGen(arglist,times)
+		arglist = list()		
+		(sfmt,sres)=RandomGen(arglist,seed,times)
 		s = '%s '%(prefix)
 		s += '-f %s'%(QuoteBlank(sfmt))
 		s += ' '
@@ -54,6 +58,7 @@ def MakeShellFormat(n,prefix='test_format_string',times=10):
 			s += ' '
 			s += '%s'%(QuoteBlank(arg))
 		print s
+		seed += (n*times)
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')

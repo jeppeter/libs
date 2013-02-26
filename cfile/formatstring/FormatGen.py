@@ -150,19 +150,24 @@ import random
 import time
 
 CharacterUse='abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\'\"='
+#CharacterUse='ab\'\"='
 NumberUse='0123456789'
 
 class RandomFormatGen:
-	def __init__(self):
-		random.seed(time.time())
+	def __init__(self,seed=None):
+		if seed is None:
+			seed = time.time()
+		random.seed(seed)
 		self.__fmt = None
 		self.__opts = None
 		self.__sv = None
 		self.__argv = None
+		self._rseed = seed
 		return
 
 	def GenValue(self):
 		global CharacterUse
+		random.seed(self._rseed)
 		k = random.randint(0,5)		
 		if k == 0:
 			f = FormatGenInt()
@@ -240,6 +245,7 @@ class RandomFormatGen:
 		self.__opts = sfmt
 		self.__argv = s
 		self.__sv = sv
+		self._rseed += 1
 		return
 
 	def GetFmt(self):
