@@ -174,19 +174,19 @@ static int add_args(test_args_v_t* args,const char* str,int type)
 			pnewArgs[numargs-1].u.charv = (unsigned char)str[0];			
 			break;
 		case LL_VALUE:
-			fprintf(stderr,"LL_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = LL_VALUE;
 			pnewArgs[numargs-1].u.llv = strtoll(str,&pend,10);
+			fprintf(stderr,"LL_VALUE %s (%lld)\n",str,pnewArgs[numargs-1].u.llv);
 			break;
 		case U_LL_VALUE:
-			fprintf(stderr,"U_LL_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = U_LL_VALUE;
 			pnewArgs[numargs-1].u.ullv = strtoull(str,&pend,10);
+			fprintf(stderr,"U_LL_VALUE %s (%lld)\n",str,pnewArgs[numargs-1].u.ullv);
 			break;
 		case DOUBLE_VALUE:
-			fprintf(stderr,"DOUBLE_VALUE %s\n",str);
 			pnewArgs[numargs-1].type = DOUBLE_VALUE;
 			pnewArgs[numargs-1].u.dv = atof(str);
+			fprintf(stderr,"DOUBLE_VALUE %s (%g)\n",str,pnewArgs[numargs-1].u.dv);
 			break;
 		case FLOAT_VALUE:
 			

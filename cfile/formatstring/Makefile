@@ -3,9 +3,9 @@ OBJS=testformat.o format_string.o
 GCC=gcc
 CFLAGS= -Wall 
 OFLAGS= -Wall
-DEPFILES=testformat_def.h testformat_func.c testformat.cases
+DEPFILES=testformat_def.h testformat_func.c
 NUM_ARGS=6
-all:$(DEPFILES) $(EXE)
+all:$(DEPFILES) $(EXE) testcase.sh
 
 $(EXE):$(OBJS)
 	$(GCC) $(OFLAGS) -o $@ $(OBJS)
@@ -17,11 +17,13 @@ testformat_def.h:bprint.py
 testformat_func.c:codeformat.py
 	python codeformat.py $(NUM_ARGS) >$@
 
-testformat.cases:formattestcase.py
-	python formattestcase.py > $@
 
 %.o:%.c
 	$(GCC) $(CFLAGS) -c $< -o $@
+testcase.sh:rtgen.py LocalException.py FormatGen.py
+	python rtgen.py 1 $(NUM_ARGS)  >$@
+	chmod u+x $@
+
 
 clean:
-	rm -f $(EXE) $(OBJS) $(DEPFILES)
+	rm -f $(EXE) $(OBJS) $(DEPFILES) testcase.sh *.pyc
