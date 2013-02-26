@@ -63,7 +63,7 @@ class FormatGenDouble(FormatGenBase):
 				n = int(m.group(1))
 				if n <= 0 or n >= 5:
 					raise LocalException.LocalException('fmt (%s) size >=5 or <=0'%(fmt))
-				fmtv = '%%.%df'%(n)
+				fmtv = '%%.%dg'%(n)
 				sv = fmtv%(fv)
 				return sv
 			else:
