@@ -201,6 +201,9 @@ static long long ParseLongLong(const char* str)
 	long long ret=0;
 	char* pCur = (char*)str;
 	int minus = 0;
+	unsigned long long maxhv = (1ULL<<63) - 1;
+	unsigned long long tb = maxhv / 10;
+	
 	if (*pCur == '-')
 	{
 		minus = 1;
@@ -208,11 +211,17 @@ static long long ParseLongLong(const char* str)
 	}
 	while(isdigit(*pCur))
 	{
-		ret *= 10;
-		ret += *pCur - '0';
+		if (ret < tb)
+		{
+			ret *= 10;
+			ret += *pCur - '0';
+		}
+		else
+		{
+			ret = maxhv;
+		}
 		pCur ++;
 	}
-
 
 	return minus ? -ret : ret;
 }
@@ -221,12 +230,23 @@ static unsigned long long ParseULongLong(const char* str)
 {
 	unsigned long long ret=0;
 	char* pCur =(char*) str;
+	unsigned long long maxhv = 0xffffffffffffffff;
+	unsigned long long tb = maxhv / 10;
 	while(isdigit(*pCur))
 	{
-		ret *= 10;
-		ret += *pCur - '0';
+		if (ret < tb)
+		{
+			ret *= 10;
+			ret += *pCur - '0';
+		}
+		else
+		{
+			ret = maxhv;
+		}
 		pCur ++;
 	}
+
+	
 	return  ret;
 }
 

@@ -17,14 +17,12 @@ class FormatGenInt(FormatGenBase):
 			maxv = 2**32
 			maxhv = 2**31
 			iv = int(value)
-			rpat = re.compile('%%x')
+			rpat = re.compile('%x')
 			isx = 0
 			if rpat.search(fmt):
 				isx = 1
-			if iv >= maxv and isx == 0:
-				iv %= maxv
 
-			if iv >= maxhv and isx == 0:
+			if iv >= maxhv :
 				iv = maxhv - 1
 			if isx == 1:
 				sv = '%x'%(iv)
@@ -75,11 +73,11 @@ class FormatGenLongLong(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
 			maxv = 2**64
-			maxhv = 2**63
+			maxhv = 2**63 
 			curv = int(value)
-			if curv >= maxv :
-				curv %= maxv
-			m = re.match('%%llx',fmt)
+			if curv >= maxhv :
+				curv = maxhv - 1
+			m = re.match('%llx',fmt)
 			if  m:
 				# it is %llx format
 				#logging.info('curv (%d) '%(curv))
@@ -99,7 +97,7 @@ class FormatGenULongLong(FormatGenBase):
 			maxv = 2**64
 			curv = int(value)
 			if curv >= maxv:
-				curv %= maxv
+				curv = maxv - 1
 			m = re.match('%llx',fmt)
 			if m:
 				# it is %llx format
