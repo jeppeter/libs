@@ -333,8 +333,7 @@ class FormatGenUnittest(unittest.TestCase):
 		s = '%d'%(i)
 		li = i
 		if i >= maxhv:
-			li = i % maxv
-			li = li - maxv
+			li = maxhv - 1
 
 		svi = '%d'%(li)		
 		v = f.GenerateResult(fmt,s)
@@ -359,8 +358,8 @@ class FormatGenUnittest(unittest.TestCase):
 		f = FormatGenDouble()
 		d = 33.221225554
 		s = '%f'%(d)
-		fmt = '%%.3g'
-		fmtv = '%.3f'
+		fmt = '%.3g'
+		fmtv = '%.3g'
 		svi = fmtv%(d)
 		v = f.GenerateResult(fmt,s)
 		self.assertEqual(svi,v)
@@ -392,8 +391,8 @@ class FormatGenUnittest(unittest.TestCase):
 	def test_Double4(self):
 		f = FormatGenDouble()
 		s = '33.22333555533'
-		fmt = '%%.3g'
-		v = '33.223'
+		fmt = '%.3g'
+		v = '33.2'
 		svi = f.GenerateResult(fmt,s)
 		self.assertEqual(v ,svi)
 		return 
