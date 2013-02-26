@@ -22,9 +22,11 @@ def RandomGen(arglist,seed=None,times=10):
 	r = ''
 	for i in xrange(times):
 		rf.GenValue()
+		s += ':'
 		s += rf.GetFmt()
 		arglist.append(rf.GetOpt())
 		arglist.append(rf.GetArgv())
+		r += ':'
 		r += rf.GetSv()
 	return s ,r
 	
