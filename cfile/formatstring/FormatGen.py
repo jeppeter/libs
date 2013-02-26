@@ -41,14 +41,15 @@ class FormatGenFloat(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
 			fv = float(value)
-			m = re.match(r'%%\.([\d]+)f',fmt)
+			m = re.match('%\.([\d]+)f',fmt)
 			if m and m.group(1):
 				n  = int(m.group(1))
 				if n <= 0 or n>=5:
 					raise LocalException.LocalException('can not format(%d)(%s)'%(n,fmt))
+				fmtv = '%%.%df'%(n)
 			else:
 				raise LocalException.LocalException('not valid fmt (%s)'%(fmt))
-			sv = fmt%(fv)
+			sv = fmtv%(fv)
 			return sv
 		except:
 			raise LocalException.LocalException('can not change %s %s value'%(fmt,value))
@@ -57,7 +58,7 @@ class FormatGenDouble(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
 			fv = float(value)
-			m = re.match(r'%%.([\d]+)g',fmt)
+			m = re.match('%\.([\d]+)g',fmt)
 			if m and m.group(1):
 				n = int(m.group(1))
 				if n <= 0 or n >= 5:
@@ -148,7 +149,7 @@ class FormatGenULong(FormatGenBase):
 import random
 import time
 
-CharacterUse='abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\"\'='
+CharacterUse='abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\'\"='
 NumberUse='0123456789'
 
 class RandomFormatGen:
@@ -168,18 +169,19 @@ class RandomFormatGen:
 			v = random.randint(0,2**33)
 			fmt = random.randint(0,1) and '%d' or '%x'
 			sfmt = '-i'
+			s = '%d'%(v)
 		elif k == 1:
 			f = FormatGenString()
 			l = len(CharacterUse) -1
 			fmt = '%s'
-			v = ''
-			smft = '-s'
+			s = ''
+			sfmt = '-s'			
 			for i in xrange(35):
 				j = random.randint(0,l)
-				v += CharacterUse[j]
+				s += CharacterUse[j]
 		elif k == 2:
 			f = FormatGenDouble()
-			dot = 0			
+			dot = 0
 			s = ''
 			sfmt = '-d'
 			for i in xrange(30):
@@ -195,7 +197,7 @@ class RandomFormatGen:
 					
 				s += NumberUse[j]
 			i = random.randint(1,4)
-			fmt = '%%\.%dg'%(i)			
+			fmt = '%%.%dg'%(i)			
 		elif k == 3:
 			f = FormatGenFloat()
 			dot = 0			
@@ -213,7 +215,7 @@ class RandomFormatGen:
 					dot = 1
 				s += NumberUse[j]
 			i = random.randint(1,4)
-			fmt = '%%\.%df'%(i)			
+			fmt = '%%.%df'%(i)			
 		elif k == 4:
 			f = FormatGenLongLong()
 			s = ''
@@ -233,7 +235,6 @@ class RandomFormatGen:
 		else:
 			logging.error('k (%d)'%(k))
 			assert(0!=0)
-
 		sv = f.GenerateResult(fmt,s)
 		self.__fmt = fmt
 		self.__opts = sfmt
@@ -352,7 +353,7 @@ class FormatGenUnittest(unittest.TestCase):
 		f = FormatGenDouble()
 		d = 33.221225554
 		s = '%f'%(d)
-		fmt = '%.3g'
+		fmt = '%%.3g'
 		fmtv = '%.3f'
 		svi = fmtv%(d)
 		v = f.GenerateResult(fmt,s)
@@ -381,6 +382,14 @@ class FormatGenUnittest(unittest.TestCase):
 		except LocalException.LocalException as e:
 			ok = 1
 		self.assertEqual(ok,1)
+		return 
+	def test_Double4(self):
+		f = FormatGenDouble()
+		s = '33.22333555533'
+		fmt = '%%.3g'
+		v = '33.223'
+		svi = f.GenerateResult(fmt,s)
+		self.assertEqual(v ,svi)
 		return 
 
 	def test_Float1(self):
