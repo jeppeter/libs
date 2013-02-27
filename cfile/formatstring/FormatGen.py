@@ -96,13 +96,13 @@ class FormatGenULongLong(FormatGenBase):
 			curv = int(value)
 			if curv >= maxv:
 				curv = maxv - 1
-			if curv >= maxhv:
-				curv = curv - maxv
 			m = re.match('%llx',fmt)
 			if m:
 				# it is %llx format
 				sv = '%x'%(curv)
 			else:
+				if curv >= maxhv:
+					curv = curv - maxv
 				sv = '%d'%(curv)
 			return sv
 		except:
@@ -472,8 +472,6 @@ class FormatGenUnittest(unittest.TestCase):
 		llv = ll
 		if ll >= maxv :
 			llv = maxv - 1
-		if llv >= maxhv:
-			llv = llv - maxv		
 		svll = '%x'%(llv)
 		fmt = '%llx'
 		v = f.GenerateResult(fmt,ll)
@@ -488,8 +486,6 @@ class FormatGenUnittest(unittest.TestCase):
 		llv = ll
 		if ll >= maxv :
 			llv = maxv - 1
-		if llv >= maxhv:
-			llv = llv - maxv		
 		svll = '%x'%(llv)
 		fmt = '%llx'
 		v = f.GenerateResult(fmt,ll)
