@@ -56,7 +56,7 @@ def MakeShellFormat(n,prefix='./testformat',times=10):
 		print '_res=$?'
 		print 'if [ $_res -ne 0 ]'
 		print 'then'
-		print '    echo "not success"'
+		print '    echo "not success on(%d)"'%(i)
 		print '    exit 3'
 		print 'fi'
 		s = ''
@@ -72,7 +72,7 @@ def MakeShellFormat(n,prefix='./testformat',times=10):
 	print '_res=$?'
 	print 'if [ $_res -ne 0 ]'
 	print 'then'
-	print '    echo "not success"'
+	print '    echo "not success on(%d)"'%(n)
 	print '    exit 3'
 	print 'fi'
 	print 'All %d case%s success'%(n,n > 1 and "s" or " ")
