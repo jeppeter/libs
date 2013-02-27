@@ -188,6 +188,9 @@ class RandomFormatGen:
 			s = ''
 			sfmt = '-d'
 			for i in xrange(30):
+				if i >= 15 and dot == 0:
+					s += '.'
+					dot = 1
 				j = random.randint(0,10)
 				if j == 10 and dot == 1:
 					j = 0
@@ -207,6 +210,9 @@ class RandomFormatGen:
 			s = ''
 			sfmt = '-F'			
 			for i in xrange(30):
+				if i >= 10 and dot == 0:
+					dot = 1
+					s += '.'
 				j = random.randint(0,10)
 				if j == 10 and dot == 1:
 					j = 0
