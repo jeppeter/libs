@@ -248,7 +248,7 @@ def FactoryCodeGen(nshift):
 	str += ' ' * ntabs*4
 	str += '{\n'
 	str += ' ' * (ntabs+1)*4
-	str += 'fprintf(stderr,"args more than %d\\n");\n'%(nshift)
+	str += 'fprintf(stderr,"args equal or more than %d\\n");\n'%(nshift)
 	str += ' ' * (ntabs+1)*4
 	str += 'return -EINVAL;\n'
 	str += ' ' * ntabs*4

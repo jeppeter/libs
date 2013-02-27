@@ -78,6 +78,16 @@ def MakeShellFormat(n,prefix='./testformat',times=10):
 	print 'echo "All %d case%s success"'%(n,n > 1 and "s" or " ")
 
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')
-MakeShellFormat(int(sys.argv[1]),times=int(sys.argv[2]))
+def GenerateCode():
+	logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')
+	if len(sys.argv) < 3:
+		print >>sys.stderr,"%s num_case num_args\n"%(__file__)
+		sys.exit(3)
+	casenums=int(sys.argv[1])
+	caseargs=int(sys.argv[2])
+	caseargs -= 1
+	MakeShellFormat(casenums,times=caseargs)
+
+if __name__ == '__main__':
+	GenerateCode()
 
