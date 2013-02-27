@@ -4,7 +4,7 @@ GCC=gcc
 CFLAGS= -Wall 
 OFLAGS= -Wall
 DEPFILES=testformat_def.h testformat_func.c
-NUM_ARGS=6
+NUM_ARGS=9
 all:$(DEPFILES) $(EXE) testcase.sh
 
 $(EXE):$(OBJS)
@@ -21,7 +21,7 @@ testformat_func.c:codeformat.py
 %.o:%.c
 	$(GCC) $(CFLAGS) -c $< -o $@
 testcase.sh:rtgen.py LocalException.py FormatGen.py
-	python rtgen.py 1 5  >$@
+	python rtgen.py 100 ${NUM_ARGS}  >$@
 	chmod u+x $@
 
 
