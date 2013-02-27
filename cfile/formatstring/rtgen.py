@@ -49,10 +49,18 @@ def QuoteBlank(s):
 def MakeShellFormat(n,prefix='./testformat',times=10):
 	print '#! /bin/sh'
 	seed = time.time()
+	print 'echo "Start Testing (%d) case%s"'%(n,n > 1 and "s" or " ")
 	for i in xrange(n):
 		arglist = list()		
 		(sfmt,sres)=RandomGen(arglist,seed,times)
-		s = '%s '%(prefix)
+		print '_res=$?'
+		print 'if [ $_res -ne 0 ]'
+		print 'then'
+		print '    echo "not success"'
+		print '    exit 3'
+		print 'fi'
+		s = ''
+		s += '%s '%(prefix)
 		s += '-f %s'%(QuoteBlank(sfmt))
 		s += ' '
 		s += ' -r %s '%(QuoteBlank(sres))
@@ -61,6 +69,13 @@ def MakeShellFormat(n,prefix='./testformat',times=10):
 			s += '%s'%(QuoteBlank(arg))
 		print s
 		seed += (n*times)
+	print '_res=$?'
+	print 'if [ $_res -ne 0 ]'
+	print 'then'
+	print '    echo "not success"'
+	print '    exit 3'
+	print 'fi'
+	print 'All %d case%s success'%(n,n > 1 and "s" or " ")
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')
