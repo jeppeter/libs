@@ -75,7 +75,7 @@ def MakeShellFormat(n,prefix='./testformat',times=10):
 	print '    echo "not success on(%d)"'%(n)
 	print '    exit 3'
 	print 'fi'
-	print 'All %d case%s success'%(n,n > 1 and "s" or " ")
+	print 'echo "All %d case%s success"'%(n,n > 1 and "s" or " ")
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(filename)s:%(lineno)d - - %(asctime)s %(message)s', datefmt='[%b %d %H:%M:%S]')
