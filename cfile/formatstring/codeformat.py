@@ -142,7 +142,7 @@ out:
 	str += ' ' * ntabs*4
 	str += 'unsigned long long ullv[%d];\n'%(nshift)
 	str += ' ' * ntabs*4
-	str += 'float fv[%d];\n'%(nshift)
+	str += 'double fv[%d];\n'%(nshift)
 	str += '''	for (i=0;i<args->numargs;i++)
 	{
 		args_v_t *pv = args->args;
