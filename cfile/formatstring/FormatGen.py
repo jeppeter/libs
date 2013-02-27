@@ -72,7 +72,6 @@ class FormatGenDouble(FormatGenBase):
 class FormatGenLongLong(FormatGenBase):
 	def GenerateResult(self,fmt,value):
 		try:
-			maxv = 2**64
 			maxhv = 2**63 
 			curv = int(value)
 			if curv >= maxhv :
@@ -84,8 +83,6 @@ class FormatGenLongLong(FormatGenBase):
 				sv = '%x'%(curv)
 			else:
 				# it is %lld format now to give the long value
-				if curv >= maxhv:
-					curv = curv - maxv				
 				sv = '%d'%(curv)
 			return sv
 		except:
@@ -210,7 +207,7 @@ class RandomFormatGen:
 			s = ''
 			sfmt = '-F'			
 			for i in xrange(30):
-				if i >= 10 and dot == 0:
+				if i >= 6 and dot == 0:
 					dot = 1
 					s += '.'
 				j = random.randint(0,10)
@@ -288,11 +285,11 @@ class FormatGenUnittest(unittest.TestCase):
 	def test_LongLong1(self):
 		f = FormatGenLongLong()
 		ll = 2**64+1
-		maxv = 2**64
+		maxhv = 2**63
 		llv = ll
 		fmt = '%%lld'
-		if ll > maxv :
-			llv = ll % maxv
+		if ll >= maxhv :
+			llv = maxhv -1
 		svi = '%d'%(llv)
 		v = f.GenerateResult(fmt,ll)
 		self.assertEqual(svi,v)
@@ -305,12 +302,8 @@ class FormatGenUnittest(unittest.TestCase):
 		maxv = 2**64
 		llv = ll
 		fmt = '%%lld'
-		if ll >= maxhv and ll < maxv:
-			llv = ll - maxv
-		elif ll >= maxv:
-			llv = ll % maxv
-			if llv >= maxhv :
-				llv = llv - maxv
+		if ll >= maxhv :
+			llv = maxhv - 1
 		svi = '%d'%(llv)
 		v = f.GenerateResult(fmt,ll)
 		self.assertEqual(v,svi)
@@ -319,10 +312,11 @@ class FormatGenUnittest(unittest.TestCase):
 		f = FormatGenLongLong()
 		ll = 2**63+1
 		maxv = 2**64
+		maxhv = 2**63
 		llv = ll
-		fmt = '%%llx'
-		if ll >= maxv :
-			llv = ll % maxv
+		fmt = '%llx'
+		if ll >= maxhv :
+			llv = maxhv - 1
 		svi = '%x'%(llv)
 		v = f.GenerateResult(fmt,ll)
 		self.assertEqual(svi,v)
@@ -352,7 +346,7 @@ class FormatGenUnittest(unittest.TestCase):
 		fmt = '%%d'
 		li = i
 		if i >= maxv:
-			li = i % maxv
+			li = maxhv -1
 		svi = '%d'%(li)	
 		v = f.GenerateResult(fmt,i)
 		self.assertEqual(svi,v)
@@ -441,7 +435,7 @@ class FormatGenUnittest(unittest.TestCase):
 		ll = 2**64+2**31
 		llv = ll
 		if llv >= maxv:
-			llv = llv % maxv
+			llv = maxv - 1
 		svll = '%d'%(llv)
 		fmt = '%lld'
 		v = f.GenerateResult(fmt,ll)
@@ -453,7 +447,7 @@ class FormatGenUnittest(unittest.TestCase):
 		ll = 2**64+1
 		llv = ll
 		if ll >= maxv :
-			llv = ll - maxv
+			llv = maxv - 1
 		svll = '%d'%(llv)
 		fmt = '%%lld'
 		v = f.GenerateResult(fmt,ll)
@@ -475,9 +469,9 @@ class FormatGenUnittest(unittest.TestCase):
 		ll = 2**64+1
 		llv = ll
 		if ll >= maxv :
-			llv = ll % maxv
+			llv = maxv - 1
 		svll = '%x'%(llv)
-		fmt = '%%llx'
+		fmt = '%llx'
 		v = f.GenerateResult(fmt,ll)
 		self.assertEqual(v,svll)
 		return
