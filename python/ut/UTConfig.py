@@ -13,12 +13,13 @@ class UTCfgOverflowError(LocalException.LocalException):
 class UTConfig:
 	def __init__(self,fname=None):
 		self.__IncludeFiles = []
+		self.__FuncLevel = 0
+		self.__MainCfg = None
 		if fname :
+			self.__LoadFile(fname)
 			self.__MainName = fname
-			self.__IncludeFiles.append(fname)
 		else:
 			self.__MainName = None
-		self.__FuncLevel = 0
 
 	def __del__(self):
 		self.__MainName = None
@@ -26,7 +27,7 @@ class UTConfig:
 		assert( self.__FuncLevel == 0)
 
 
-	def __AddOption(m,p):
+	def __AddOption(self,m,p):
 		for s in p.sections():
 			for c in p.options(s):
 				if m.has_section(s):
@@ -40,6 +41,9 @@ class UTConfig:
 					m.set(s,c,p.get(s,c))
 		return m
 
+	def __ParseIncludeFiles(self,cfg):
+		pass
+
 	def __LoadFile(self,fname):
 		'''
 			this is to load the files to the config
@@ -48,8 +52,28 @@ class UTConfig:
 		'''
 		if self.__FuncLevel >= 30:
 			raise UTCfgOverflowError('Load %s fname overflow'%(fname))
+		if fname in self.__IncludeFiles:
+			# we have already include this file
+			return
 		# we parse the file
-		
+		try:
+			cfg = ConfigParser.RawConfigParser()
+			cfg.read(fname)
+		except:
+			raise LocalException.LocalException('can not parse file %s'%(fname))
+		# now to add the option
+		if self.__MainCfg is None:
+			self.__MainCfg = ConfigParser.RawConfigParser()
+		self.__IncludeFiles.append(fname)
+
+		############################
+		#load special config 
+		# include_files
+		# unit_test_modules
+		############################
+		self.__AddOption(self.__MainCfg,cfg)
+		return 
+			
 
 	def __GetValue(self,section,item,expand=1,level=0):
 		'''
