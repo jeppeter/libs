@@ -38,12 +38,12 @@ class UTConfig:
 				if m.has_section(s):
 					if m.has_option(s,c):
 						logging.warning('redefined [%s].%s'%(s,c))
-						m.set(s,c,p.get(s,c))
+						m.set(s,c,p.get(s,c,1))
 					else:
-						m.set(s,c,p.get(s,c))
+						m.set(s,c,p.get(s,c,1))
 				else:
 					m.add_section(s)
-					m.set(s,c,p.get(s,c))
+					m.set(s,c,p.get(s,c,1))
 		return m
 
 
@@ -95,13 +95,13 @@ class UTConfig:
 			return
 		# we parse the file
 		try:
-			cfg = ConfigParser.RawConfigParser()
+			cfg = ConfigParser.ConfigParser()
 			cfg.read(fname)
 		except:
 			raise LocalException.LocalException('can not parse file %s'%(fname))
 		# now to add the option
 		if self.__MainCfg is None:
-			self.__MainCfg = ConfigParser.RawConfigParser()
+			self.__MainCfg = ConfigParser.ConfigParser()
 		self.__IncludeFiles.append(fname)
 
 		############################
@@ -133,8 +133,8 @@ class UTConfig:
 				# now we should give the value expand
 				if expand :
 					# now expand ,so we should expand value
-					tmpv = self.__MainCfg.get(section,item,0)
+					tmpv = self.__MainCfg.get(section,item,1)
 				else:
 					# now expand ,so we get the raw value
-					v = self.__MainCfg.get(section,item,0)
+					v = self.__MainCfg.get(section,item,1)
 		return v
