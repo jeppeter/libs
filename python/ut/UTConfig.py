@@ -132,22 +132,44 @@ class UTConfig:
 				v = None
 		return s ,v
 
-	def __ExpandValue(self,k):
+	def __ExpandValue(self,section,option):
 		p = '%\(([^)]+)\)s'
 		vpat = re.compile(p)
+		k = option
 		v = k
 		if vpat.search(k):
 			# now to make sure for the 
 			sarr = re.findall(p,k)
 			assert(len(sarr) > 0)
 			assert(self.__MainCfg)
+			values={}
 			for s in sarr:
 				# now we test for it 
 				sec,opt = self.__SplitKey(s)
 				if opt:
+					# if we have find the section and option
+					if self.__MainCfg.has_section(sec) and self.__MainCfg.has_option(sec,opt):
+						v = self.__MainCfg.get(sec,opt,1)
+						try:
+							self.__LevelFunc += 1
+							if self.__LevelFunc >= 30:
+								raise LocalException.LocalException('expand value %s overflow '%(k))
+							v = self.__ExpandValue(s,v)
+							values[s] = v
+						finally:
+							self.__LevelFunc -= 1
+					else:
+						values[sec] = ''
 
 				else:
-				
+					if self.__MainCfg.has_option(section,sec) :
+						try:
+							self.__LevelFunc += 1
+							if self.__LevelFunc >= 30:
+								raise LocalException.LocalException('expand value %s overflow '%(k))
+														
+						finally:
+							self.__LevelFunc -= 1
 		return v
 
 	def __GetValue(self,section,item,expand=1,valuemap={}):
