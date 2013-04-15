@@ -117,7 +117,38 @@ class UTConfig:
 		
 		self.__AddOption(self.__MainCfg,cfg)
 		return 
-			
+
+	def __SplitKey(self,k):
+		r = k.find('.')
+		s = k
+		v = None
+		if r >= 0:
+			r = k.rfind('.')
+			s = k[:r]
+			v = k[r+1:]
+			# if it is end of '.' so we should make this ok
+			if len(v) == 0:
+				s = k
+				v = None
+		return s ,v
+
+	def __ExpandValue(self,k):
+		p = '%\(([^)]+)\)s'
+		vpat = re.compile(p)
+		v = k
+		if vpat.search(k):
+			# now to make sure for the 
+			sarr = re.findall(p,k)
+			assert(len(sarr) > 0)
+			assert(self.__MainCfg)
+			for s in sarr:
+				# now we test for it 
+				sec,opt = self.__SplitKey(s)
+				if opt:
+
+				else:
+				
+		return v
 
 	def __GetValue(self,section,item,expand=1,valuemap={}):
 		'''
