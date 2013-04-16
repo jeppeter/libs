@@ -13,24 +13,29 @@ class UTCfgOverflowError(LocalException.LocalException):
 	pass
 
 class UTConfig:
-	def __init__(self,fname=None):
-		self.__IncludeFiles = []
-		self.__SearchPaths=[]
-		self.__UnitTests = []
-		self.__FuncLevel = 0
+	def __ResetCfg(self):
+		if hasattr(self,'__MainCfg') and self.__MainCfg:
+			del self.__MainCfg
 		self.__MainCfg = None
+		self.__IncludeFiles = []
+		self.__MainName = None
+		self.__SearchPaths = []
+		self.__FuncLevel = 0
+		return 
+
+	def __init__(self,fname=None):
+		self.__ResetCfg()
 		if fname :
 			self.__LoadFile(fname)
+			logging.info('cfg %s'%(repr(self.__MainCfg)))
 			assert(self.__FuncLevel == 0)
 			self.__MainName = fname
 		else:
 			self.__MainName = None
 
 	def __del__(self):
-		self.__MainName = None
-		self.__IncludeFiles = []
+		self.__ResetCfg()
 		assert( self.__FuncLevel == 0)
-
 
 	def __AddOption(self,m,p):
 		for s in p.sections():
@@ -44,6 +49,8 @@ class UTConfig:
 				else:
 					m.add_section(s)
 					m.set(s,c,p.get(s,c,1))
+				#logging.info('[%s].%s=%s'%(s,c,p.get(s,c,1)))
+				#logging.info('main.[%s].%s=%s'%(s,c,m.get(s,c,1)))
 		return m
 
 
@@ -132,17 +139,18 @@ class UTConfig:
 				v = None
 		return s ,v
 
-	def __ExpandValue(self,section,option):
+	def __ExpandValue(self,section,option,values=None):
 		p = '%\(([^)]+)\)s'
 		vpat = re.compile(p)
 		k = option
 		v = k
+		if values is None:
+			values = {}
 		if vpat.search(k):
 			# now to make sure for the 
 			sarr = re.findall(p,k)
 			assert(len(sarr) > 0)
 			assert(self.__MainCfg)
-			values={}
 			for s in sarr:
 				# now we test for it 
 				sec,opt = self.__SplitKey(s)
@@ -154,8 +162,9 @@ class UTConfig:
 							self.__LevelFunc += 1
 							if self.__LevelFunc >= 30:
 								raise LocalException.LocalException('expand value %s overflow '%(k))
-							v = self.__ExpandValue(s,v)
+							v = self.__ExpandValue(s,v,values)
 							values[s] = v
+							break
 						finally:
 							self.__LevelFunc -= 1
 					else:
@@ -186,8 +195,20 @@ class UTConfig:
 				# now we should give the value expand
 				if expand :
 					# now expand ,so we should expand value
+					logging.info('[%s].%s\n'%(section,item))
 					tmpv = self.__MainCfg.get(section,item,1)
+					
 				else:
 					# now expand ,so we get the raw value
 					v = self.__MainCfg.get(section,item,1)
 		return v
+
+	def GetValue(self,sec,opt,expand=1):
+		return self.__GetValue(sec,opt,expand)
+
+	def LoadFile(self,fname):
+		self.__ResetCfg()
+		self.__LoadFile(fname)
+		self.__MainName = fname
+		logging.info('cfg %s'%(repr(self.__MainCfg)))
+		return 
