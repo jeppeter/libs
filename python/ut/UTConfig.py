@@ -139,7 +139,7 @@ class UTConfig:
 				v = None
 		return s ,v
 
-	def __ExpandValue(self,section,option,values=None):
+	def __ExpandValue(self,section,options,values=None):
 		p = '%\(([^)]+)\)s'
 		vpat = re.compile(p)
 		k = option
@@ -176,7 +176,7 @@ class UTConfig:
 							self.__LevelFunc += 1
 							if self.__LevelFunc >= 30:
 								raise LocalException.LocalException('expand value %s overflow '%(k))
-														
+							
 						finally:
 							self.__LevelFunc -= 1
 		return v
