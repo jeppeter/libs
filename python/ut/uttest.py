@@ -12,6 +12,13 @@ class UtTest(unittest.TestCase):
 		self.assertEqual(utcfg.GetValue('new','base2'),'hello world')
 		return
 
+	def test_IncludeFiles(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		includes = utcfg.GetIncludeFiles()
+		self.assertTrue( 'inc.cfg' in includes )
+		self.assertTrue( 'base.cfg' in includes )
+		return
+
 
 
 if __name__ == '__main__':

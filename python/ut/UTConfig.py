@@ -77,14 +77,14 @@ class UTConfig:
 
 	def __AddIncludeFiles(self,cfg):
 		# now we should plus the func level for including
-		s = 'include_files'
+		s = 'include'
 		if cfg.has_section(s):
 			for c in cfg.options(s):
 				v = cfg.get(s,c)
 				if v == 'y' :
 					try:
 						self.__FuncLevel += 1
-						sefl.__LoadFile(c)
+						self.__LoadFile(c)
 					finally:
 						self.__FuncLevel -= 1
 		return
@@ -220,3 +220,6 @@ class UTConfig:
 		self.__MainName = fname
 		logging.info('cfg %s'%(repr(self.__MainCfg)))
 		return 
+
+	def GetIncludeFiles(self):
+		return self.__IncludeFiles
