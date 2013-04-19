@@ -1,5 +1,27 @@
 #! python
 
+
+'''
+	this file for the ut config
+	and it will expand the value by the 
+	special sections are 
+	.include
+	.path
+	.unit.test
+
+	[.include]
+	base.cfg=y
+	inc.cfg=y
+
+	[.path]
+	/usr/inc=y
+
+
+	[.unit.test]
+	TestBase=y
+	UnitTest=y
+	
+'''
 import ConfigParser
 import LocalException
 import logging
@@ -55,7 +77,7 @@ class UTConfig:
 
 
 	def __AddSearchPathSection(self,cfg):
-		s = 'search.path'
+		s = '.path'
 		if cfg.has_section(s):
 			# now to add the search path
 			for c in cfg.options(s):
@@ -66,7 +88,7 @@ class UTConfig:
 		return
 
 	def __AddUnitTestSection(self,cfg):
-		s = 'unit.test'
+		s = '.unit.test'
 		if cfg.has_section(s):
 			for c in cfg.options(s):
 				v = cfg.get(s,c)
@@ -77,7 +99,7 @@ class UTConfig:
 
 	def __AddIncludeFiles(self,cfg):
 		# now we should plus the func level for including
-		s = 'include'
+		s = '.include'
 		if cfg.has_section(s):
 			for c in cfg.options(s):
 				v = cfg.get(s,c)
@@ -153,18 +175,15 @@ class UTConfig:
 			for s in sarr:
 				# now we test for it 
 				sec,opt = self.__SplitKey(s)
-				logging.info('sec (%s) opt (%s)'%(sec,opt))
 				if opt:
 					# if we have find the section and option
 					if self.__MainCfg.has_section(sec) and self.__MainCfg.has_option(sec,opt):
 						v = self.__MainCfg.get(sec,opt,1)
-						logging.info('[sec](%s)v (%s)\n'%(sec,v))
 						try:
 							self.__FuncLevel += 1
 							if self.__FuncLevel >= 30:
 								raise UTCfgOverflowError('expand value %s overflow '%(k))
 							v = self.__ExpandValue(sec,opt,v,values)
-							logging.info('v (%s)'%(v))
 							values[s] = v
 							break
 						finally:
@@ -179,7 +198,9 @@ class UTConfig:
 							self.__FuncLevel += 1
 							if self.__FuncLevel >= 30:
 								raise UTCfgOverflowError('expand value %s overflow '%(k))
-							
+							v = self.__MainCfg.get(section,sec,1)
+							v = self.__ExpandValue(section,sec,v,values)
+							values[s] = v
 						finally:
 							self.__FuncLevel -= 1
 						
@@ -202,11 +223,8 @@ class UTConfig:
 				# now we should give the value expand
 				if expand :
 					# now expand ,so we should expand value
-					logging.info('[%s].%s\n'%(section,item))
 					tmpv = self.__MainCfg.get(section,item,1)
-					logging.info('tmpv %s'%(tmpv))
 					v = self.__ExpandValue(section,item,tmpv,valuemap)
-					logging.info('v %s'%(v))					
 				else:
 					# now expand ,so we get the raw value
 					v = self.__MainCfg.get(section,item,1)

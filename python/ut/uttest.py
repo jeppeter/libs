@@ -5,8 +5,7 @@ import unittest
 import sys
 import logging
 
-#class UtTest(unittest.TestCase):
-class UtTest:
+class UtTest(unittest.TestCase):
 	def test_LoadBasic(self):
 		# now for 
 		utcfg = UTConfig.UTConfig('base.cfg')
@@ -53,7 +52,6 @@ class UtTest:
 		self.assertTrue( ok == 0)
 		return
 
-class TestC(unittest.TestCase):
 	def test_SectionInnerOverflowError(self):
 		utcfg = UTConfig.UTConfig('inc.cfg')
 		ok = 1
