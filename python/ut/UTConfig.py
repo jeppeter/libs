@@ -18,6 +18,7 @@ class UTConfig:
 			del self.__MainCfg
 		self.__MainCfg = None
 		self.__IncludeFiles = []
+		self.__UnitTests = []
 		self.__MainName = None
 		self.__SearchPaths = []
 		self.__FuncLevel = 0
@@ -27,7 +28,6 @@ class UTConfig:
 		self.__ResetCfg()
 		if fname :
 			self.__LoadFile(fname)
-			logging.info('cfg %s'%(repr(self.__MainCfg)))
 			assert(self.__FuncLevel == 0)
 			self.__MainName = fname
 		else:
@@ -55,7 +55,7 @@ class UTConfig:
 
 
 	def __AddSearchPathSection(self,cfg):
-		s = 'search_path'
+		s = 'search.path'
 		if cfg.has_section(s):
 			# now to add the search path
 			for c in cfg.options(s):
@@ -66,7 +66,7 @@ class UTConfig:
 		return
 
 	def __AddUnitTestSection(self,cfg):
-		s = 'unit_test'
+		s = 'unit.test'
 		if cfg.has_section(s):
 			for c in cfg.options(s):
 				v = cfg.get(s,c)
@@ -162,7 +162,7 @@ class UTConfig:
 						try:
 							self.__FuncLevel += 1
 							if self.__FuncLevel >= 30:
-								raise LocalException.LocalException('expand value %s overflow '%(k))
+								raise UTCfgOverflowError('expand value %s overflow '%(k))
 							v = self.__ExpandValue(sec,opt,v,values)
 							logging.info('v (%s)'%(v))
 							values[s] = v
@@ -178,7 +178,7 @@ class UTConfig:
 						try:
 							self.__FuncLevel += 1
 							if self.__FuncLevel >= 30:
-								raise LocalException.LocalException('expand value %s overflow '%(k))
+								raise UTCfgOverflowError('expand value %s overflow '%(k))
 							
 						finally:
 							self.__FuncLevel -= 1
@@ -223,3 +223,9 @@ class UTConfig:
 
 	def GetIncludeFiles(self):
 		return self.__IncludeFiles
+
+	def GetUnitTests(self):
+		return self.__UnitTests
+		
+	def GetSearchPaths(self):
+		return self.__SearchPaths

@@ -17,9 +17,40 @@ class UtTest(unittest.TestCase):
 		includes = utcfg.GetIncludeFiles()
 		self.assertTrue( 'inc.cfg' in includes )
 		self.assertTrue( 'base.cfg' in includes )
+		self.assertTrue(len(includes) == 2)
 		return
 
+	def test_Unittests(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		units = utcfg.GetUnitTests()
+		self.assertTrue('base.unit.test' in units)
+		self.assertTrue('inc.unit.test' in units)
+		self.assertTrue(len(units) == 2)
+		return
 
+	def test_SearchPaths(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		paths = utcfg.GetSearchPaths()
+		self.assertTrue(len(paths) == 1)
+		self.assertTrue( '/usr/inc' in paths)
+		return
+
+	def test_OverflowError(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		ok = 1
+		try:
+			v = utcfg.GetValue('value1','base1')
+		except UTConfig.UTCfgOverflowError as e:
+			ok = 0
+		self.assertTrue( ok == 0)
+
+		ok = 1
+		try:
+			v = utcfg.GetValue('value2','base2')
+		except UTConfig.UTCfgOverflowError as e:
+			ok = 0
+		self.assertTrue( ok == 0)
+		return
 
 if __name__ == '__main__':
 	if '-v' in sys.argv[1:] or '--verbose' in sys.argv[1:]:
