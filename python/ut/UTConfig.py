@@ -139,10 +139,9 @@ class UTConfig:
 				v = None
 		return s ,v
 
-	def __ExpandValue(self,section,options,values=None):
+	def __ExpandValue(self,section,option,k,values=None):
 		p = '%\(([^)]+)\)s'
 		vpat = re.compile(p)
-		k = option
 		v = k
 		if values is None:
 			values = {}
@@ -154,31 +153,38 @@ class UTConfig:
 			for s in sarr:
 				# now we test for it 
 				sec,opt = self.__SplitKey(s)
+				logging.info('sec (%s) opt (%s)'%(sec,opt))
 				if opt:
 					# if we have find the section and option
 					if self.__MainCfg.has_section(sec) and self.__MainCfg.has_option(sec,opt):
 						v = self.__MainCfg.get(sec,opt,1)
+						logging.info('[sec](%s)v (%s)\n'%(sec,v))
 						try:
-							self.__LevelFunc += 1
-							if self.__LevelFunc >= 30:
+							self.__FuncLevel += 1
+							if self.__FuncLevel >= 30:
 								raise LocalException.LocalException('expand value %s overflow '%(k))
-							v = self.__ExpandValue(s,v,values)
+							v = self.__ExpandValue(sec,opt,v,values)
+							logging.info('v (%s)'%(v))
 							values[s] = v
 							break
 						finally:
-							self.__LevelFunc -= 1
+							self.__FuncLevel -= 1
 					else:
+						logging.info('\n')
 						values[sec] = ''
 
 				else:
 					if self.__MainCfg.has_option(section,sec) :
 						try:
-							self.__LevelFunc += 1
-							if self.__LevelFunc >= 30:
+							self.__FuncLevel += 1
+							if self.__FuncLevel >= 30:
 								raise LocalException.LocalException('expand value %s overflow '%(k))
 							
 						finally:
-							self.__LevelFunc -= 1
+							self.__FuncLevel -= 1
+		if self.__FuncLevel == 0:
+			# it is the top of the level
+			v = self.__MainCfg.get(section,option,0,values)
 		return v
 
 	def __GetValue(self,section,item,expand=1,valuemap={}):
@@ -197,7 +203,9 @@ class UTConfig:
 					# now expand ,so we should expand value
 					logging.info('[%s].%s\n'%(section,item))
 					tmpv = self.__MainCfg.get(section,item,1)
-					
+					logging.info('tmpv %s'%(tmpv))
+					v = self.__ExpandValue(section,item,tmpv,valuemap)
+					logging.info('v %s'%(v))					
 				else:
 					# now expand ,so we get the raw value
 					v = self.__MainCfg.get(section,item,1)
