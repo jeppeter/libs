@@ -182,6 +182,7 @@ class UTConfig:
 							
 						finally:
 							self.__FuncLevel -= 1
+						
 		if self.__FuncLevel == 0:
 			# it is the top of the level
 			v = self.__MainCfg.get(section,option,0,values)
