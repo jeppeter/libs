@@ -27,11 +27,14 @@ import LocalException
 import logging
 import sys
 import re
+import os
 
 class UTCfgKeyError(LocalException.LocalException):
 	pass
 
 class UTCfgOverflowError(LocalException.LocalException):
+	pass
+class UTCfgLoadFileError(LocalException.LocalException):
 	pass
 
 class UTConfig:
@@ -111,6 +114,11 @@ class UTConfig:
 						self.__FuncLevel -= 1
 		return
 
+	def __DebugCfg(self,cfg):
+		for s in cfg.sections():
+			for o in cfg.options(s):
+				logging.info('[%s].%s=%s'%(s,o,cfg.get(s,o,1)))
+		return 
 	def __LoadFile(self,fname):
 		'''
 			this is to load the files to the config
@@ -122,12 +130,23 @@ class UTConfig:
 		if fname in self.__IncludeFiles:
 			# we have already include this file
 			return
-		# we parse the file
+		# now to test if the file is ex
 		try:
+			# now to test for the file
+			filefind = None
+			for path in self.__SearchPaths:
+				if os.path.isfile(path+os.sep+fname):
+					filefind = path + os.sep+fname
+					break
+			if filefind is None:
+				if os.path.isfile(fname):
+					filefind = fname					
+				else:
+					raise UTCfgLoadFileError('could not find file %s in %s'%(fname,self.__SearchPaths))
 			cfg = ConfigParser.ConfigParser()
-			cfg.read(fname)
+			cfg.read(filefind)
 		except:
-			raise LocalException.LocalException('can not parse file %s'%(fname))
+			raise UTCfgLoadFileError('can not parse file %s'%(fname))
 		# now to add the option
 		if self.__MainCfg is None:
 			self.__MainCfg = ConfigParser.ConfigParser()
@@ -189,8 +208,8 @@ class UTConfig:
 						finally:
 							self.__FuncLevel -= 1
 					else:
-						logging.info('\n')
-						values[sec] = ''
+						logging.info('s (%s) sec(%s)\n'%(s,sec))
+						values[s] = ''
 
 				else:
 					if self.__MainCfg.has_option(section,sec) :

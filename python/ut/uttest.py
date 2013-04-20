@@ -5,8 +5,7 @@ import unittest
 import sys
 import logging
 
-#class UtTest(unittest.TestCase):
-class UtTest:
+class UtTest(unittest.TestCase):
 	def test_LoadBasic(self):
 		# now for 
 		utcfg = UTConfig.UTConfig('base.cfg')
@@ -68,7 +67,7 @@ class UtTest:
 		v = utcfg.GetValue('no_section','no_opt')
 		self.assertTrue( v is None)
 		return
-class CTest(unittest.TestCase):
+		
 	def test_3LevelRef(self):
 		utcfg = UTConfig.UTConfig('inc.cfg')
 		v = utcfg.GetValue('base2.value','base2')
