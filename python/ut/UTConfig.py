@@ -221,10 +221,8 @@ class UTConfig:
 							values[s] = v
 						finally:
 							self.__FuncLevel -= 1
-						
-		if self.__FuncLevel == 0:
-			# it is the top of the level
-			v = self.__MainCfg.get(section,option,0,values)
+		# we will expand for the value				
+		v = self.__MainCfg.get(section,option,0,values)
 		return v
 
 	def __GetValue(self,section,item,expand=1,valuemap={}):
@@ -266,3 +264,11 @@ class UTConfig:
 		
 	def GetSearchPaths(self):
 		return self.__SearchPaths
+
+	def SetValue(self,section,option,value):
+		if self.__MainCfg is None:
+			self.__MainCfg = ConfigParser.ConfigParser()
+		if self.__MainCfg.has_option(section,option):
+			logging.warning('[%s].%s has value %s reset it'%(section,option,self.__MainCfg.get(section,option,1)))
+		self.__MainCfg.set(section,option,value)
+		return

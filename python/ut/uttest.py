@@ -79,7 +79,13 @@ class UtTest(unittest.TestCase):
 		v = utcfg.GetValue('base2.value','base3')
 		self.assertEqual(v,' param1')
 		return
-		
+
+	def test_setgetvalue(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		utcfg.SetValue('base2.value','base4','%(base2.value.base2)s value')
+		v = utcfg.GetValue('base2.value','base4')
+		self.assertEqual(v,'hello param1 value')
+		return
 
 if __name__ == '__main__':
 	if '-v' in sys.argv[1:] or '--verbose' in sys.argv[1:]:
