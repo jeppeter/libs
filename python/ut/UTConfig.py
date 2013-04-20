@@ -208,7 +208,6 @@ class UTConfig:
 						finally:
 							self.__FuncLevel -= 1
 					else:
-						logging.info('s (%s) sec(%s)\n'%(s,sec))
 						values[s] = ''
 
 				else:

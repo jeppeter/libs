@@ -74,6 +74,13 @@ class UtTest(unittest.TestCase):
 		self.assertEqual(v,'hello param1')
 		return
 
+	def test_noref(self):
+		utcfg = UTConfig.UTConfig('inc.cfg')
+		v = utcfg.GetValue('base2.value','base3')
+		self.assertEqual(v,' param1')
+		return
+		
+
 if __name__ == '__main__':
 	if '-v' in sys.argv[1:] or '--verbose' in sys.argv[1:]:
 		logging.basicConfig(level=logging.INFO,format="%(levelname)-8s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
