@@ -37,7 +37,7 @@ class UTCfgOverflowError(LocalException.LocalException):
 class UTCfgLoadFileError(LocalException.LocalException):
 	pass
 
-class UTConfig:
+class UTConfigBase:
 	def __ResetCfg(self):
 		if hasattr(self,'__MainCfg') and self.__MainCfg:
 			del self.__MainCfg
@@ -85,9 +85,10 @@ class UTConfig:
 			# now to add the search path
 			for c in cfg.options(s):
 				v = cfg.get(s,c)
-				if c not in self.__SearchPaths:
-					self.__SearchPaths.append(c)
-					sys.path.append(c)
+				if c not in self.__SearchPaths and v =='y':
+					path = self.__ExpandKey(s,c)
+					self.__SearchPaths.append(path)
+					sys.path.append(path)
 		return
 
 	def __AddUnitTestSection(self,cfg):
@@ -105,15 +106,26 @@ class UTConfig:
 		s = '.include'
 		if cfg.has_section(s):
 			for c in cfg.options(s):
-				v = cfg.get(s,c)
+				v = cfg.get(s,c,1)				
 				if v == 'y' :
+					fname = self.__ExpandKey(s,c)
 					try:
 						self.__FuncLevel += 1
-						self.__LoadFile(c)
+						self.__LoadFile(fname)
 					finally:
 						self.__FuncLevel -= 1
 		return
 
+	def __ReplaceValue(self,k,values):
+		v = k
+		p = '%\(([^)]+)\)s'
+		vpat = re.compile(p)
+		if vpat.search(k):
+			sarr = re.findall(p,k)
+			for s in sarr:
+				assert(s in values.keys())
+				v = v.replace('%%(%s)s'%(s),values[s])
+		return v
 	def __ExpandKey(self,section,k,values={}):
 		p = '%\(([^)]+)\)s'
 		vpat = re.compile(p)
@@ -125,9 +137,23 @@ class UTConfig:
 			for s in sarr:
 				sec,opt = self.__SplitKey(s)
 				if opt:
-					# if we have expand the key
-					
+					if self.__MainCfg.has_option(sec,opt):
+						v = self.__MainCfg.get(sec,opt,1)
+						# if we have expand the key
+						v = self.__ExpandValue(sec,opt,s,values)
+						values[s]=v
+					else:
+						values[s]=''
 				else:
+					if self.__MainCfg.has_option(section,sec):
+						v = self.__MainCfg.get(section,sec,1)
+						v = self.__ExpandValue(section,sec,v,values)
+						values[s]=v
+					else:
+						values[s]=''
+			# it is to expand the value
+			v = self.__ReplaceValue(k,values)
+		return v
 
 	def __DebugCfg(self,cfg):
 		for s in cfg.sections():
