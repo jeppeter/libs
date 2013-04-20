@@ -265,10 +265,10 @@ class UTConfig:
 	def GetSearchPaths(self):
 		return self.__SearchPaths
 
-	def SetValue(self,section,option,value):
+	def SetValue(self,section,option,value,force=0):
 		if self.__MainCfg is None:
 			self.__MainCfg = ConfigParser.ConfigParser()
-		if self.__MainCfg.has_option(section,option):
-			logging.warning('[%s].%s has value %s reset it'%(section,option,self.__MainCfg.get(section,option,1)))
+		if self.__MainCfg.has_option(section,option) and force == 0:
+			raise UTCfgKeyError('[%s].%s has value %s reset it'%(section,option,self.__MainCfg.get(section,option,1)))
 		self.__MainCfg.set(section,option,value)
 		return
