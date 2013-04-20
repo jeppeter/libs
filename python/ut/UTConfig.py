@@ -252,8 +252,8 @@ class UTConfig:
 	def LoadFile(self,fname):
 		self.__ResetCfg()
 		self.__LoadFile(fname)
-		self.__MainName = fname
-		logging.info('cfg %s'%(repr(self.__MainCfg)))
+		if self.__MainName is None:
+			self.__MainName = fname
 		return 
 
 	def GetIncludeFiles(self):

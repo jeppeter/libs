@@ -87,6 +87,15 @@ class UtTest(unittest.TestCase):
 		self.assertEqual(v,'hello param1 value')
 		return
 
+	def test_LoadError(self):
+		ok = 1
+		try:
+			utcfg = UTConfig.UTConfig()
+			utcfg.LoadFile('nocfg.cfg')
+		except UTConfig.UTCfgLoadFileError as e:
+			ok = 0
+		self.assertTrue(ok == 0)
+		return
 if __name__ == '__main__':
 	if '-v' in sys.argv[1:] or '--verbose' in sys.argv[1:]:
 		logging.basicConfig(level=logging.INFO,format="%(levelname)-8s [%(filename)-10s:%(funcName)-20s:%(lineno)-5s] %(message)s")
