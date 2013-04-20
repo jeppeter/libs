@@ -114,6 +114,21 @@ class UTConfig:
 						self.__FuncLevel -= 1
 		return
 
+	def __ExpandKey(self,section,k,values={}):
+		p = '%\(([^)]+)\)s'
+		vpat = re.compile(p)
+		v = k
+		if vpat.search(k):
+			sarr = re.findall(p,k)
+			assert(len(sarr) > 0)
+			assert(self.__MainCfg)
+			for s in sarr:
+				sec,opt = self.__SplitKey(s)
+				if opt:
+					# if we have expand the key
+					
+				else:
+
 	def __DebugCfg(self,cfg):
 		for s in cfg.sections():
 			for o in cfg.options(s):
@@ -152,18 +167,20 @@ class UTConfig:
 			self.__MainCfg = ConfigParser.ConfigParser()
 		self.__IncludeFiles.append(fname)
 
+		# we have to add option first ,because when call the 
+		# add includefiles or searchpathsections ,to make it ok
+		self.__AddOption(self.__MainCfg,cfg)
 		############################
 		#load special config 
-		# [search_path]
-		# [include_files]
-		# [unit_test]
+		# [.path]
+		# [.include]
+		# [.unit.test]
 		# sections to be the value
 		############################
 		self.__AddSearchPathSection(cfg)
 		self.__AddIncludeFiles(cfg)
 		self.__AddUnitTestSection(cfg)
 		
-		self.__AddOption(self.__MainCfg,cfg)
 		return 
 
 	def __SplitKey(self,k):
