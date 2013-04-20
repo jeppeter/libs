@@ -234,8 +234,8 @@ class UTConfig:
 			level will be expand to it
 		'''
 		if self.__MainCfg is None:
-			return None
-		v = None
+			return ''
+		v = ''
 		if self.__MainCfg.has_section(section):
 			if self.__MainCfg.has_option(section,item):
 				# now we should give the value expand

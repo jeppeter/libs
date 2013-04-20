@@ -65,7 +65,7 @@ class UtTest(unittest.TestCase):
 	def test_NonValue(self):
 		utcfg = UTConfig.UTConfig('inc.cfg')
 		v = utcfg.GetValue('no_section','no_opt')
-		self.assertTrue( v is None)
+		self.assertTrue( v == '')
 		return
 		
 	def test_3LevelRef(self):
