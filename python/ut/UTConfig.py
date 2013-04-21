@@ -293,9 +293,11 @@ class UTConfigBase:
 		return self.__GetValue(sec,opt,expand)
 
 	def LoadFile(self,fname):
+		assert(self.__FuncLevel == 0)
 		self.__LoadFile(fname)
 		if self.__MainName is None:
 			self.__MainName = fname
+		assert(self.__FuncLevel == 0)
 		return 
 
 	def GetIncludeFiles(self):
