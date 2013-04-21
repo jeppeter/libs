@@ -317,15 +317,15 @@ class UTConfigBase:
 		self.__MainCfg.set(section,option,value)
 		return
 
-class SingletonDecorator(object):
-    def __init__(self, cls):
-        self._cls = cls
-        self._inst = None
-    def __call__(self, *args, **kwargs):
-        ''' Over __call__ method. So the instance of this class
-        can be called as a function. '''
-        if not self._inst:
-            self._inst = self._cls(*args, **kwargs)
-        return self._inst
 
-UTConfig=SingletonDecorator(UTConfigBase)
+def singleton(cls):
+	instances = {}
+	def get_instance():
+		if cls not in instances:
+			instances[cls] = cls()
+		return instances[cls]
+	return get_instance
+
+@singleton
+class UTConfig(UTConfigBase):
+	pass
