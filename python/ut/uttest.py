@@ -110,6 +110,22 @@ class UtTest(unittest.TestCase):
 		paths = utcfg.GetSearchPaths()
 		self.assertTrue( '/nopath' in paths )
 		return
+
+	def test_Singleton(self):
+		utcfg = UTConfig.UTConfig()
+		ut2 = UTConfig.UTConfig()
+		self.assertTrue( utcfg == ut2)
+		utcfg.LoadFile('exp.cfg')
+		paths = utcfg.GetSearchPaths()
+		self.assertTrue( '/nopath' in paths )
+		ut2.LoadFile('inc.cfg')
+		paths = ut2.GetSearchPaths()
+		self.assertTrue( '/nopath' in paths )
+		ut2.SetValue('no_section','no_opt','no_value')
+		v = utcfg.GetValue('no_section','no_opt')
+		self.assertEqual(v,'no_value')
+		return
+
 		
 if __name__ == '__main__':
 	if '-v' in sys.argv[1:] or '--verbose' in sys.argv[1:]:

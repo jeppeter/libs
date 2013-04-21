@@ -293,7 +293,6 @@ class UTConfigBase:
 		return self.__GetValue(sec,opt,expand)
 
 	def LoadFile(self,fname):
-		self.__ResetCfg()
 		self.__LoadFile(fname)
 		if self.__MainName is None:
 			self.__MainName = fname
@@ -313,5 +312,20 @@ class UTConfigBase:
 			self.__MainCfg = ConfigParser.ConfigParser()
 		if self.__MainCfg.has_option(section,option) and force == 0:
 			raise UTCfgKeyError('[%s].%s has value %s reset it'%(section,option,self.__MainCfg.get(section,option,1)))
+		if not self.__MainCfg.has_section(section):
+			self.__MainCfg.add_section(section)
 		self.__MainCfg.set(section,option,value)
 		return
+
+class SingletonDecorator(object):
+    def __init__(self, cls):
+        self._cls = cls
+        self._inst = None
+    def __call__(self, *args, **kwargs):
+        ''' Over __call__ method. So the instance of this class
+        can be called as a function. '''
+        if not self._inst:
+            self._inst = self._cls(*args, **kwargs)
+        return self._inst
+
+UTConfig=SingletonDecorator(UTConfigBase)
