@@ -1,0 +1,91 @@
+0.1.5
+=====
+Update to work with Linux 2.6.0-test5.
+
+0.1.4
+=====
+
+Update to work with Linux 2.6.0-test2.  Drop support for 2.5 kernels.
+Increase maximal allowed memory window.
+
+0.1.3
+=====
+
+Split sources for 2.4 and 2.5 kernels.  There is too much difference.
+Add support for Linux 2.5.72.  Enable mapping only after latency has
+been programmed.  Disallow memory mapping in the first megabyte - it
+hangs some Intel machines.
+
+0.1.2
+=====
+
+Add missing call to class_device_unregister().  Without it, 2.5.x
+kernels would crash randomly after module removal.  Split unaligned I/O
+windows in two.  This should fix support for Symbol cards.
+
+0.1.1
+=====
+
+Update to the new PCMCIA API in Linux 2.5.68-bk11.  Make sure that the
+memory and I/O regions are aligned.  Remove support for padding around
+unaligned regions.  
+
+0.1.0
+=====
+
+Reset implementation was completely broken.  Fixed now.  Slow down
+access to control registers, fast access was unreliable.
+
+0.0.9
+=====
+
+Implemented reset.  Added preliminary support for wait states.
+
+0.0.8
+=====
+
+Update for the new interrupt API used starting with Linux 2.5.68-bk2.
+
+0.0.7
+=====
+
+Added support for 8-bit bus access.  pcnet_cs is working now.
+
+0.0.6
+=====
+
+Another fix for pcmcia-cs.  Allocate address areas dynamically.  PLX9052
+has only 4 of them, so they should be used on demand.  Memory windows
+are supported now, but they haven't been tested.  There are still
+problems with pcnet_cs and ide-cs.
+
+0.0.5
+=====
+
+Fixed event processing when compiling in pcmcia-cs tree.
+
+0.0.4
+=====
+
+Memory windows are now dynamic.  One window is implemented, so it's used
+for CIS.  The whole I/O region actually decoded by the socket is now
+allocated, not just the requested window.  Module count has been fixed -
+the driver cannot be unloaded if it's used by cardmgr.
+
+0.0.3
+=====
+
+Unified version for Linux 2.4.x, 2.5.x and pcmcia-cs.  Yes, it looks
+ugly, but it's important not to exclude any testers at this point.
+
+0.0.2
+=====
+
+I/O windows are now dynamic.  Memory windows still don't work.  Only
+wireless cards are known to work.
+
+0.0.1
+=====
+
+Initial public version.  Both I/O and memory are static.  Only wireless
+cards are known to work.  Memory windows don't work at all.

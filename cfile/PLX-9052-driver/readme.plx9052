@@ -1,0 +1,67 @@
+Linux driver for PLX9052 based PCMCIA bridges
+=============================================
+
+This is a Linux driver for PLX9052 based PCMCIA-to-PCI bridges commonly
+used in "PCI wireless cards" that have a PCMCIA wireless card inside. 
+If you remove the card, the rest is a PCMCIA bridge that this driver is
+meant to support.
+
+It is possible to use the adapter with other cards.  However, there are
+significant limitations stemming both from hardware and software
+problems.
+
+PLX9052 based bridges don't support variable voltage.  Only 5V cards are
+supported.  A 3.3V card may be damaged if you insert it into the socket. 
+You have been warned!
+
+CardBus cards are also unsupported for hardware reasons.  You are likely
+to damage them if you try to use them with a PLX9052 based bridge.
+
+Memory cards without CIS are not supported.  There is no way to detect
+them.  IDE cards don't work either for unknown reason.
+
+Only wireless cards and Merlin G201 GPRS cards are known to be supported
+at this point.  Three drivers for Prism based wireless card (Orinoco,
+linux-wlan-ng and HostAP) already have support for wireless cards
+connected through the PLX9052 bridge, and you probably want to use them
+for now.
+
+This driver gives you an option to use PCMCIA drivers from those
+projects.  Also, it is expected that non-prism based wireless cards
+would work with this driver, as well as most network cards.  Well, at
+least when we get the wait states right.
+
+This driver can be compiled for Linux PCMCIA in the recent 2.4.x and
+2.5.x kernels, as well as for the drivers in the pcmcia-cs package.  In
+any case, the driver should be copied to the source tree and the
+corresponding patches should be applied to the tree.
+
+
+Installation
+------------
+
+Standalone build:
+
+Run "make", become root and run "make install".  You may need to specify
+PCMCIA_PATH and KERNEL_PATH on the "make" command line.
+
+For kernel PCMCIA:
+
+Rename plx9052-24.c (for 2.4 kernels) or plx9052-25.c (for 2.5 kernels)
+to plx9052.c and copy it to the drivers/pcmcia/ directory in the Linux
+kernel tree.  Patch the kernel sources.  Enable the driver during kernel
+configuration.  Compile the kernel and install it.  Reboot.
+
+For pcmcia-cs:
+
+Rename plx9052-24.c to plx9052.c and copy it to the modules/ directory
+in the pcmcia-cs source tree.  Patch the pcmcia-cs sources.  Recompile
+the sources.  Run "make install".  Reload all PCMCIA modules or reboot.
+
+If the driver was compiled as module, make sure that it's loaded before
+the "ds" module by adding following line to /etc/modules.conf:
+
+below ds plx9052
+
+There are also other ways to load the module automatically.  In Red Hat
+Linux you can set PCIC=plx9052 in /etc/sysconfig/pcmcia.
