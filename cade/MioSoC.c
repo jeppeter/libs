@@ -32,6 +32,7 @@
 
 #include <linux/atomic.h>
 #include <asm/io.h>
+#include <linux/semaphore.h>
 
 
 #define MioSoC_VERSION		"n1.0.0"
@@ -50,9 +51,15 @@
 //short	inw( int iAddress );
 //void	outw( int iAddress, short sData );
 
-static DEFINE_MUTEX(MioSoC_mutex);
+//DECLARE_MUTEX(MioSoC_mutex);
+static struct semaphore MioSoC_mutex;
 
 static struct class *MioSoC_class;
+
+
+
+#define  MIOSOC_OFF_STATE       0
+#define  MIOSOC_INIT_STATE      1
 
 static int MioSoC_major;
 static int MOT_ISR(void);
@@ -64,6 +71,7 @@ struct MioSoC_device {
 
     u32   caddr;
     u32   ioaddr;
+	u32   state;   // indicate that the state of the device ,we just have 2 state 0 for OFF_STATE  1 INIT_STATE
 
     //atomic_t counter;
     wait_queue_head_t wait;
@@ -74,13 +82,9 @@ struct MioSoC_device {
 
 };
 
-
-
 int		siVcmdAxis = 0;
 double	gdRealIntTime = 0.;
 float		gfRealCycleTime = 0.;
-
-
 unsigned short mode;
 int iAxis;
 
@@ -88,6 +92,205 @@ struct MioSoC_device *pmio;
 
 static unsigned char MioSoC_devices[MioSoC_MAX_MINORS];
 
+static const struct file_operations MioSoC_file_ops;
+static irqreturn_t MioSoC_isr(int irq, void *data);
+
+
+
+int __RegisterDeviceNoLock(struct pci_dev* pdev,int major)
+{
+	unsigned int minor;
+	int retval;
+	int i;
+
+	u32 pio_flags1,pio_len1;
+	u32 pio_flags3,pio_len3;
+	//unsigned long mmio_start, mmio_end, mmio_flags, mmio_len;
+
+	MIO_DEBUG("probe start.\n");//added by guo, to test the probe, 2013-3-22
+
+	retval = pci_enable_device(pdev);
+	if (retval) {
+		dev_err(&pdev->dev, "pci_enable_device failed!\n");
+		goto err;
+	}
+
+	minor = MioSoC_MAX_MINORS;
+	for(i=0;i<MioSoC_MAX_MINORS;i++)
+	{
+		if (MioSoC_devices[i]==0)
+		{
+			minor = i;
+			break;
+		}
+	}
+
+	if (minor == MioSoC_MAX_MINORS) {
+		dev_err(&pdev->dev, "too many devices found!\n");
+		retval = -EIO;
+		goto err_dis;
+	}
+
+
+	retval = pci_request_regions(pdev, "MioSoC");
+	if (retval) {
+		dev_err(&pdev->dev, "pci_request_regions failed!\n");
+		goto err_dis;
+	}
+
+	MIO_DEBUG( "pci_request_regions ok.\n");//added by guo, to test the probe, 2013-3-24
+
+	retval = -ENOMEM;
+	pmio = kzalloc(sizeof(*pmio), GFP_KERNEL);
+	if (pmio == NULL) {
+		dev_err(&pdev->dev, "unable to allocate device\n");
+		goto err_reg;
+	}
+
+	pmio->caddr = pci_resource_start(pdev, 1);
+ 	pio_flags1 = pci_resource_flags (pdev, 1);
+	pio_len1 = pci_resource_len(pdev,1);
+ 
+
+	/* set this immediately, we need to know before
+	 * we talk to the chip directly */
+	MIO_DEBUG("PIO region 1 size == 0x%02X\n", pio_len1);
+
+	/* make sure PCI base addr 1 is PIO */
+	if (!(pio_flags1 & IORESOURCE_IO)) {
+		printk (KERN_INFO  "region #1 not a PIO resource, aborting\n");
+		retval = -ENODEV;
+		goto err_fr;
+	}
+
+
+	MIO_DEBUG("pmio->caddr: %X\n", pmio->caddr);//added by guo, to test the probe, 2013-3-26
+
+
+	pmio->ioaddr = pci_resource_start(pdev, 3);
+
+ 	pio_flags3 = pci_resource_flags (pdev, 3);
+	pio_len3 = pci_resource_len (pdev, 3);
+
+
+	/* set this immediately, we need to know before
+	 * we talk to the chip directly */
+	MIO_DEBUG("PIO region 3 size == 0x%02X\n", pio_len3);
+
+	/* make sure PCI base addr 3 is PIO */
+	if (!(pio_flags3 & IORESOURCE_IO)) {
+		printk (KERN_INFO  "region #3 not a PIO resource, aborting\n");
+		retval = -ENODEV;
+		goto err_fr;
+	}
+
+	MIO_DEBUG("pmio->ioaddr: %x\n", pmio->ioaddr);//added by guo, to test the probe, 2013-3-26
+
+
+	spin_lock_init(&pmio->regs_lock);
+	init_waitqueue_head(&pmio->wait);
+	cdev_init(&pmio->cdev, &MioSoC_file_ops);
+	pmio->cdev.owner = THIS_MODULE;
+
+
+
+	retval = request_irq(pdev->irq, MioSoC_isr,IRQF_SHARED , "MioSoC", pmio);
+	if (retval) {
+		dev_err(&pdev->dev, "can't establish ISR\n");
+		MIO_DEBUG("can not get request irq\n");
+		goto err_unmio;
+	}
+
+	MIO_DEBUG("pdev->irq: %X\n", pdev->irq);  //added by guo, to test the probe, 2013-3-30
+
+
+	retval = cdev_add(&pmio->cdev, MKDEV(MioSoC_major, minor), 1);
+	if (retval) {
+		dev_err(&pdev->dev, "chardev registration failed\n");
+		goto err_irq;
+	}
+
+	if (IS_ERR(device_create(MioSoC_class, &pdev->dev,
+				 MKDEV(MioSoC_major, minor), NULL,
+				 "MioSoC%u", minor))){
+		dev_err(&pdev->dev, "can't create device\n");
+		retval = -ENODEV;
+		goto err_cdev_del;
+	}
+
+	pci_set_drvdata(pdev, pmio);
+	MioSoC_devices[minor] = 1;
+
+	retval = minor;
+
+	MIO_DEBUG("probe ok.\n");//added by guo, to test the probe, 2013-3-22
+
+	return retval;
+err_cdev_del:
+	cdev_del(&(pmio->cdev));
+err_irq:
+	free_irq(pdev->irq, pmio);
+err_unmio:
+	pci_release_regions(pdev);
+err_fr:
+	kfree(pmio);
+err_reg:
+	pci_release_regions(pdev);
+err_dis:
+	pci_disable_device(pdev);
+err:
+	return retval;
+}
+
+int RegisterDevice(struct pci_dev* pdev,int major)
+{
+	int minor = -1;
+	int ret;
+
+	/*we maybe error on down wait*/
+	ret = down_interruptible(&MioSoC_mutex);
+	if (ret < 0)
+	{
+		return ret;
+	}
+
+	minor = __RegisterDeviceNoLock(pdev,major);
+	up(&MioSoC_mutex);
+	return minor;
+}
+
+int __UnRegisterDeviceNoLock(struct pci_dev* pdev,int major,int minor)
+{
+    struct MioSoC_device *pmio = pci_get_drvdata(pdev);
+
+	if (MioSoC_devices[minor]==0){
+		MIO_ERROR("at[%d] device is not set for it\n",minor);
+		return -ENODEV;
+	}
+
+
+	cdev_del(&(pmio->cdev));
+	/*because ,we have set the irq not callable ,so we do this ok*/
+	free_irq(pdev->irq, pmio);
+	pci_release_regions(pdev);
+	kfree(pmio);
+	pci_release_regions(pdev);
+	pci_disable_device(pdev);
+    MioSoC_devices[minor] = 0;
+	return 0;
+}
+
+
+int UnRegisterDevice(struct pci_dev* pdev,int major,int minor)
+{
+	int ret;
+
+	/*in unregister we must try best*/
+	down(&MioSoC_mutex);
+	ret = __UnRegisterDeviceNoLock(pdev,major,minor);
+	up(&MioSoC_mutex);
+	return ret;
+}
 
 struct Para_EnableMioChannel *pPara_EnableMioChannel;
 struct Para_WriteLioStatus *pPara_WriteLioStatus;
@@ -96,6 +299,29 @@ struct Para_DisableLdiInt *pPara_DisableLdiInt;
 struct Para_StartDda *pPara_StartDda;
 
 static int ISR(void);
+
+#define   MIOSOC_PAGE_REG   15
+
+unsigned short ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
+{
+	unsigned short word;
+	/*first to set the page*/
+	outw_p(Page,pmio->ioaddr+MIOSOC_PAGE_REG*2);
+
+	/*now to read the register*/
+	word = inw_p(pmio->ioaddr+reg*2);
+	return word;
+}
+
+int WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short word)
+{
+	/*first to set the page*/
+	outw_p(Page,pmio->ioaddr+MIOSOC_PAGE_REG*2);
+
+	/*now to read the register*/
+	outw_p(word,pmio->ioaddr+reg*2);
+	return 0;
+}
 
 static long MioSoC_ioctl(struct file *file, unsigned int cmd,
         unsigned long arg)
@@ -839,196 +1065,19 @@ int ReadIntSourceFunc(void)
     return uiSource;
 
 }
-/*
- * Init and deinit driver
- */
 
-static unsigned int __devinit MioSoC_get_free(void)
-{
-    unsigned int i;
-
-    for (i = 0; i < MioSoC_MAX_MINORS; i++)
-        if (MioSoC_devices[i] == 0)
-            break;
-
-    return i;
-}
 
 static int __devinit MioSoC_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 {
+	int retval;
 
-    unsigned int minor;
-    int retval;
-
-    u32 pio_start1, pio_end1, pio_flags1, pio_len1;
-    u32 pio_start3, pio_end3, pio_flags3, pio_len3;
-    //unsigned long mmio_start, mmio_end, mmio_flags, mmio_len;
-
-    MIO_DEBUG("probe start.\n");//added by guo, to test the probe, 2013-3-22
-
-    retval = pci_enable_device(pdev);
-    if (retval) {
-        dev_err(&pdev->dev, "pci_enable_device failed!\n");
-        goto err;
-    }
-
-    minor = MioSoC_get_free();
-    if (minor == MioSoC_MAX_MINORS) {
-        dev_err(&pdev->dev, "too many devices found!\n");
-        retval = -EIO;
-        goto err_dis;
-    }
-
-    MioSoC_devices[minor] = 1;
-
-    retval = pci_request_regions(pdev, "MioSoC");
-    if (retval) {
-        dev_err(&pdev->dev, "pci_request_regions failed!\n");
-        goto err_null;
-    }
-
-    MIO_DEBUG( "pci_request_regions ok.\n");//added by guo, to test the probe, 2013-3-24
-
-    retval = -ENOMEM;
-    pmio = kzalloc(sizeof(*pmio), GFP_KERNEL);
-    if (pmio == NULL) {
-        dev_err(&pdev->dev, "unable to allocate device\n");
-        goto err_reg;
-    }
-    /*参考windows下写法，这里和板卡硬件寻址方式有关。
-    status = m_LocalConfig.Initialize(
-            pResListTranslated,
-            pResListRaw,
-            PciConfig.BaseAddressIndexToOrdinal(1)
-            );*/
-    /*
-    //pmio->caddr = pci_iomap(pdev, 1, 0);
-    pmio->caddr = pci_resource_start(pdev, 1);
-    if (pmio->caddr == NULL) {
-        dev_err(&pdev->dev, "can't remap conf space\n");
-        goto err_fr;
-    }
-*/
-
-    pmio->caddr = pci_resource_start(pdev, 1);
-
-    pio_start1 = pci_resource_start (pdev, 1);
-    pio_end1 = pci_resource_end (pdev, 1);
-    pio_flags1 = pci_resource_flags (pdev, 1);
-    pio_len1 = pci_resource_len (pdev, 1);
-
-
-    /* set this immediately, we need to know before
-     * we talk to the chip directly */
-    MIO_DEBUG("PIO region 1 size == 0x%02X\n", pio_len1);
-    //DPRINTK("MMIO region size == 0x%02lX\n", mmio_len);
-
-    /* make sure PCI base addr 1 is PIO */
-    if (!(pio_flags1 & IORESOURCE_IO)) {
-        printk (KERN_INFO  "region #1 not a PIO resource, aborting\n");
-        retval = -ENODEV;
-        goto err_fr;
-    }
-
-
-    MIO_DEBUG("pmio->caddr: %X\n", pmio->caddr);//added by guo, to test the probe, 2013-3-26
-
-
-    /* 参考windows下写法，这里和板卡硬件寻址方式有关。
-    status = m_EPCIOPort.Initialize(
-            pResListTranslated,
-            pResListRaw,
-            PciConfig.BaseAddressIndexToOrdinal(3) */
-    //pmio->ioaddr = pci_iomap(pdev, 3, 0);
-    /*
-    pmio->ioaddr = pci_resource_start(pdev, 3);
-    if (pmio->ioaddr == NULL) {
-        dev_err(&pdev->dev, "can't remap input & output space\n");
-        goto err_unmio;
-    }
-
-    */
-    pmio->ioaddr = pci_resource_start(pdev, 3);
-
-    pio_start3 = pci_resource_start (pdev, 3);
-    pio_end3 = pci_resource_end (pdev, 3);
-    pio_flags3 = pci_resource_flags (pdev, 3);
-    pio_len3 = pci_resource_len (pdev, 3);
-
-
-    /* set this immediately, we need to know before
-     * we talk to the chip directly */
-    MIO_DEBUG("PIO region 3 size == 0x%02X\n", pio_len3);
-    //DPRINTK("MMIO region size == 0x%02lX\n", mmio_len);
-
-    /* make sure PCI base addr 3 is PIO */
-    if (!(pio_flags3 & IORESOURCE_IO)) {
-        printk (KERN_INFO  "region #3 not a PIO resource, aborting\n");
-        retval = -ENODEV;
-        goto err_fr;
-    }
-
-
-
-    MIO_DEBUG("pmio->ioaddr: %x\n", pmio->ioaddr);//added by guo, to test the probe, 2013-3-26
-
-
-    //mutex_init(&pmio->open_lock);
-    spin_lock_init(&pmio->regs_lock);
-    init_waitqueue_head(&pmio->wait);
-    cdev_init(&pmio->cdev, &MioSoC_file_ops);
-    pmio->cdev.owner = THIS_MODULE;
-
-
-
-    retval = request_irq(pdev->irq, MioSoC_isr,IRQF_SHARED , "MioSoC", pmio);
-    //retval = request_irq(pdev->irq, MioSoC_isr,IRQF_SHARED | IRQF_DISABLED, "MioSoC", pmio);
-    //retval = request_irq(pdev->irq, MioSoC_isr,IRQF_TRIGGER_HIGH , "MioSoC", pmio);
-    if (retval) {
-        dev_err(&pdev->dev, "can't establish ISR\n");
-	MIO_DEBUG("can not get request irq\n");
-        goto err_unmio;
-    }
-
-    MIO_DEBUG("pdev->irq: %X\n", pdev->irq);  //added by guo, to test the probe, 2013-3-30
-
-
-    retval = cdev_add(&pmio->cdev, MKDEV(MioSoC_major, minor), 1);
-    if (retval) {
-        dev_err(&pdev->dev, "chardev registration failed\n");
-        goto err_irq;
-    }
-
-    if (IS_ERR(device_create(MioSoC_class, &pdev->dev,
-                 MKDEV(MioSoC_major, minor), NULL,
-                 "MioSoC%u", minor)))
-        dev_err(&pdev->dev, "can't create device\n");
-
-    pci_set_drvdata(pdev, pmio);
-
-    MIO_DEBUG("probe ok.\n");//added by guo, to test the probe, 2013-3-22
-
-    return 0;
-err_irq:
-    free_irq(pdev->irq, pmio);
-err_unmio:
-    //pci_iounmap(pdev, pmio->ioaddr);
-    pci_release_regions(pdev);
-
-//err_unmc:
-    //pci_iounmap(pdev, pmio->caddr);
-    //pci_release_regions(pdev);
-err_fr:
-    kfree(pmio);
-err_reg:
-    pci_release_regions(pdev);
-err_null:
-    MioSoC_devices[minor] = 0;
-err_dis:
-    pci_disable_device(pdev);
-err:
-    return retval;
-
+	/*return value is minor*/
+	retval = RegisterDevice(pdev,MioSoC_major);
+	if(retval < 0)
+	{
+		return retval;
+	}
+	return 0;
 }
 
 
@@ -1037,25 +1086,8 @@ static void __devexit MioSoC_remove(struct pci_dev *pdev)
     struct MioSoC_device *pmio = pci_get_drvdata(pdev);
     unsigned int minor = MINOR(pmio->cdev.dev);
 
-    device_destroy(MioSoC_class, MKDEV(MioSoC_major, minor));
-
-    cdev_del(&pmio->cdev);
-
-    outw(0, pmio->caddr + MIO_IRQCTL);
-    inw(pmio->caddr + MIO_IRQCTL); /* PCI posting */
-    free_irq(pdev->irq, pmio);
-
-    //pci_iounmap(pdev, pmio->ioaddr);
-
-    //pci_iounmap(pdev, pmio->caddr);
-
-    kfree(pmio);
-
-    pci_release_regions(pdev);
-
-    MioSoC_devices[minor] = 0;
-
-    pci_disable_device(pdev);
+	UnRegisterDevice(pdev,MioSoC_major,minor);
+	return;
 }
 
 
@@ -1087,28 +1119,30 @@ static int __init MioSoC_init(void)
     int retval;
     dev_t dev;
 
+
+	sema_init(&MioSoC_mutex,1);
     MioSoC_class = class_create(THIS_MODULE, "MioSoC");
     if (IS_ERR(MioSoC_class)) {
         retval = PTR_ERR(MioSoC_class);
-        printk(KERN_ERR "MioSoC: can't register MioSoC class\n");
+        MIO_ERROR("MioSoC: can't register MioSoC class\n");
         goto err;
     }
     retval = class_create_file(MioSoC_class, &class_attr_version.attr);
     if (retval) {
-        printk(KERN_ERR "MioSoC: can't create sysfs version file\n");
+        MIO_ERROR( "MioSoC: can't create sysfs version file\n");
         goto err_class;
     }
 
     retval = alloc_chrdev_region(&dev, 0, MioSoC_MAX_MINORS, "MioSoC");
     if (retval) {
-        printk(KERN_ERR "MioSoC: can't register character device\n");
+        MIO_ERROR("MioSoC: can't register character device\n");
         goto err_attr;
     }
     MioSoC_major = MAJOR(dev);
 
     retval = pci_register_driver(&MioSoC_pci_driver);
     if (retval) {
-        printk(KERN_ERR "MioSoC: can't register pci driver\n");
+        MIO_ERROR("MioSoC: can't register pci driver\n");
         goto err_unchr;
     }
 
@@ -1122,7 +1156,7 @@ err_attr:
     class_remove_file(MioSoC_class, &class_attr_version.attr);
 err_class:
     class_destroy(MioSoC_class);
-err:
+err:	
     return retval;
 }
 
@@ -1136,6 +1170,7 @@ static void __exit MioSoC_exit(void)
     class_destroy(MioSoC_class);
 
     pr_debug("MioSoC: module successfully removed\n");
+	
 }
 
 module_init(MioSoC_init);

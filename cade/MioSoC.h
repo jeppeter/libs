@@ -13,7 +13,8 @@
 #include <linux/types.h>
 
 
-#define  MIO_DEBUG(...) do{printk(KERN_ERR "[%s:%d]\t",__FILE__,__LINE__);printk(__VA_ARGS__);} while(0)
+#define  MIO_DEBUG(...) do{printk(KERN_INFO "[%s:%d]\t",__FILE__,__LINE__);printk(__VA_ARGS__);} while(0)
+#define  MIO_ERROR(...) do{printk(KERN_ERR "[%s:%d]\t",__FILE__,__LINE__);printk(__VA_ARGS__);} while(0)
 
 struct Para_EnableMioChannel {
     int iSetNum;
