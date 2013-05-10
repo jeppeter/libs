@@ -61,6 +61,10 @@ static struct class *MioSoC_class;
 #define  MIOSOC_OFF_STATE       0
 #define  MIOSOC_INIT_STATE      1
 
+#define  LOCK_REGS(pmio,irqflag)  spin_lock_irqsave(&(pmio->regs_lock),irqflag)
+
+#define  UNLOCK_REGS(pmio,irqflag)  spin_unlock_irqrestore(&(pmio->regs_lock),irqflag)
+
 static int MioSoC_major;
 static int MOT_ISR(void);
 struct MioSoC_device {
@@ -321,6 +325,48 @@ int WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short w
 	/*now to read the register*/
 	outw_p(word,pmio->ioaddr+reg*2);
 	return 0;
+}
+
+unsigned short __EnableMioSocIntr(struct MioSoC_device *pmio)
+{
+	unsigned short intr;
+
+	intr = inw(pmio->caddr + 0x4c);
+	intr |= 0x43;
+
+	outw_p(intr,pmio->caddr + 0x4c);
+	return intr;
+}
+
+unsigned short __DisableMioSocIntr(struct MioSoC_device *pmio)
+{
+	unsigned short intr;
+
+	intr = inw(pmio->caddr + 0x4c);
+	intr &= (unsigned short)(~0x43);
+	outw_p(intr,pmio->caddr + 0x4c);
+	return intr;
+}
+
+
+int SetMioSocOffState(struct MioSoC_device *pmio)
+{
+	unsigned long flags;
+	int ret=0;
+	LOCK_REGS(pmio,flags);
+
+	if (pmio->state != MIOSOC_OFF_STATE)
+	{
+		/*now to set for the disable*/
+		__DisableMioSocIntr(pmio);
+		
+	}
+
+	pmio->state = MIOSOC_OFF_STATE;
+
+	UNLOCK_REGS(pmio,flags);
+
+	return ret;
 }
 
 static long MioSoC_ioctl(struct file *file, unsigned int cmd,
@@ -788,28 +834,16 @@ static int MioSoC_open(struct inode *inode, struct file *file)
     struct MioSoC_device *dev = container_of(inode->i_cdev,
             struct MioSoC_device, cdev);
 
-    //mutex_lock(&MioSoC_mutex);
-    nonseekable_open(inode, file);
-
-  //  if (mutex_lock_interruptible(&dev->open_lock)) {
-  //    mutex_unlock(&MioSoC_mutex);
-  //      return -ERESTARTSYS;
-  //  }
 
     if (dev->opened) {
-        //mutex_unlock(&dev->open_lock);
-        //mutex_unlock(&MioSoC_mutex);
         return -EINVAL;
     }
 
-    //WARN_ON(dev->status & PHB_NOT_OH);
+    nonseekable_open(inode, file);
 
     file->private_data = dev;
-
-    //atomic_set(&dev->counter, 0);
+	SetMioSocOffState(dev);
     dev->opened++;
-    //mutex_unlock(&dev->open_lock);
-    //mutex_unlock(&MioSoC_mutex);
     return 0;
 }
 
@@ -820,6 +854,7 @@ static int MioSoC_release(struct inode *inode, struct file *file)
     //mutex_lock(&dev->open_lock);
 
     dev->opened = 0;
+	SetMioSocOffState(dev);
     //MioSoC_status(dev, dev->status & ~PHB_RUNNING);
    // dev->status &= ~PHB_NOT_OH;
 
