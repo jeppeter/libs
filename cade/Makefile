@@ -1,4 +1,3 @@
-
 obj-m =
 obj-m += MioSoC.o
 
@@ -22,4 +21,4 @@ clean:
 	make -C ${KERNEL_PATH} M=${PWD} clean
 	rm -f main.o sigsoc
 	# to remove the backup files
-	rm -f *~
+	rm -f *~ *.gbk.c *.gbk.h
