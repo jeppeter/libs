@@ -6,10 +6,14 @@ ifeq ($(KERNEL_PATH),)
 $(error please set KERNEL_PATH for kernel compile)
 endif
 
-all:MioSoC.ko sigsoc
+all:check_env MioSoC.ko sigsoc
 
 MioSoC.ko:MioSoC.c MioSoC.h
 	make -C ${KERNEL_PATH} M=${PWD} modules
+
+
+check_env:
+	sh ./gbkutf.sh .
 
 sigsoc:main.o
 	gcc -Wall -o $@ $^

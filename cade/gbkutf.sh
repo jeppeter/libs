@@ -8,7 +8,7 @@ fi
 
 FILE_LIST=`find $todir  | egrep -e '*\.gbk.c$' -e  '*\.gbk.h$'  `
 
-echo -e "FILE_LIST($todir)\n$FILE_LIST"
+/bin/echo -e "FILE_LIST($todir)\n$FILE_LIST"
 
 
 for f in $FILE_LIST

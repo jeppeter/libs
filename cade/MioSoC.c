@@ -11,7 +11,8 @@
  *  http://www.fi.muni.cz/~xslaby/phantom.html
  *  or alternatively, you might use OpenHaptics provided by Sensable.
  */
-
+// 要看见这个GBK
+/*要看见这个GBK*/
 #include <linux/compat.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
