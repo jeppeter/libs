@@ -879,11 +879,13 @@ int iIsrCount1;
 static irqreturn_t MioSoC_isr(int irq, void *data)
 {
     //struct fpga_key_dev *dev = &fpga_key_dev;
-    struct MioSoC_device *dev = data;
+    struct MioSoC_device *pmio = data;
+	unsigned long flags;
+	irqreturn_t ret=IRQ_NONE;
     //unsigned int i;
     //u32 ctl;
     unsigned int dwIntStatus;
-    spin_lock(&dev->regs_lock);
+	LOCK_REGS(pmio,flags);
 
     dwIntStatus = inw(pmio->caddr +0x4c); // 读取卡上的控制缓存器中断状态
 
@@ -896,20 +898,24 @@ static irqreturn_t MioSoC_isr(int irq, void *data)
 //            iIsrCount1++;
 //            printk(KERN_INFO "iIsrCount1: %d\n", iIsrCount1);//added by guo, to test the probe, 2013-4-10
 
-            if (dev->async_queue)
-               kill_fasync(&dev->async_queue, SIGIO, POLL_IN);
+            if (pmio->async_queue)
+               kill_fasync(&pmio->async_queue, SIGIO, POLL_IN);
             outw((unsigned int)dwIntStatus,pmio->caddr + 0x4c);
+			ret = IRQ_HANDLED;
 
         }
 
-    spin_unlock(&dev->regs_lock);
+	UNLOCK_REGS(pmio,flags);
 
     //inw(dev->ioaddr); /* PCI posting */
 
     //atomic_inc(&dev->counter);
-    wake_up_interruptible(&dev->wait);
+    if (ret == IRQ_HANDLED)
+    {
+    	wake_up_interruptible(&pmio->wait);
+    }
 
-    return IRQ_HANDLED;
+    return ret;
 }
 //==========================================================================
 // Function   : void MOT_ISR(void)
@@ -934,11 +940,6 @@ static int MOT_ISR(void)
 
     //
 
-    #ifdef WIN32
-        int iFIFOStockNum[MAX_AXIS] = {0,0,0,0,0,0};
-        int iCount = 0;
-        int iAxis = 0;
-    #endif
 
 
     iOldPage=GetPage();
