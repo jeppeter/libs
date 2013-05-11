@@ -52,6 +52,42 @@
 //void	outw( int iAddress, short sData );
 
 //DECLARE_MUTEX(MioSoC_mutex);
+
+#define  MIOSOC_PAGE_REG                        15
+#define  MIOSOC_PAGE_0                          0
+#define  MIOSOC_PAGE_1                          1
+#define  MIOSOC_PAGE_2                          2
+#define  MIOSOC_PAGE_3                          3
+#define  MIOSOC_PAGE_4                          4
+#define  MIOSOC_PAGE_5                          5
+#define  MIOSOC_PAGE_6                          6
+#define  MIOSOC_PAGE_7                          7
+#define  MIOSOC_PAGE_8                          8
+#define  MIOSOC_PAGE_9                          9
+#define  MIOSOC_PAGE_10                         10
+#define  MIOSOC_PAGE_11                         11
+#define  MIOSOC_PAGE_12                         12
+#define  MIOSOC_PAGE_13                         13
+
+
+#define  MIOSOC_PAGE0_RD_INTR_IDX_REG         0x0
+#define  MIOSOC_PAGE0_WR_SW_RESET_REG         0x0
+#define  MIOSOC_PAGE0_WR_ISA_BUS_WAIT_REG     0x1
+#define  MIOSOC_PAGE0_WR_INTR_CHNL_REG        0x2
+#define  MIOSOC_PAGE0_WR_INTR_MODE_REG        0x3
+#define  MIOSOC_PAGE0_WR_INTR_CLR_REG         0x4
+
+
+#define  MIOSOC_PAGE1_WR_DDA_INTR_REG         12
+#define  MIOSOC_PAGE1_WR_DDA_CLK_REG          13
+
+#define  MIOSOC_PAGE2_WR_INTR_ENBL_REG       12
+#define  MIOSOC_PAGE2_WR_CLOCK_REG            13        
+
+#define  MIOSOC_PAGE9_WR_ERR_REG              7
+
+#define  MIOSOC_PAGE10_WR_SERIAL_CLK_REG     12
+
 static struct semaphore MioSoC_mutex;
 
 static struct class *MioSoC_class;
@@ -304,9 +340,8 @@ struct Para_StartDda *pPara_StartDda;
 
 static int ISR(void);
 
-#define   MIOSOC_PAGE_REG   15
 
-unsigned short ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
+unsigned short __ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
 {
 	unsigned short word;
 	/*first to set the page*/
@@ -317,7 +352,7 @@ unsigned short ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
 	return word;
 }
 
-int WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short word)
+int __WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short word)
 {
 	/*first to set the page*/
 	outw_p(Page,pmio->ioaddr+MIOSOC_PAGE_REG*2);
@@ -331,10 +366,10 @@ unsigned short __EnableMioSocIntr(struct MioSoC_device *pmio)
 {
 	unsigned short intr;
 
-	intr = inw(pmio->caddr + 0x4c);
+	intr = inw(pmio->caddr + MIO_IRQCTL);
 	intr |= 0x43;
 
-	outw_p(intr,pmio->caddr + 0x4c);
+	outw_p(intr,pmio->caddr + MIO_IRQCTL);
 	return intr;
 }
 
@@ -342,9 +377,9 @@ unsigned short __DisableMioSocIntr(struct MioSoC_device *pmio)
 {
 	unsigned short intr;
 
-	intr = inw(pmio->caddr + 0x4c);
+	intr = inw(pmio->caddr + MIO_IRQCTL);
 	intr &= (unsigned short)(~0x43);
-	outw_p(intr,pmio->caddr + 0x4c);
+	outw_p(intr,pmio->caddr + MIO_IRQCTL);
 	return intr;
 }
 
@@ -369,6 +404,152 @@ int SetMioSocOffState(struct MioSoC_device *pmio)
 	return ret;
 }
 
+
+int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
+{
+	unsigned int i,divide,bitno;
+	unsigned short val,cardtype;
+
+	/*reset all the modules*/
+	__WriteMioSocWord(pmio,0,0,0);
+
+	// Set PCI Bridge Interrupt ..........从windows驱动下复制过来，再做修改； 2013-3-26，郭
+
+
+	/*to enable soc intr*/
+	__EnableMioSocIntr(pmio);
+
+	__WriteMioSocWord(pmio,0,0x1f,0);
+	cardtype = __ReadMioSocWord(pmio,0,(0x1e));
+
+	/*reset module again */
+	__WriteMioSocWord(pmio,0,0,0x300);
+
+	
+	for (i=0;i<100;i++)
+	{
+		__WriteMioSocWord(pmio,0,0,0x00);
+	}
+
+
+	/*to reset the interrupt channel*/
+	__WriteMioSocWord(pmio,0,2,(1<<9) | 0xff);
+
+
+	__WriteMioSocWord(pmio,0,3,0x2);
+
+
+	/*SetAxisCounter count is 192 */
+	val = 3<<6;
+	for (i=1;i<10;i++)
+	{
+		int regcount=0,pagecount=MIOSOC_PAGE_2;
+		if (i<4)
+		{
+			pagecount = MIOSOC_PAGE_2;
+			regcount = 4*(i-1);
+		}
+		else if (i<7)
+		{
+			pagecount = MIOSOC_PAGE_3;
+			regcount = 4*(i-4);
+		}
+		else if (i < 10)
+		{
+			pagecount = MIOSOC_PAGE_4;
+			regcount = 4*(i-7);
+		}
+		/*to write lower reg the count and set higher reg 0*/
+		__WriteMioSocWord(pmio,pagecount,regcount,val);
+		__WriteMioSocWord(pmio,pagecount,regcount+1,0);
+	}
+
+
+	/*start filter sample*/
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_2,MIOSOC_PAGE2_WR_CLOCK_REG,0x8000);
+
+	outw((u16)1,pmio->ioaddr + 0x20 + 0x1e );	   //====== InterruptLineInit: //从原来EpcioInit()里移过来。 2013-3-28.郭=============
+	outw((u16)0,pmio->ioaddr + 0x20 );
+
+
+	/*dda unlatch*/
+	val = __ReadMioSocWord(pmio,MIOSOC_PAGE_1,10) & 0xff;
+	for (i=0;i<7;i++)
+	{
+		if (val & (1 << i))
+		{
+			return i + 1;
+		}
+	}
+
+
+	/*set int clear*/
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_0,4,MIOSOC_PAGE0_WR_SW_RESET_REG);
+
+	/*enable error counter 0x8000 means start plc 0x3f means start channel 0-5*/
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_9,MIOSOC_PAGE9_WR_ERR_REG,0x803f);
+
+	/*enable dda serial clock ,0x8000 means star 0x10 is the serial clock divider */
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_10,MIOSOC_PAGE10_WR_SERIAL_CLK_REG,0x80);
+
+
+	for (i=0;i<(MAX_AXIS+3);i++)
+	{
+		/*for axis enable*/
+		val = (1<<i);
+		__WriteMioSocWord(pmio,MIOSOC_PAGE_2,MIOSOC_PAGE2_WR_INTR_ENBL_REG,val);
+
+		for (val=0;val<2000;val++)
+		{
+			/*for delay*/
+			__asm__("movl %esi,%esi");
+		}
+
+		__WriteMioSocWord(pmio,MIOSOC_PAGE_2,MIOSOC_PAGE2_WR_INTR_ENBL_REG,0);
+	}
+
+
+
+	for (i=6;i<12;i++)
+	{
+		/*plus clock is 28 and out format is A/B*/
+		__WriteMioSocWord(pmio,MIOSOC_PAGE_1,i,(28|0x1000));
+	}
+
+
+	if (minisec == 0)
+	{
+		minisec = 10;
+	}
+
+
+	divide = (unsigned int)((40*1000*minisec/32768));
+	/*15 bits dda*/
+	bitno = 0x5000;
+
+
+	val = (divide | bitno);
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_1,MIOSOC_PAGE1_WR_DDA_CLK_REG,val);
+
+
+	/*to enable dda cycle ,and not minimum stock count and emergency stop DDA machin and dda[0:5] start*/
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_1,MIOSOC_PAGE1_WR_DDA_INTR_REG,0x40bf);
+
+	return 0;
+
+}
+
+int MioSocInit(struct MioSoC_device *pmio,int minisec)
+{
+	int ret;
+	unsigned long flags;
+
+	LOCK_REGS(pmio,flags);
+	ret = __MioSocInitNoLock( pmio,minisec);
+	UNLOCK_REGS(pmio,flags);
+	
+	return ret;
+}
 static long MioSoC_ioctl(struct file *file, unsigned int cmd,
         unsigned long arg)
 {
