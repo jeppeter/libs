@@ -413,6 +413,7 @@ int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
 	/*reset all the modules*/
 	__WriteMioSocWord(pmio,0,0,0);
 
+	MIO_DEBUG("\n");
 	// Set PCI Bridge Interrupt ..........从windows驱动下复制过来，再做修改； 2013-3-26，郭
 
 
@@ -535,6 +536,7 @@ int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
 	/*to enable dda cycle ,and not minimum stock count and emergency stop DDA machin and dda[0:5] start*/
 	__WriteMioSocWord(pmio,MIOSOC_PAGE_1,MIOSOC_PAGE1_WR_DDA_INTR_REG,0x40bf);
 
+	MIO_DEBUG("\n");
 	return 0;
 
 }
@@ -554,220 +556,22 @@ static long MioSoC_ioctl(struct file *file, unsigned int cmd,
         unsigned long arg)
 {
     void __user *argp = (void __user *)arg;
-
-    int iCardType = 0;
+    struct MioSoC_device *pmio = file->private_data;
     int iMiniSec;
-    int my_intcsr;
-
-    unsigned int uiDivide;
-    int iBitNo;
-    int tmp;
-    int iDelay;
-    int i;
-    short val;
-    unsigned int uiSource;
-    int iDelay1;
+	int ret;
 //struct Para_MioSoCinit *pPara_MioSoCinit;
+	ret = 0;
     switch (cmd)
     {
 
         case MioSoCinit:
 
-            // EPCIO Intitial .................
-            SetPage(0);
-            //m_EPCIOPort.outw(0 , 0); // ResetAllModules
-            outw((u16)0,pmio->ioaddr+0);       // ResetAllModules
+			if (copy_from_user(&iMiniSec, argp, sizeof(iMiniSec)))
+			{
+				return -EFAULT;
+			}
 
-            // Set PCI Bridge Interrupt ..........从windows驱动下复制过来，再做修改； 2013-3-26，郭
-
-            my_intcsr = inw(pmio->caddr + MIO_IRQCTL);    // 读取卡上的控制缓存器中断状态
-            printk(KERN_INFO "my_intcsr: %X\n", my_intcsr);     //added by guo, to test the probe, 2013-3-30
-            outw( (u32) my_intcsr|0x43,pmio->caddr + MIO_IRQCTL );	// PCI Bridge Using high level trigger
-
-            my_intcsr = inw(pmio->caddr + MIO_IRQCTL);    // 读取卡上的控制缓存器中断状态
-            printk(KERN_INFO "my_intcsr: %X\n", my_intcsr);//added by guo, to test the probe, 2013-3-30
-
-            outw((u16)0,pmio->ioaddr + 0x20+0x1e );        //===========case GetMotionCardType:=========================
-            iCardType= inw(pmio->ioaddr + 0x20+0x1c);
-            printk("GetMotionCardType ok, value is: iCardType%x\n",iCardType);
-
-            SetPage(0);                                     //==========case ResetAllModules://===================
-            outw( (u16)0x300,pmio->ioaddr );
-
-            for(iDelay=0;iDelay<200;iDelay++);
-            outw((u16) 0,pmio->ioaddr  );
-
-            SetPage(0);                                     //=======case SetInterruptChannel:==========================
-            outw((u16) ((1 << 9) | 0xff),pmio->ioaddr + 4 );
-
-            SetPage(0);                                     //=========== SetIntMode:        //int SetIntMode(unsigned short mode)===============
-            //outw(mode,giBaseAddress + 3*2 ); 原先的写法，mode作为输入参数，现临时用固定INT_LEVEL_HIGH值代替；2013-3-28
-            //outw(0x03,giBaseAddress + 3*2 );  //INT_LEVEL_LOW       0x03
-            outw((u16)0x02,pmio->ioaddr + 3*2 );  //INT_LEVEL_HIGH       0x02
-
-                    val=3<<6;                               //==== SetAxisCounter:=============================
-                    for (i=1;i<10;i++)
-                    {
-                        if(i<4)
-                        {
-                            SetPage(2);
-                            outw((u16)val, pmio->ioaddr+4+8*(i-1));
-                        }
-                        else if(i<7)
-                        {
-                            SetPage(3);
-                            outw((u16) val,pmio->ioaddr+4+8*(i-4));
-                        }
-                        //Motion Code Ver: 92.01.23(3)
-                        else if(i<10)
-                        {
-                            SetPage(4);
-                            outw((u16) val,pmio->ioaddr+4+8*(i-7));
-                        }
-                        //
-                    }
-
-                SetPage(2);                                  // ======EncoderFilter:================================
-                outw((u16)0x8000, pmio->ioaddr+13*2 );
-
-                outw((u16)1,pmio->ioaddr + 0x20 + 0x1e );      //====== InterruptLineInit: //从原来EpcioInit()里移过来。 2013-3-28.郭=============
-                outw((u16)0,pmio->ioaddr + 0x20 );
-
-                 SetPage(1);                                 //=========== DdaUnlatch:================================
-                 uiSource=inw( pmio->ioaddr+20) & 0xff ;
-
-                  if(uiSource & 1)
-                 {
-                        return 1 ; /* FIFO 0 with minimum stock*/
-                 }
-                 else if(uiSource & (1<<1) )
-                 {
-                      return 2; /*  FIFO 1 with minimum stock*/
-                 }
-                 else if(uiSource & (1<<2) )
-                 {
-                        return 3; /*  FIFO 2 with minimum stock*/
-                 }
-                 else if(uiSource & (1<<3) )
-                 {
-                      return 4; /*  FIFO 3 with minimum stock */
-                 }
-                 else if(uiSource & (1<<4) )
-                 {
-                      return 5; /*  FIFO 4 with minimum stock*/
-                 }
-                 else if(uiSource & (1<<5) )
-                 {
-                      return 6;  /*  FIFO 5 with minimum stock*/
-                 }
-                 else if(uiSource & (1<<6) )
-                 {
-                      return 7; /* DDA Cycle*/
-                 }
-
-                SetPage(0);                             // =============SetIntClear:====================================
-                //modified by steven
-                outw((u16)0x0,pmio->ioaddr + 4*2 );
-
-                SetPage(9);                              //========== EnableErrCounter:=============================
-                outw((u16) 0x803f,pmio->ioaddr + 7 * 2);
-
-                SetPage(10);                             //============= EnableDAPort:===============================
-                outw((u16) 0x8010,pmio->ioaddr + 12 *2);
-
-                  for ( iAxis=0; iAxis<(MAX_AXIS+3); iAxis++  )  // ===============ClearAbsoluteCounter:   //int ClearAbsoluteCounter( int iAxis )     //ClearAbsoluteCounter( iAxis );
-                      {
-
-                      if( iAxis<0 || iAxis>=MAX_ENCODER )
-                          { return -EFAULT; }
-
-                      SetPage( 2 );
-                      outw((u16)(1<<(iAxis)) ,pmio->ioaddr+14*2 );
-
-                      for ( iDelay1=0; iDelay1<=2000; iDelay1++ );	/*	*/
-                      SetPage( 2 ); // 20041218
-                      outw((u16)0, pmio->ioaddr+14*2 );
-
-                  }
-
-        // ==================EnableMioChannel://int EnableMioChannel(int iSetNum, int iSlave0Flag, int iSlave1Flag, int iSlave2Flag)
-/*
-                if (copy_from_user(&pPara_EnableMioChannel, argp, sizeof(pPara_EnableMioChannel)))
-                    return -EFAULT;
-
-                if( pPara_EnableMioChannel->iSetNum<0 || pPara_EnableMioChannel->iSetNum>=MAX_REMOTE_SET )
-                    { return -1; }
-
-                if( pPara_EnableMioChannel->iSlave0Flag!=0 && pPara_EnableMioChannel->iSlave0Flag!=1 )
-                    { return -2; }
-
-                if( pPara_EnableMioChannel->iSlave1Flag!=0 && pPara_EnableMioChannel->iSlave1Flag!=1 )
-                    { return -3; }
-
-                if( pPara_EnableMioChannel->iSlave2Flag!=0 && pPara_EnableMioChannel->iSlave2Flag!=1 )
-                    { return -4; }
-
-                giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][2] = 0x00ff;
-                giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][1] = 0x0068 | (pPara_EnableMioChannel->iSlave0Flag<<0) | (pPara_EnableMioChannel->iSlave1Flag<<1) | (pPara_EnableMioChannel->iSlave2Flag<<2);
-                giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][0] = 0x0100;
-
-                //Set 0 => Page 5,Set 1 => Page 6
-                SetPage(pPara_EnableMioChannel->iSetNum+5);
-                //Slave 2
-                outw(  giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][2],pmio->ioaddr+12*2);
-                //Slave 1
-                outw(  giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][1],pmio->ioaddr+13*2);
-                //Slave 0
-                outw( giEnableRemoteSlave[pPara_EnableMioChannel->iSetNum][0],pmio->ioaddr+14*2);
-*/
-
-                SetPage(1);                                     //=============== SetABPhase://void SetABPhase( int iBaseAddress )==================
-                outw(  (u16)(28 | 0x1000) ,pmio->ioaddr+12);
-                outw(  (u16)(28 | 0x1000),pmio->ioaddr+14 );
-                outw(  (u16)(28 | 0x1000) ,pmio->ioaddr+16);
-                outw( (u16)(28 | 0x1000),pmio->ioaddr+18 );
-                outw(  (u16)(28 | 0x1000),pmio->ioaddr+20 );
-                outw( (u16)(28 | 0x1000) ,pmio->ioaddr+22 );
-
-                if (copy_from_user(&iMiniSec, argp, sizeof(iMiniSec)))// ====StartDda:  //void StartDda( int iBaseAddress, int iMiniSec )============
-                    return -EFAULT;
-
-                if (iMiniSec==0){
-                    iMiniSec=10;
-                }
-
-                uiDivide=(unsigned int)((40*1000*iMiniSec/32768));
-                iBitNo=0x5000;
-
-                /*
-
-                //uiDivide=(unsigned int)((ceil)(40.*1000*pPara_StartDda->iMiniSec/32768.))-1;
-                //uiDivide=(unsigned int)((40.*1000*pPara_StartDda->iMiniSec/32768.))-1;//just for a test. 2013-3-20
-                uiDivide=(unsigned int)((40*1000*pPara_StartDda->iMiniSec/32768))-1;//just for a test. 2013-3-20; "32768." will occur error when making..
-
-                iBitNo=0x5000;
-
-                // for realinttime
-                // marked by guo,  otherwise ERROR: "__extendsfdf2" [drivers/cade/MioSoC.ko] undefined!
-                ERROR: "__truncdfsf2" [drivers/cade/MioSoC.ko] undefined!
-                ERROR: "__divdf3" [drivers/cade/MioSoC.ko] undefined!  ..... will occur when making..
-
-                // gfRealCycleTime = (float) (32768.0 * 1000. * (uiDivide + 1) / (40 * 1.0e6));
-
-
-                // gdRealIntTime = (double)gfRealCycleTime;
-               */
-
-                SetPage(1);
-                tmp = uiDivide|iBitNo;
-                outw((u16)(uiDivide|iBitNo), pmio->ioaddr+26);
-
-                SetPage(1);             //=====p43======//
-                outw( (u16)0x40bf ,pmio->ioaddr+12*2 ); /* start dda[5:0] and enable int dda cycle */
-
-//                SetPage(0);                                   //=======case SetInterruptChannel:==========================
-//                outw( ((1 << 9) | 0xff),pmio->ioaddr + 4 );
-
+			ret = MioSocInit(pmio,iMiniSec);
 
             break;
         case ResetAllModules://
@@ -1006,7 +810,7 @@ static long MioSoC_ioctl(struct file *file, unsigned int cmd,
         return -ENOTTY;
 
     }
-    return 0;
+    return ret;
 }
 
 
