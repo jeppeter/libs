@@ -99,7 +99,6 @@ struct Para_MioSoCinit {
 #define WriteLio2Status        _IOW(MIO_IOC_MAGIC, 64, struct Para_WriteLio2Status *)//int WriteLio2Status(int iNum, int iValue);
 #define ResetIRQNo        	   _IOW(MIO_IOC_MAGIC, 35,int )//int	ResetIRQNo();
 
- int 	DdaUnlatchFunc(void);
 
 int 	ReadIntSourceFunc(void);
 

@@ -123,6 +123,7 @@ struct MioSoC_device {
 
 };
 static int MOT_ISR(struct MioSoC_device* pmio);
+static int    DdaUnlatchFunc(struct MioSoC_device* pmio);
 
 
 int		siVcmdAxis = 0;
