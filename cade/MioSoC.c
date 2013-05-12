@@ -78,6 +78,8 @@
 #define  MIOSOC_PAGE0_WR_INTR_CLR_REG         0x4
 
 
+#define  MIOSOC_PAGE1_RD_INTR_CLR_REG         10
+
 #define  MIOSOC_PAGE1_WR_DDA_INTR_REG         12
 #define  MIOSOC_PAGE1_WR_DDA_CLK_REG          13
 
@@ -339,7 +341,7 @@ struct Para_WriteLio2Status *pPara_WriteLio2Status;
 struct Para_DisableLdiInt *pPara_DisableLdiInt;
 struct Para_StartDda *pPara_StartDda;
 
-static int ISR(void);
+static int ISR(struct MioSoC_device* pmio);
 
 
 unsigned short __ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
@@ -982,7 +984,9 @@ static int MOT_ISR(struct MioSoC_device* pmio)
 //        iInterruptSource = iIntSource;
         //
         if((iIntSource & 0x1) == 0x1)
-            { DdaUnlatchFunc(); }
+        {
+        	DdaUnlatchFunc(pmio);
+		}
 
 //        if(iIntSource & 0xE)
 //            { lIndexSrc = ENCODERUnlatch(iIntSource); }
@@ -1007,7 +1011,7 @@ static int MOT_ISR(struct MioSoC_device* pmio)
         if((iIntSource & 0x1) == 0x1)
         {
 
-            ISR();
+            ISR(pmio);
 
         }
 
@@ -1041,7 +1045,7 @@ static int MOT_ISR(struct MioSoC_device* pmio)
 
 }
 
-static int ISR(void)
+static int ISR(struct MioSoC_device* pmio)
 {
 
 //    iIsrCount1++;
@@ -1057,12 +1061,11 @@ static int ISR(void)
 // Purpose    : dda中断清除动作
 // Return     : 目前无意义
 //==========================================================================
-int DdaUnlatchFunc(void)
+int DdaUnlatchFunc(struct MioSoC_device* pmio)
 {
      unsigned int uiSource;
 
-     SetPage(1);
-     uiSource=inw( pmio->ioaddr+20) & 0xff ;
+	 uiSource = __ReadMioSocWord(pmio,MIOSOC_PAGE_1,MIOSOC_PAGE1_RD_INTR_CLR_REG) & 0xff;
 
       if(uiSource & 1)
      {
