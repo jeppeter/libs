@@ -411,7 +411,7 @@ unsigned short __DisableMioSocIntr(struct MioSoC_device *pmio)
 }
 
 
-int SetMioSocOffState(struct MioSoC_device *pmio)
+static int SetMioSocOffState(struct MioSoC_device *pmio)
 {
 	unsigned long flags;
 	int ret=0;
@@ -432,7 +432,7 @@ int SetMioSocOffState(struct MioSoC_device *pmio)
 }
 
 
-int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
+static int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
 {
 	unsigned int i,divide,bitno;
 	unsigned short val,cardtype;
@@ -568,7 +568,7 @@ int __MioSocInitNoLock(struct MioSoC_device *pmio,int minisec)
 
 }
 
-int MioSocInit(struct MioSoC_device *pmio,int minisec)
+static int MioSocInit(struct MioSoC_device *pmio,int minisec)
 {
 	int ret;
 	unsigned long flags;
@@ -579,6 +579,33 @@ int MioSocInit(struct MioSoC_device *pmio,int minisec)
 	
 	return ret;
 }
+
+
+static int __ResetAllModulesNoLock(struct MioSoC_device* pmio)
+{
+	unsigned int i;
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_0,MIOSOC_PAGE0_WR_SW_RESET_REG,0x300);
+	for (i=0;i<100;i++)
+	{
+		__asm__("movl %esi,%esi");
+	}
+
+	__WriteMioSocWord(pmio,MIOSOC_PAGE_0,MIOSOC_PAGE0_WR_SW_RESET_REG,0);
+	return 0;
+}
+
+static int ResetAllModule(struct MioSoC_device* pmio)
+{
+	int ret;
+	unsigned long flags;
+
+	LOCK_REGS(pmio,flags);
+	ret = __ResetAllModulesNoLock( pmio);
+	UNLOCK_REGS(pmio,flags);	
+	return ret;
+}
+
+
 static long MioSoC_ioctl(struct file *file, unsigned int cmd,
         unsigned long arg)
 {
@@ -609,15 +636,8 @@ static long MioSoC_ioctl(struct file *file, unsigned int cmd,
              // Purpose    : 重置EPCIO的动作
              // Return     : 无
              //==========================================================================
-             {
-             int iDelay;
-             SetPage(0);
-             outw( (u16)0x300,pmio->ioaddr );
-
-             for(iDelay=0;iDelay<200;iDelay++);
-             outw((u16) 0,pmio->ioaddr  );
-             }
-         break;
+			ret = ResetAllModule(pmio);
+			break;
         case GetCardAxisNum:       //int GetCardAxisNum(int iFpgaBaseAddress)
                 //==========================================================================
                 // Function   : int GetCardAxisNum(iFpgaBaseAddress)
