@@ -102,7 +102,6 @@ static struct class *MioSoC_class;
 #define  UNLOCK_REGS(pmio,irqflag)  spin_unlock_irqrestore(&(pmio->regs_lock),irqflag)
 
 static int MioSoC_major;
-static int MOT_ISR(void);
 struct MioSoC_device {
     unsigned int opened;
 //    u32   caddr;
@@ -121,6 +120,8 @@ struct MioSoC_device {
     struct fasync_struct *async_queue;
 
 };
+static int MOT_ISR(struct MioSoC_device* pmio);
+
 
 int		siVcmdAxis = 0;
 double	gdRealIntTime = 0.;
@@ -352,14 +353,37 @@ unsigned short __ReadMioSocWord(struct MioSoC_device *pmio,int Page,int reg)
 	return word;
 }
 
-int __WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short word)
+int __GetMioSocPage(struct MioSoC_device *pmio)
+{
+	unsigned short val;
+
+	val = inw(pmio->ioaddr + MIOSOC_PAGE_REG*2);
+	return (int)val;
+}
+
+int __SetMioSocPage(struct MioSoC_device *pmio,int Page)
 {
 	/*first to set the page*/
 	outw_p(Page,pmio->ioaddr+MIOSOC_PAGE_REG*2);
+	return 0;
+}
 
+int __WriteMioSocWord(struct MioSoC_device *pmio,int Page,int reg,unsigned short word)
+{
+
+	__SetMioSocPage(pmio,Page);
 	/*now to read the register*/
 	outw_p(word,pmio->ioaddr+reg*2);
 	return 0;
+}
+
+
+unsigned short __GetMioSocIntrReg(struct MioSoC_device *pmio)
+{
+	unsigned short intr;
+
+	intr = inw(pmio->caddr + MIO_IRQCTL);
+	return intr;
 }
 
 unsigned short __EnableMioSocIntr(struct MioSoC_device *pmio)
@@ -887,20 +911,21 @@ static irqreturn_t MioSoC_isr(int irq, void *data)
     unsigned int dwIntStatus;
 	LOCK_REGS(pmio,flags);
 
-    dwIntStatus = inw(pmio->caddr +0x4c); // 读取卡上的控制缓存器中断状态
+	/*read intr status*/
+    dwIntStatus = __GetMioSocIntrReg(pmio);
 
         if ((unsigned int)dwIntStatus & 0x4)              // 检查是否为本卡的中断
         {
 
-            outw((unsigned int)dwIntStatus & ~0x43,pmio->caddr+0x4c);
+			__DisableMioSocIntr(pmio);
 
-            MOT_ISR();
+            MOT_ISR(pmio);
 //            iIsrCount1++;
 //            printk(KERN_INFO "iIsrCount1: %d\n", iIsrCount1);//added by guo, to test the probe, 2013-4-10
 
             if (pmio->async_queue)
                kill_fasync(&pmio->async_queue, SIGIO, POLL_IN);
-            outw((unsigned int)dwIntStatus,pmio->caddr + 0x4c);
+			__EnableMioSocIntr(pmio);
 			ret = IRQ_HANDLED;
 
         }
@@ -923,7 +948,7 @@ static irqreturn_t MioSoC_isr(int irq, void *data)
 // Purpose    : Motion中断服务程序
 // Return     : 无
 //==========================================================================
-static int MOT_ISR(void)
+static int MOT_ISR(struct MioSoC_device* pmio)
 {
     int iIntSource = 0;
     int iIsrLoop = 0;
@@ -942,7 +967,7 @@ static int MOT_ISR(void)
 
 
 
-    iOldPage=GetPage();
+    iOldPage=__GetMioSocPage(pmio);
 
     //for Vcmd_G31, marked by maverick 2004/6/18 05:39PM
     //iIntSource=ReadIntSource();
@@ -951,7 +976,7 @@ static int MOT_ISR(void)
     //
     //
 
-    while((iIntSource=ReadIntSourceFunc())!=0 && iIsrLoop< 3)
+    while((iIntSource=__GetMioSocIntrReg(pmio))!=0 && iIsrLoop< 3)
     {
         //for Vcmd_G31, added by maverick 2004/6/18 05:39PM
 //        iInterruptSource = iIntSource;
@@ -1010,7 +1035,7 @@ static int MOT_ISR(void)
 
     iIsrLoop=0;
 
-    SetPage( iOldPage );
+    __SetMioSocPage(pmio, iOldPage );
 
     return 0;
 
