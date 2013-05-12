@@ -100,7 +100,6 @@ struct Para_MioSoCinit {
 #define ResetIRQNo        	   _IOW(MIO_IOC_MAGIC, 35,int )//int	ResetIRQNo();
 
 
-int 	ReadIntSourceFunc(void);
 
 /*
 #define IOCTL_SetTriggerMode	       _IOWR(MIO_IOC_MAGIC, 6, struct phm_regs *)//void	SetTriggerMode();

@@ -124,6 +124,7 @@ struct MioSoC_device {
 };
 static int MOT_ISR(struct MioSoC_device* pmio);
 static int    DdaUnlatchFunc(struct MioSoC_device* pmio);
+static int __ReadIntSourceFunc(struct MioSoC_device* pmio);
 
 
 int		siVcmdAxis = 0;
@@ -999,7 +1000,7 @@ static int MOT_ISR(struct MioSoC_device* pmio)
     //
     //
 
-    while((iIntSource=__GetMioSocIntrReg(pmio))!=0 && iIsrLoop< 3)
+    while((iIntSource=__ReadIntSourceFunc(pmio))!=0 && iIsrLoop< 3)
     {
         //for Vcmd_G31, added by maverick 2004/6/18 05:39PM
 //        iInterruptSource = iIntSource;
@@ -1125,12 +1126,11 @@ int DdaUnlatchFunc(struct MioSoC_device* pmio)
 // Purpose    : 读取中断来源位置
 // Return     : epcio 中断状态值
 //==========================================================================
-int ReadIntSourceFunc(void)
+static int __ReadIntSourceFunc(struct MioSoC_device* pmio)
 {
      unsigned int uiSource;
 
-     SetPage(0);
-     uiSource=inw( pmio->ioaddr)& 0x01ff;
+	 uiSource = __ReadMioSocWord(pmio,MIOSOC_PAGE_0,MIOSOC_PAGE0_RD_INTR_IDX_REG) & 0x1ff;
 
     return uiSource;
 
