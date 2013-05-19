@@ -49,6 +49,7 @@ class XUnitConfigBase:
 		self.__MainName = None
 		self.__SearchPaths = []
 		self.__FuncLevel = 0
+		self.__ConfigFile=''
 		return 
 
 	def __init__(self,fname=None):
@@ -58,6 +59,7 @@ class XUnitConfigBase:
 			assert(self.__FuncLevel == 0)
 			self.__MainName = fname
 			self.__ExpandAllKeys()
+			self.__ConfigFile = fname
 		else:
 			self.__MainName = None
 
@@ -359,7 +361,7 @@ class XUnitConfigBase:
 		# expand all keys
 		self.__ExpandAllKeys()
 		assert(self.__FuncLevel == 0)
-		
+		self.__ConfigFile = fname
 		return 
 
 	def GetIncludeFiles(self):
@@ -434,7 +436,8 @@ class XUnitConfigBase:
 				if vpat is None or vpat.search(o):
 					ro.append(o)
 		return ro
-		
+	def GetConfigFile(self):
+		return self.__ConfigFile
 		
 def singleton(cls):
 	instances = {}

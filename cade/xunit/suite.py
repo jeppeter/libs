@@ -4,10 +4,13 @@ import unittest
 import logging
 
 from xunit.utils import exception
+from xunit.case import XUnitCase
 
 class LoadModuleError(exception.XUnitException):
 	pass
 
+class ClassNotSupportError(exception.XUnitException):
+	pass
 
 class XUnitSuiteBase(unittest.TestSuite):
 	def __LoadCase(self,mn,cn,fn=None):
@@ -20,6 +23,10 @@ class XUnitSuiteBase(unittest.TestSuite):
 			else:
 				tests = unittest.loader.TestLoader().loadTestsFromTestCase(cls)
 				rst.addTest(tests)
+
+			# we should here ,because this is not the class over
+			if not issubclass(cls,XUnitCase):
+				raise ClassNotSupportError('[%s].%s:%s not XUnitCase (%s)'%(mn,cn,fn and fn or '',cls))
 		except:			
 			raise LoadModuleError('can not load [%s].%s:%s module'%(mn,cn,fn))
 		return rst

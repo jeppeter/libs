@@ -5,7 +5,7 @@ import sys
 import logging
 from optparse import OptionParser
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'src'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'.'))
 import xunit.config
 import xunit.suite
 import unittest

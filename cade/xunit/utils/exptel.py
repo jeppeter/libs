@@ -55,11 +55,7 @@ class XUnitTelnet:
 				rlist = [self.__tel.fileno()]
 				wlist = []
 				xlist = []
-				ltime = et - ct
-				if self.__timeout == 0:
-					# if we should listen all the time ,so we should
-					# give the return 1 seconds ,for key interrupt
-					ltime = 1
+				ltime = 1
 				ret = select.select(rlist,wlist,xlist,ltime)
 				if len(ret) > 0 and len(ret[0]) > 0:
 					r = self.__tel.read_very_eager()
@@ -130,10 +126,7 @@ class XUnitTelnet:
 			rlist = [self.__tel.fileno()]
 			wlist = []
 			xlist = []
-			ltime = et - ct
-			if timeout == 0:
-				# 1 second for key interrupt
-				ltime = 1
+			ltime = 1
 			ret = select.select(rlist,wlist,xlist,ltime)
 			if len(ret) > 0 and len(ret[0]) > 0:
 				r = self.__tel.read_very_eager()

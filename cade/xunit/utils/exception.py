@@ -6,7 +6,7 @@ import inspect
 class XUnitException(Exception):
 	def __init__(self,msg):
 		t,v,tb = sys.exc_info()
-		if isinstance(v,XUnitException):
+		if isinstance(v,XUnitException) or issubclass(v.__class__,XUnitException):
 			super(Exception,self).__init__(str(v))
 		else:
 			_f = inspect.stack()[1]		
@@ -18,6 +18,7 @@ def testXUnitException(first,second):
 		raise XUnitException(first)
 	except:
 		raise XUnitException(second)
+
 
 
 if __name__ == '__main__':
