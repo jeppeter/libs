@@ -9,15 +9,24 @@ def Usage(ec,opt,msg=None):
 		fp = sys.stdout
 	if msg is not None:
 		fp.write('%s\n'%(msg))
-	fp.write('%s [OPTIONS]\n'%(os.path.basename(__file__)))
-	fp.write('\t-H host    : specify the hostname and port host:port\n')
-	fp.write('\t-p  process : specify the process to handle\n')
+	opt.print_help(fp)	
 	sys.exit(ec)
 	return
 
+def Parse_Callback(option, opt_str, value, parser):
+	if hasattr(parser.values,'process'):
+		parser.values.process.append(value)
+	else:
+		parser.values.process = []
+		parser.values.process.append(value)
+	return
 def main():
 	args = OptionParser()
-	args.add_option
+	args.add_option('-v','--verbose',action='store_true',nargs=0,help='verbose mode')
+	args.add_option('-H','--host',metavar='host',help='specify host port host:port')
+	args.add_option('-p','--process',action='callback',callback=Parse_Callback,help='to append process search')
+	opt,nargs = args.parse_args(sys.argv[1:])
+	
 
 if __name__ == '__main__':
 	main()
