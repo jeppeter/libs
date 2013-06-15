@@ -3,6 +3,8 @@
 import sys
 from optparse import OptionParser
 import os
+
+
 def Usage(ec,opt,msg=None):
 	fp = sys.stderr
 	if ec == 0 :
@@ -25,6 +27,8 @@ def main():
 	args.add_option('-v','--verbose',action='store_true',dest="verbose",help='verbose mode')
 	args.add_option('-H','--host',action="store",type="string",dest='host',default="",help='specify host port host:port')
 	args.add_option('-p','--process',action='callback',callback=Parse_Callback,help='to append process search')
+	args.add_option('-D','--daemon',action='store_true',dest='daemon',help='daemon mode')
+	args.add_option('-t','--timer',action='store',type='int',dest='timeout',default=60,help='time to send for living message default 60')
 	opt,nargs = args.parse_args(sys.argv[1:])
 
 	
