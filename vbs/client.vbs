@@ -67,19 +67,42 @@ Function GetSystemDrive()
 	GetSystemDrive = drv
 End Function
 
-dim users,key,valuename,value,u
-dim ipport,pacinstalldir,installpac,tmplpac
-ipport = wscript.Arguments(0)
-pacinstalldir = GetSystemDrive()
-installpac = pacinstalldir & "\" & "proxy.pac"
-tmplpac = "proxy.pac.tmpl"
-wscript.stdout.writeline("ipport " & ipport & vbCRLF & "installpac " & installpac )
+Function RegistryAll(installpac)
+	dim users,key,valuename,value,u
+	users = GetAllUsers()
+	key="Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+	valuename="AutoConfigURL"
+	value="file://" & installpac
+	for each u in users
+		SetUserValue u,key,valuename,value
+	next
 
-FileReplace tmplpac , installpac,"%PROXY_IP_PORT%",ipport
-users = GetAllUsers()
-key="Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-valuename="AutoConfigURL"
-value="file://" & installpac
-for each u in users
-	SetUserValue u,key,valuename,value
+End Function
+
+
+Function InstallPacFile(ipport)
+	dim installdir,installpac,tmplpac
+	installdir = GetSystemDrive
+	installpac = installdir & "\" & "proxy.pac"
+	tmplpac = "proxy.pac.tmpl"
+	FileReplace tmplpac , installpac,"%PROXY_IP_PORT%",ipport	
+	RegistryAll installpac
+End Function
+
+
+dim ipport,args,numi,v
+Set args = wscript.Arguments
+
+numi = 0
+for each v in args
+	numi = numi + 1
 next
+
+if numi < 1 then
+	wscript.stderr.writeline("client.vbs ippport")
+	wscript.Quit 3
+end if
+
+ipport = args(0)
+
+InstallPacFile ipport

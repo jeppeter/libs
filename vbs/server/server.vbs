@@ -146,6 +146,7 @@ if i = 0 then
 	wscript.stderr.writeline("service.vbs --install/--uninstall [port]")
 	wscript.stderr.writeline("   install use port")
 	wscript.stderr.writeline("   uninstall not use port")
+	wscript.Quit 3
 else
 	if args(0) = "--install" then
 		if i > 1 then
