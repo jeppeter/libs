@@ -9,47 +9,52 @@ Const NOT_INTERACTIVE = False
 Const NORMAL_ERROR_CONTROL = 2
 
 
-Function StartService(sname)
-	dim sccmd
-	Dim WshShell, oExec,x
-	sccmd = "sc start " & sname
-	wscript.echo ("cmd (" & sccmd & ")")
-	Set WshShell = WScript.CreateObject("WScript.Shell")
-	Set oExec = WshShell.Exec(sccmd)
-	x = oExec.StdOut.ReadAll
-	wscript.echo(x)	
-
-End Function
-
-Function StopService(sname)
-	dim sccmd
-	Dim WshShell, oExec,x
-	sccmd = "sc stop " & sname
-	wscript.echo ("cmd (" & sccmd & ")")
-	Set WshShell = WScript.CreateObject("WScript.Shell")
-	Set oExec = WshShell.Exec(sccmd)
-	x = oExec.StdOut.ReadAll
-	wscript.echo(x)	
-End Function
-
-Function RemoveService(sname)
-	dim sccmd
-	Dim WshShell, oExec,x
-	sccmd = "sc delete " & sname
-	wscript.echo ("cmd (" & sccmd & ")")
-	Set WshShell = WScript.CreateObject("WScript.Shell")
-	Set oExec = WshShell.Exec(sccmd)
-	x = oExec.StdOut.ReadAll
-	wscript.echo(x)	
-End Function
-
 Function RunCmd(cmd)
 	Dim WshShell, oExec,x
 	Set WshShell = WScript.CreateObject("WScript.Shell")
 	Set oExec = WshShell.Exec(cmd)
 	x = oExec.StdOut.ReadAll
-	wscript.echo(x)
+	wscript.stderr.writeline("Run Cmd (" & cmd & ")")
+	wscript.stdout.writeline(x)
 End Function
+
+
+Function StartService(sname)
+	dim sccmd
+'	Dim WshShell, oExec,x
+	sccmd = "sc start " & sname
+'	wscript.echo ("cmd (" & sccmd & ")")
+'	Set WshShell = WScript.CreateObject("WScript.Shell")
+'	Set oExec = WshShell.Exec(sccmd)
+'	x = oExec.StdOut.ReadAll
+'	wscript.echo(x)	
+	RunCmd sccmd
+End Function
+
+Function StopService(sname)
+	dim sccmd
+'	Dim WshShell, oExec,x
+	sccmd = "sc stop " & sname
+	RunCmd sccmd
+'	wscript.echo ("cmd (" & sccmd & ")")
+'	Set WshShell = WScript.CreateObject("WScript.Shell")
+'	Set oExec = WshShell.Exec(sccmd)
+'	x = oExec.StdOut.ReadAll
+'	wscript.echo(x)	
+End Function
+
+Function RemoveService(sname)
+	dim sccmd
+'	Dim WshShell, oExec,x
+	sccmd = "sc delete " & sname
+	RunCmd sccmd
+'	wscript.echo ("cmd (" & sccmd & ")")
+'	Set WshShell = WScript.CreateObject("WScript.Shell")
+'	Set oExec = WshShell.Exec(sccmd)
+'	x = oExec.StdOut.ReadAll
+'	wscript.echo(x)	
+End Function
+
 
 Function InstallService(sname,dname,bin,cmd)
 	dim sccmd
@@ -60,7 +65,6 @@ Function InstallService(sname,dname,bin,cmd)
 	sccmd = sccmd & " start= auto "
 	sccmd = sccmd & " error= normal "
 	sccmd = sccmd & " binPath= "& chr(34) & cmd & chr(34)
-	wscript.echo ("cmd (" & sccmd & ")")
 	RunCmd sccmd
 End Function
 
@@ -102,6 +106,15 @@ Function FileReplace(ifname,ofname,orig,repl)
 	objOutputFile.Close
 End Function
 
+Function DeleteFolderFunc(d)
+dim objFSO
+Set	objFSO=CreateObject("Scripting.FileSystemObject")
+if objFSO.FolderExists(d) then
+	wscript.echo("Remove " & d)
+	objFSO.DeleteFolder d ,FALSE
+end if
+End Function
+
 
 Function Install3Proxy(port)
 	dim cmd
@@ -122,14 +135,14 @@ Function Install3Proxy(port)
 End Function
 
 Function Remove3Proxy()
-	dim cmd,dstdir
+	dim dstdir
+	Dim WshShell, oExec,x
 	On Error Resume Next
 	StopService "3proxy"
 	RemoveService "3proxy"
 	dstdir = GetSystemDrive
 	dstdir = dstdir & "\" & "3proxy"
-	cmd = "rmdir /s /q " & dstdir 
-	RunCmd cmd
+	DeleteFolderFunc dstdir
 End Function
 
 dim args,val,i
@@ -156,7 +169,6 @@ else
 		Install3Proxy port
 	end if
 	if args(0) = "--uninstall" then
-		wscript.echo("uninstall")
 		Remove3Proxy 
 	end if
 end if
