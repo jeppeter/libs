@@ -22,10 +22,11 @@ def Parse_Callback(option, opt_str, value, parser):
 	return
 def main():
 	args = OptionParser()
-	args.add_option('-v','--verbose',action='store_true',nargs=0,help='verbose mode')
-	args.add_option('-H','--host',metavar='host',help='specify host port host:port')
+	args.add_option('-v','--verbose',action='store_true',dest="verbose",help='verbose mode')
+	args.add_option('-H','--host',action="store",type="string",dest='host',default="",help='specify host port host:port')
 	args.add_option('-p','--process',action='callback',callback=Parse_Callback,help='to append process search')
 	opt,nargs = args.parse_args(sys.argv[1:])
+
 	
 
 if __name__ == '__main__':
