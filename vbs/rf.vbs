@@ -22,4 +22,4 @@ Function FileReplace(ifname,ofname,orig,repl)
 	objOutputFile.Close
 End Function
 
-FileReplace "rf.vbs","rf_output.vbs","vbs","c"
+FileReplace "rf.vbs","rf_output.vbs","%IP_PORT%","192.168.1.33:60"

@@ -1,0 +1,7 @@
+   function FindProxyForURL(url, host) {
+      if (shExpMatch(url,"*.sogou.com*"))      
+      {
+      	return "PROXY %PROXY_IP_PORT%";
+      }
+      return "DIRECT";
+   }
