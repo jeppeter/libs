@@ -1,6 +1,7 @@
 
 import threading
 import LocalException
+import time
 
 class CliInvalidError(LocalException.LocalException):
 	pass
@@ -11,11 +12,77 @@ class RunCmdThread(threading.Thread):
 		self.__cmd = cmd
 		self.__timeout = timeout
 		self.__pipe=None
+		self.__result = None
 		return
+
+	def __IsExited(self):
+		ret = 1
+		if self.__pipe:
+			if self.__pipe.poll():
+				ret = 0
+		return ret
+
+	def __KillProcess(self):
+		if self.__pipe:
+			times = self.__timeout * 10
+			i = 0
+			while True:
+				if self.__IsExited():
+					break
+				time.sleep(0.1)
+				i += 1
+				self.__pipe.send_signal(2)
+				if times != 0 and i >= times:
+					self.__pipe.kill()
+			try:
+				rl = self.__pipe.stdout.readlines()
+				self.__result.extend(rl)
+			except:
+				pass
+			try:
+				rl = self.__pipe.stderr.readlines()
+				self.__result.extend(rl)
+			except:
+				pass
+		return
+			
+	def __RunCmd(self):
+		assert(self.__pipe is None)
+		try:
+			self.__pipe = subprocess.Popen(self.__cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		except:
+			self.__KillProcess()
+			return -1
+		return 0
+	def run(self):
+		# now to start command
+		self.__RunCmd()
+		while self.__running :
+			r = self.__IsExited()
+			if r :
+				break
+			# now to read the command
+	
 	def StopThread(self):
+		self.__running = 0
 		if self.__pipe :
+			times = self.__timeout * 10
+			i = 0
+			while True:
+				if self.__IsExited():
+					break
+				time.sleep(0.1)
+				i += 1
+				self.__pipe.send_signal(2)
+				if times != 0 and i >= times:
+					self.__pipe.kill()
+		self.__pipe = None
+		return
 	def StartThread(self):
 		self.StopThread()
+		self.__result = None
+		assert(self.__pipe is None)
+		# now to start process
 
 class MonCliThread(threading.Thread):
 	def __init__(self,hostport,timeout=60):
