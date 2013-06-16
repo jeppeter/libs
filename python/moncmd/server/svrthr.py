@@ -12,11 +12,8 @@ class MonSvrThread(threading.Thread):
 		threading.Thread.__init__(self)
 		self.__timeout = timeout
 		self.__port = port
-		self.__socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		self.__socket.bind(('',port))
-		self.__socket.listen(5)
-		self.__socket.setblocking(0)
-		self.__running = 1
+		self.__running = 0
+		self.__socket = None
 		self.__mutex = threading.Lock()
 		self.__clients = []
 		self.__clientaddrs = []
@@ -24,6 +21,13 @@ class MonSvrThread(threading.Thread):
 		self.__logs = []
 		self.__writecmds=[]
 		return 
+
+	def __BindSocket(self):
+		self.__socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		self.__socket.bind(('',self.__port))
+		self.__socket.listen(5)
+		self.__socket.setblocking(0)
+		return 	
 
 	def __IsWriteCmd(self):
 		ret = 0
@@ -62,13 +66,17 @@ class MonSvrThread(threading.Thread):
 				break
 		return None
 
+	def __InsertClientAddr(self,sock,addr):
+		self.__clients.append(sock)
+		self.__clientaddrs.append(addr)
+		return ret
+		
 		
 	def __HandleAccept(self):
 		try:
 			s , addr = self.__socket.accept()
 			sock = monproto.MonProtoSock(s)
-			self.__clients.append(sock)
-			self.__clientaddrs.append(addr)
+			self.__InsertClientAddr(sock,addr)
 		except:
 			if sock:
 				self.__clients.remove(sock)
@@ -96,6 +104,15 @@ class MonSvrThread(threading.Thread):
 		self.__logs.append(elem)
 		self.__mutex.release()
 		return ret
+
+	def __RemoveClientAddr(self,sock):
+		for i in xrange(0,len(self.__clients)):
+			if self.__clients[i] == sock:
+				sock.CloseSocket()
+				del self.__clients[i]
+				del self.__clientaddrs[i]
+				return 1		
+		return 0
 	def __HandleClient(self,sock):
 		monsock = None
 		i = 0
@@ -105,7 +122,7 @@ class MonSvrThread(threading.Thread):
 				monsock = monp
 				addr = self.__clientaddrs[i]
 				break
-			i += 0
+			i += 1
 		if monsock is None:
 			return 0
 		try:
@@ -120,7 +137,7 @@ class MonSvrThread(threading.Thread):
 				ret = 0
 		except:
 			# this is error ,so we should remove the sock and address
-			pass
+			self.__RemoveClientAddr(monsock)
 		return ret
 
 	def __HandleRead(self,rlist):
@@ -152,11 +169,13 @@ class MonSvrThread(threading.Thread):
 			return 1
 		return 0
 	def run(self):
+		self.__BindSocket()
 		while self.__running:
 			s = self.__GetRead(self.__timeout)
 			if s and len(s) > 0:
 				self.__HandleRead(s)
 			self.__HandleWriteCmd()
+		self.__ClearRresource()
 		return 0
 
 	def InsertCmd(self,addr,msg):
@@ -194,6 +213,7 @@ class MonSvrThread(threading.Thread):
 		while len(self.__writecmds) > 0:
 			self.__writecmds.remove(0)
 
+		self.__mutex.release()
 		# now to close the socket
 		assert(len(self.__clients) == len(self.__clientaddrs))
 		while len(self.__clients) > 0:
@@ -201,9 +221,25 @@ class MonSvrThread(threading.Thread):
 			sock.CloseSocket()
 			self.__clients.remove(0)
 			self.__clientaddrs.remove(0)
-		self.__mutex.release()
+		assert(len(self.__clients) == 0)
+		assert(len(self.__clientaddrs) == 0)
+		if self.__socket:
+			self.__socket.close()
+			del self.__socket
+		self.__socket = None
 		return
 	def StopThread(self):
 		self.__running=0
+		i = 0
+		while True:
+			self.join(2.0)
+			if not self.isAlive():
+				break
+			i += 1
+			assert(i <= 3)
+		return
 	def StartThread(self):
+		self.StopThread()
 		self.__running = 1
+		self.start()
+		return 

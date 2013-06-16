@@ -3,4 +3,3 @@
 import socket
 import multi
 
-class 
