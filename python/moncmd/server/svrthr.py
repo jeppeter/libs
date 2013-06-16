@@ -24,6 +24,7 @@ class MonSvrThread(threading.Thread):
 
 	def __BindSocket(self):
 		self.__socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.__socket.bind(('',self.__port))
 		self.__socket.listen(5)
 		self.__socket.setblocking(0)

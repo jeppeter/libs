@@ -20,9 +20,12 @@ class MonSvrImpl:
 		return
 	def Start(self):
 		self.Stop()
-		assert(self.__thread is None)
-		self.__thread = svrthr.MonSvrThread(self.__port,self.__timeout)
-		self.__thread.StartThread()
+		try:
+			assert(self.__thread is None)
+			self.__thread = svrthr.MonSvrThread(self.__port,self.__timeout)
+			self.__thread.StartThread()
+		except :
+			raise LocalException.LocalException('can not bind on %d '%(self.__port))
 		return
 	def Stop(self):
 		if self.__thread :

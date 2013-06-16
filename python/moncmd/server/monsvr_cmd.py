@@ -63,17 +63,71 @@ def RunCommand(cmd):
 		sys.stdout.write('not run cmd (%s)\n'%(cmd))
 		return
 	addrs = []
+	leftidx = -1
 	for i in xrange(1,len(cmds)):
 		if cmds[i] == '--':
+			leftidx = i
 			break
 		addrs.append(cmds[i])
-	if len(addrs) >= (len(cmds) - 2):
+	if leftidx == -1 or leftidx == (len(cmds) - 1):
 		sys.stdout.write('no cmds for run ,please use --\n')
 		return
+	if len(addrs) == 0:
+		sys.stdout.write('no addr specified\n')
+		return
+	leftidx += 1
+	cmdfmt = ' '.join(cmds[leftidx:])
+	try:
+		result = []
+		for a  in addrs:
+			res = svrthreadimpl.WriteCmd(a,cmdfmt)
+			result.append(res)
+		sys.stdout.write('run (%s) on %s\n'%(cmdfmt,addrs))
+		for res in result:
+			sys.stdout.write('%s\n',repr(res))
+	except LocalException.LocalException as e:
+		sys.stdout.write('run cmd (%s) error %s'%(cmd,e))
+		return
+	return
 
-def HelpCommand():
+def BindCommand(cmd):
+	global svrthreadimpl
+	cmds = cmd.split()
+
+	if len(cmds) <= 1:
+		sys.stdout.write('cmd (%s) please set port\n'%(cmd))
+		return
+	if cmds[0] != 'bind':
+		sys.stdout.write('cmd (%s) not valid\n'%(cmd))
+		return
+	port = 0
+	timeout = 60
+	try:
+		port = int(cmds[1])
+		if len(cmds) >= 3:
+			timeout = int(cmds[2])
+	except:
+		sys.stdout.write('not valid integer (%s)\n'%(cmd))
+		return
+	if svrthreadimpl is not None:
+		svrthreadimpl.Stop()
+		del svrthreadimpl
+	svrthreadimpl = None
+	svrthreadimpl = monsvrimpl.MonSvrImpl(port,timeout)
+	try:
+		svrthreadimpl.Start()
+	except LocalException.LocalException as e:
+		svrthreadimpl.Stop()
+		del svrthreadimpl
+		svrthreadimpl = None
+		sys.stdout.write('can not run (%s) on error(%s)\n'%(cmd,e))
+		return
+	return
+
+def HelpCommand(cmd):
 	fp = sys.stdout
 	fp.write('help                                        : for list this help information\n')
+	fp.write('bind  port  [timeout]             : for bind port timeout default 60\n')
 	fp.write('list  [ip:port]...                       : for list the information none list all\n')
 	fp.write('run [ip:port] -- [cmds]...      : for run command\n')
 	fp.write('quit | exit                              : exit command\n')
@@ -85,7 +139,9 @@ def command_ui():
 	while True:
 		Prompt()
 		cmd = GetCommand()
-		if cmd[:4] == 'quit' or cmd[:4] == 'exit':
+		if cmd is None:
+			break
+		elif cmd[:4] == 'quit' or cmd[:4] == 'exit':
 			break
 		elif cmd[:4] == 'list':
 			ListCommand(cmd)
@@ -94,7 +150,9 @@ def command_ui():
 		elif cmd[:4] == 'help':
 			HelpCommand(cmd)
 		elif len(cmd) == 0:
-			break
+			HelpCommand(cmd)
+		elif cmd[:4] == 'bind':
+			BindCommand(cmd)
 		else:
 			sys.stdout.write('can not parse (%s)\n'%(cmd))
 			sys.stdout.flush()
