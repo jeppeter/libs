@@ -33,7 +33,7 @@ class RunCmdThread(threading.Thread):
 				i += 1
 				self.__pipe.send_signal(2)
 				if times != 0 and i >= times:
-					self.__pipe.kill()
+					self.__pipe.send_signal(9)
 			try:
 				rl = self.__pipe.stdout.readlines()
 				self.__result.extend(rl)
