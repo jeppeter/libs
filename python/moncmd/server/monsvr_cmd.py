@@ -58,14 +58,25 @@ def ListCommand(cmd):
 		sys.stdout.write('%25s|%10s|%25s\n'%(r[0],r[1],r[2]))
 	return
 def RunCommand(cmd):
-	pass
+	cmds = cmd.split()
+	if len(cmds) ==0 or cmds[0] != 'run':
+		sys.stdout.write('not run cmd (%s)\n'%(cmd))
+		return
+	addrs = []
+	for i in xrange(1,len(cmds)):
+		if cmds[i] == '--':
+			break
+		addrs.append(cmds[i])
+	if len(addrs) >= (len(cmds) - 2):
+		sys.stdout.write('no cmds for run ,please use --\n')
+		return
 
 def HelpCommand():
 	fp = sys.stdout
-	fp.write('help                                  : for list this help information\n')
-	fp.write('list  [ip:port]...                 : for list the information none list all\n')
-	fp.write('run [ip:port] [cmds]...     : for run command\n')
-	fp.write('quit | exit                        : exit command\n')
+	fp.write('help                                        : for list this help information\n')
+	fp.write('list  [ip:port]...                       : for list the information none list all\n')
+	fp.write('run [ip:port] -- [cmds]...      : for run command\n')
+	fp.write('quit | exit                              : exit command\n')
 	fp.write('\n')
 	fp.flush()
 	return
