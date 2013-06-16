@@ -4,10 +4,13 @@ import threading
 import LocalException
 import select
 import time
+import monproto
+import logging
 
 class MonSvrThread(threading.Thread):
-	def __init__(self,port):
+	def __init__(self,port,timeout=60):
 		threading.Thread.__init__(self)
+		self.__timeout = timeout
 		self.__port = port
 		self.__socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		self.__socket.bind(('',port))
@@ -16,6 +19,27 @@ class MonSvrThread(threading.Thread):
 		self.__running = 1
 		self.__mutex = threading.Lock()
 		self.__clients = []
+		self.__clientaddrs = []
+		self.__reports = []
+		self.__logs = []
+		self.__writecmds=[]
+		return 
+
+	def __IsWriteCmd(self):
+		ret = 0
+		self.__mutex.acquire()
+		ret = len(self.__writecmds) > 0 and 1 or 0		
+		self.__mutex.release()
+		return ret
+	def __GetWriteCmd(self):
+		cmd = None
+		self.__mutex.acquire()
+		if len(self.__writecmds):
+			cmd = self.__writecmds[0]
+			self.__writecmds.remove(0)
+		self.__mutex.release()
+		return cmd
+		
 
 	def __GetRead(self,timeout):
 		rlist = []
@@ -32,16 +56,72 @@ class MonSvrThread(threading.Thread):
 			if len(ret) > 0  and len(ret[0]) > 0:
 				return ret[0]
 			curtime = time.time()
+			if self.__running == 0 :
+				break
+			if self.__IsWriteCmd() > 0:
+				break
 		return None
+
+		
 	def __HandleAccept(self):
 		try:
 			s , addr = self.__socket.accept()
+			sock = monproto.MonProtoSock(s)
+			self.__clients.append(sock)
+			self.__clientaddrs.append(addr)
 		except:
+			if sock:
+				self.__clients.remove(sock)
+				self.__clientaddrs.remove(addr)
 			pass
 		return
 
+	def __HandleReport(addr,gtime,msg):
+		ret = 1
+		'''
+			we should insert into the report queue
+		'''
+		elem = (addr,gtime,msg)
+		self.__mutex.acquire()
+		self.__reports.append(elem)
+		self.__mutex.release()
+		return ret
+	def __HandleLog(msg):
+		ret = 1
+		'''
+			we should insert the log queue
+		'''
+		elem = (addr,gtime,msg)
+		self.__mutex.acquire()
+		self.__logs.append(elem)
+		self.__mutex.release()
+		return ret
 	def __HandleClient(self,sock):
-		return
+		monsock = None
+		i = 0
+		addr = None
+		for monp in self.__clients:
+			if monp.GetSocket() == sock:
+				monsock = monp
+				addr = self.__clientaddrs[i]
+				break
+			i += 0
+		if monsock is None:
+			return 0
+		try:
+			type,msg = monsock.ReadMessage()
+			gtime = time.time()
+			if type == monproto.REP_TYPE:
+				ret = self.__HandleReport(addr,gtime,msg)
+			elsif type == monproto.LOG_TYPE:
+				ret = self.__HandleLog(addr,gtimemsg)
+			else:
+				logging.warning('type %d not recognize'%(type))
+				ret = 0
+		except:
+			# this is error ,so we should remove the sock and address
+			pass
+		return ret
 
 	def __HandleRead(self,rlist):
 		for r in rlist:
@@ -49,9 +129,81 @@ class MonSvrThread(threading.Thread):
 				self.__HandleAccept()
 			elsif r in self.__CliSocks:
 				self.__HandleClient(r)
-	def __WriteCommand(self,s,cmd):
-		s.WriteMessage(2,cmd)
 		return
+	def __WriteCommand(self,s,cmd):
+		s.WriteMessage(monproto.CMD_TYPE,cmd)
+		return
+	def __HandleWriteCmd(self):
+		sock = None
+		cmd = self.__GetWriteCmd()
+		if cmd and len(cmd) == 2:
+			# because we have to
+			addr = cmd[0]
+			msg = cmd[1]
+			i = 0
+			sock = None
+			for i in xrange(0,len(self.__clientaddrs)):				
+				if self.__clientaddrs[i] == addr:
+					sock = self.__clients[i]
+					break
+			if sock is None:
+				return 0
+			self.__WriteCommand(sock,msg)
+			return 1
+		return 0
 	def run(self):
 		while self.__running:
-			
+			s = self.__GetRead(self.__timeout)
+			if s and len(s) > 0:
+				self.__HandleRead(s)
+			self.__HandleWriteCmd()
+		return 0
+
+	def InsertCmd(self,addr,msg):
+		cmd = (addr,msg)
+		self.__mutex.acquire()
+		self.__writecmds.append(cmd)
+		self.__mutex.release()
+		return
+
+	def GetLog(self):
+		log = None
+		self.__mutex.acquire()
+		if len(self.__logs) > 0:
+			log = self.__logs[0]
+			self.__logs.remove(0)
+		self.__mutex.release()
+		return log
+		
+	def GetReport(self):
+		msg = None
+		self.__mutex.acquire()
+		if len(self.__reports) > 0:
+			msg = self.__reports[0]
+			self.__reports.remove(0)
+		self.__mutex.release()
+		return msg
+
+	def __ClearResource(self):
+		self.__mutex.acquire()
+		while len(self.__logs)>0:
+			self.__logs.remove(0)
+		while len(self.__reports) > 0:
+			self.__reports.remove(0)
+
+		while len(self.__writecmds) > 0:
+			self.__writecmds.remove(0)
+
+		# now to close the socket
+		assert(len(self.__clients) == len(self.__clientaddrs))
+		while len(self.__clients) > 0:
+			sock = self.__clients[0]
+			sock.CloseSocket()
+			self.__clients.remove(0)
+			self.__clientaddrs.remove(0)
+		self.__mutex.release()
+		return
+	def StopThread(self):
+		self.__running=0
+	def StartThread(self):
+		self.__running = 1

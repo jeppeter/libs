@@ -11,6 +11,10 @@ import LocalException
 import struct
 
 
+REP_TYPE=1
+CMD_TYPE=2
+LOG_TYPE=3
+
 class MonRecvError(LocalException.LocalException):
 	pass
 class MonProtoSock:
@@ -38,3 +42,12 @@ class MonProtoSock:
 		assert(self.__sock)
 		self.__sock.send(buf)
 		return
+
+	def CloseSocket(self):
+		if self.__sock :
+			self.__sock.close()
+			del self.__sock
+		self.__sock = None
+		return
+	def __del__(self):
+		self.CloseSocket()
