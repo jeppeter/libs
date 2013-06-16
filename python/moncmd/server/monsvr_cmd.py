@@ -31,7 +31,14 @@ def RunCommand():
 	pass
 
 def HelpCommand():
-	pass
+	fp = sys.stdout
+	fp.write('help                                  : for list this help information\n')
+	fp.write('list  [ip:port]                    : for list the information \n')
+	fp.write('run [ip:port] [cmds]...     : for run command\n')
+	fp.write('quit | exit                        : exit command\n')
+	fp.write('\n')
+	fp.flush()
+	return
 
 def command_ui():
 	while True:
