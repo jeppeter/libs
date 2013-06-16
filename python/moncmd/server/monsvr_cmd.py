@@ -25,15 +25,45 @@ def GetCommand()
 	l = l.rstrip('\r\n')
 	return l
 
-def ListCommand():
-	pass
-def RunCommand():
+def ListCommand(cmd):
+	global svrthreadimpl
+	cmds = cmd.split()
+	if cmds[0] != 'list':
+		sys.stdout.write('not list command\n')
+		sys.stdout.flush()
+		return 
+	if svrthreadimpl is None:
+		sys.stdout.write('not run back ground svr\n')
+		sys.stdout.flush()
+		return
+	reports = []
+	if len(cmds) > 1:
+		for c in cmds[1:]:
+			try:
+				report = svrthreadimpl.GetReportResult(c)
+				reports.append(report)
+			except:
+				pass
+	else:
+		try:
+			report = svrthreadimpl.GetReportResult()
+			reports = report
+		except:
+			pass
+
+	sys.stdout.write('there are %d result%s\n'%(len(reports), len(reports) > 1 and 's' or ' '))
+	sys.stdout.write('%15s|%10s|%25s\n'%('addr','time','result'))
+	for r in reports:
+		assert(len(r) >= 3)
+		sys.stdout.write('%25s|%10s|%25s\n'%(r[0],r[1],r[2]))
+	return
+def RunCommand(cmd):
 	pass
 
 def HelpCommand():
 	fp = sys.stdout
 	fp.write('help                                  : for list this help information\n')
-	fp.write('list  [ip:port]                    : for list the information \n')
+	fp.write('list  [ip:port]...                 : for list the information none list all\n')
 	fp.write('run [ip:port] [cmds]...     : for run command\n')
 	fp.write('quit | exit                        : exit command\n')
 	fp.write('\n')

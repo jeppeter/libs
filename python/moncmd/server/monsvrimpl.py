@@ -59,7 +59,8 @@ class MonSvrImpl:
 			self.__InsertReport(rep)
 		self.__DeleteTimeoutReports()
 		return
-	def GetReportResult(self):
+	
+	def GetReportResult(self,addr=None):
 		# now first to make sure that the result is ok
 		reports = []
 		rep = None
@@ -73,7 +74,13 @@ class MonSvrImpl:
 			reports.append(rep)
 		self.__InsertReports(reports)
 		# just return reports
-		return self.__reports
+		if addr is None:
+			return self.__reports
+		reports = []
+		for s in self.__reports:
+			if addr == s[0]:
+				reports.append(s)
+		return reports
 
 	def __GetLog(self,addr,timeout=0):
 		assert(self.__thread);
