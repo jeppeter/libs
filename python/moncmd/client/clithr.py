@@ -12,7 +12,8 @@ class RunCmdThread(threading.Thread):
 		self.__cmd = cmd
 		self.__timeout = timeout
 		self.__pipe=None
-		self.__result = None
+		self.__errres = None
+		self.__outres = None
 		return
 
 	def __IsExited(self):
@@ -22,32 +23,61 @@ class RunCmdThread(threading.Thread):
 				ret = 0
 		return ret
 
-	def __KillProcess(self):
+	def __WaitAndKillProcess(self,timeout=0):
 		if self.__pipe:
-			times = self.__timeout * 10
+			times = timeout * 10
 			i = 0
-			while True:
+			while self.__running:
 				if self.__IsExited():
 					break
 				time.sleep(0.1)
 				i += 1
-				self.__pipe.send_signal(2)
+				try:
+					rl = self.__pipe.stdout.readline()
+					self.__outres.append(rl)
+				except:
+					pass
+				try:
+					rl = self.__pipe.stderr.readline()
+					self.__errres.append(rl)
+				except:
+					pass
+				if times != 0 and i >= times/2:
+					self.__pipe.send_signal(2)
 				if times != 0 and i >= times:
 					self.__pipe.send_signal(9)
+			while True:
+				if not self.__pipe.isAlive():
+					break
+				self.__pipe.send_signal(9)
+				time.sleep(0.1)
 			try:
 				rl = self.__pipe.stdout.readlines()
-				self.__result.extend(rl)
+				self.__outres.extend(rl)
 			except:
 				pass
 			try:
 				rl = self.__pipe.stderr.readlines()
-				self.__result.extend(rl)
+				self.__errres.extend(rl)
 			except:
 				pass
+		return
+
+	def __KillProcess(self):
+		if self.__pipe:
+			while True:
+				if not self.__pipe.isAlive():
+					break
+				self.__pipe.send_signal(9)
+				time.sleep(0.1)
+			del self.__pipe
+		self.__pipe = None
 		return
 			
 	def __RunCmd(self):
 		assert(self.__pipe is None)
+		self.__outres = []
+		self.__errres =  []
 		try:
 			self.__pipe = subprocess.Popen(self.__cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		except:
@@ -56,33 +86,27 @@ class RunCmdThread(threading.Thread):
 		return 0
 	def run(self):
 		# now to start command
-		self.__RunCmd()
-		while self.__running :
-			r = self.__IsExited()
-			if r :
-				break
-			# now to read the command
+		ret = self.__RunCmd()
+		if ret < 0:
+			return ret
+		self.__WaitAndKillProcess()
+		return 0
+			
 	
 	def StopThread(self):
 		self.__running = 0
-		if self.__pipe :
-			times = self.__timeout * 10
-			i = 0
-			while True:
-				if self.__IsExited():
-					break
-				time.sleep(0.1)
-				i += 1
-				self.__pipe.send_signal(2)
-				if times != 0 and i >= times:
-					self.__pipe.kill()
+		while True:
+			if not self.isAlive():
+				
 		self.__pipe = None
 		return
 	def StartThread(self):
 		self.StopThread()
-		self.__result = None
+		self.__errres = []
+		self.__outres = []
 		assert(self.__pipe is None)
 		# now to start process
+		
 
 class MonCliThread(threading.Thread):
 	def __init__(self,hostport,timeout=60):
