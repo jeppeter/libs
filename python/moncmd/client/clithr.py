@@ -124,7 +124,15 @@ class MonCliThread(threading.Thread):
 		self.__running = 0
 
 	def __ClearResource(self):
-		if self.__
+		if self.__sock:
+			self.__sock.CloseSocket()
+			del self.__sock
+		self.__sock = None
+
+	def __SetNonBlock(self,sock):
+		pass
+	def __Connect(self):
+		pass
 
 	def StartThread(self):
 		pass
