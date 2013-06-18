@@ -47,7 +47,7 @@ class RunCmdThread(threading.Thread):
 				if times != 0 and i >= times:
 					self.__pipe.send_signal(9)
 			while True:
-				if not self.__pipe.isAlive():
+				if  self.__IsExited():
 					break
 				self.__pipe.send_signal(9)
 				time.sleep(0.1)
@@ -89,7 +89,7 @@ class RunCmdThread(threading.Thread):
 		ret = self.__RunCmd()
 		if ret < 0:
 			return ret
-		self.__WaitAndKillProcess()
+		self.__WaitAndKillProcess(self.__timeout)
 		return 0
 			
 	
