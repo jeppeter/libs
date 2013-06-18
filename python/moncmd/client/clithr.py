@@ -171,9 +171,25 @@ class MonCliThread(threading.Thread):
 	def __SendReport(self):
 		assert(self.__sock)
 
+	def __GetReads(self,timeout):
+		pass
+	def __HandleReads(self):
+		pass
 	def run(self):
 		try:
-
+			self.__Connect()
+			lasttime = time.time()
+			curtime = time.time()
+			while self.__running:
+				curtime = time.time()
+				if curtime < (lasttime + self.__timeout):
+					curtimeout = lasttime + self.__timeout - curtime
+					ret = self.__GetReads(curtimeout)
+					if ret and len(ret) > 0:
+						self.__HandleReads()
+					continue
+				self.__SendReport()
+				lasttime = time.time()
 		except:
 			self.__ClearResource()
 			return -3
