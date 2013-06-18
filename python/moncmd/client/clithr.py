@@ -97,7 +97,8 @@ class RunCmdThread(threading.Thread):
 		self.__running = 0
 		while True:
 			if not self.isAlive():
-				
+				break
+			self.join(0.1)	
 		self.__pipe = None
 		return
 	def StartThread(self):
@@ -106,7 +107,8 @@ class RunCmdThread(threading.Thread):
 		self.__outres = []
 		assert(self.__pipe is None)
 		# now to start process
-		
+		self.start()
+		return 0
 
 class MonCliThread(threading.Thread):
 	def __init__(self,hostport,timeout=60):
@@ -130,12 +132,28 @@ class MonCliThread(threading.Thread):
 		self.__sock = None
 
 	def __SetNonBlock(self,sock):
-		pass
+		flags = fcntl.fcntl(sock.fileno(),F_GETFL)
+		fcntl.fcntl(sock.fileno(),F_SETFL,flags | O_NONBLOCK)
+		return
 	def __Connect(self):
-		pass
+		asssert(self.__sock is None)
+		sock = None
+		try:
+			self.__sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			self.__sock.connect((self.__host,self.__port))
+			self.__SetNonBlock(self,self.__sock)
+		except:
+			if sock :
+				sock.close()
+				del sock
+			sock = None
+			raise 
+		return
 
 	def StartThread(self):
-		pass
+		self.StopThread()
+		self.start()
+		return 0
 
 	def StopThread(self,timeout= 6):		
 		if self.__running :
@@ -154,5 +172,9 @@ class MonCliThread(threading.Thread):
 		assert(self.__sock)
 
 	def run(self):
-		pass
+		try:
+
+		except:
+			self.__ClearResource()
+			return -3
 
