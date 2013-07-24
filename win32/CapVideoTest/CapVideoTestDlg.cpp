@@ -144,7 +144,7 @@ BOOL CCapVideoTestDlg::OnInitDialog()
 	{
 		AfxMessageBox("Can not Register WIN+b");
 	}
-	
+	DEBUG_INFO("init succ\n");	
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 

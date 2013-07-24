@@ -73,7 +73,27 @@ HBITMAP CaptureWindow(HWND hWnd, BOOL bClientAreaOnly)
                                                     0,
                                                     LR_CREATEDIBSECTION));
 
+
     DeleteObject(hDDBmp);
 
     return hBmp;
+}
+
+
+void DebugOutString(const char* file,int lineno,const char* fmt,...)
+{
+	char* pFmt=NULL;
+	va_list ap;
+
+	pFmt = new char[2000];
+
+	_snprintf(pFmt,2000,"%s:%d\t",file,lineno);
+	OutputDebugString(pFmt);
+	AfxMessageBox(pFmt);
+	va_start(ap,fmt);
+	_vsnprintf(pFmt,2000,fmt,ap);
+	OutputDebugString(pFmt);
+	AfxMessageBox(pFmt);
+	delete [] pFmt;
+	return ;
 }
