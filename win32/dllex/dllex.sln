@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dllex", "dllex\dllex.vcproj", "{227DC57B-8E08-4ADB-98DC-BB5E6897867E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lddllex", "lddllex\lddllex.vcproj", "{01DA59A6-BE2A-4D1D-9596-AB635E48AC5A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{227DC57B-8E08-4ADB-98DC-BB5E6897867E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{227DC57B-8E08-4ADB-98DC-BB5E6897867E}.Debug|Win32.Build.0 = Debug|Win32
+		{227DC57B-8E08-4ADB-98DC-BB5E6897867E}.Release|Win32.ActiveCfg = Release|Win32
+		{227DC57B-8E08-4ADB-98DC-BB5E6897867E}.Release|Win32.Build.0 = Release|Win32
+		{01DA59A6-BE2A-4D1D-9596-AB635E48AC5A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{01DA59A6-BE2A-4D1D-9596-AB635E48AC5A}.Debug|Win32.Build.0 = Debug|Win32
+		{01DA59A6-BE2A-4D1D-9596-AB635E48AC5A}.Release|Win32.ActiveCfg = Release|Win32
+		{01DA59A6-BE2A-4D1D-9596-AB635E48AC5A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
