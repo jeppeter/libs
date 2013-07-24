@@ -83,17 +83,22 @@ HBITMAP CaptureWindow(HWND hWnd, BOOL bClientAreaOnly)
 void DebugOutString(const char* file,int lineno,const char* fmt,...)
 {
 	char* pFmt=NULL;
+	char* pLine=NULL;
+	char* pWhole=NULL;
 	va_list ap;
 
 	pFmt = new char[2000];
+	pLine = new char[2000];
+	pWhole = new char[4000];
 
-	_snprintf(pFmt,2000,"%s:%d\t",file,lineno);
-	OutputDebugString(pFmt);
-	AfxMessageBox(pFmt);
+	_snprintf_s(pLine,2000,1999,"%s:%d\t",file,lineno);
 	va_start(ap,fmt);
-	_vsnprintf(pFmt,2000,fmt,ap);
-	OutputDebugString(pFmt);
-	AfxMessageBox(pFmt);
+	_vsnprintf_s(pFmt,2000,1999,fmt,ap);
+	lstrcpy(pWhole,pLine);
+	strcat_s(pWhole,4000,pFmt);
+	OutputDebugString(pWhole);
 	delete [] pFmt;
+	delete [] pLine;
+	delete [] pWhole;
 	return ;
 }

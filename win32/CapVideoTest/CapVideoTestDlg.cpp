@@ -129,6 +129,7 @@ BOOL CCapVideoTestDlg::OnInitDialog()
     m_objHog.SetVideo("hog.dat");
     m_objHog.Hog();
 
+	DEBUG_INFO("Init hotkey begin\n");
 	m_InitHotKey = RegisterHotKey(this->m_hWnd,100,MOD_WIN,0x41);
 	if (m_InitHotKey )
 	{
