@@ -278,7 +278,19 @@ void FinializeEnviron()
 	/*we do not delete critical section ,so we should not give the critical section ok*/
 }
 
+int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filename)
+{
+}
 
+int Capture3DBackBuffer(const char* filename)
+{
+}
+
+
+/*************************************************************************
+*
+*          to make the 
+*************************************************************************/
 //------------------------------------------------------------------------
 // hook interface IDirect3DDevice9
 class CDirect3DDevice9Hook : public IDirect3DDevice9
