@@ -47,7 +47,7 @@ int FreePointer(IDirect3DDevice9* pPtr)
     int wait=0;
     int findidx;
     unsigned int i;
-	BOOL bret;
+    BOOL bret;
     if(pPtr)
     {
         do
@@ -65,27 +65,27 @@ int FreePointer(IDirect3DDevice9* pPtr)
                 }
             }
 
-			if (findidx >= 0)
-			{
-				/*already for the free*/
-				if (st_DirectShowPointerState[i] == POINTER_STATE_GRAB ||
-					st_DirectShowPointerState[i] == POINTER_STATE_RELEASE)
-				{
-					ret = 1;
-					st_DirectShowPointerState[i] = POINTER_STATE_FREE;
-				}
-			}
+            if(findidx >= 0)
+            {
+                /*already for the free*/
+                if(st_DirectShowPointerState[i] == POINTER_STATE_GRAB ||
+                        st_DirectShowPointerState[i] == POINTER_STATE_RELEASE)
+                {
+                    ret = 1;
+                    st_DirectShowPointerState[i] = POINTER_STATE_FREE;
+                }
+            }
             LeaveCriticalSection(&st_PointerCS);
 
-			if(wait)
-			{
-				bret = SwitchToThread();
-				if(!bret)
-				{
-					/*sleep for a while*/
-					Sleep(10);
-				}
-			}
+            if(wait)
+            {
+                bret = SwitchToThread();
+                if(!bret)
+                {
+                    /*sleep for a while*/
+                    Sleep(10);
+                }
+            }
         }
         while(wait);
     }
@@ -95,44 +95,44 @@ int FreePointer(IDirect3DDevice9* pPtr)
 
 int ReleasePointer(IDirect3DDevice9* pPtr)
 {
-	int wait,releaseone;
-	int ret;
-	BOOL bret;
-	int findidx;
-	unsigned int i;
-	do
-	{
-		wait = 0;
-		releaseone = 0;
-		findidx = -1;
-		EnterCriticalSection(&st_PointerCS);
-		assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-		for(i=0; i<st_DirectShowPointers.size(); i++)
-		{
-			if(st_DirectShowPointers[i] == pPtr)
-			{
-				findidx = i;
-				break;
-			}
-		}
-		
-		if (findidx >= 0)
-		{
-			/*already for the free*/
-			if (st_DirectShowPointerState[findidx] == POINTER_STATE_GRAB || 
-				st_DirectShowPointerState[findidx] == POINTER_STATE_RELEASE)
-			{
-				wait = 1;
-			}
-			else
-			{
-				st_DirectShowPointers.erase(st_DirectShowPointers.begin() + findidx);
-				st_DirectShowPointerState.erase(st_DirectShowPointerState.begin() + findidx);
-				releaseone = 1;
-			}
-			
-		}
-		LeaveCriticalSection(&st_PointerCS);
+    int wait,releaseone;
+    int ret;
+    BOOL bret;
+    int findidx;
+    unsigned int i;
+    do
+    {
+        wait = 0;
+        releaseone = 0;
+        findidx = -1;
+        EnterCriticalSection(&st_PointerCS);
+        assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+        for(i=0; i<st_DirectShowPointers.size(); i++)
+        {
+            if(st_DirectShowPointers[i] == pPtr)
+            {
+                findidx = i;
+                break;
+            }
+        }
+
+        if(findidx >= 0)
+        {
+            /*already for the free*/
+            if(st_DirectShowPointerState[findidx] == POINTER_STATE_GRAB ||
+                    st_DirectShowPointerState[findidx] == POINTER_STATE_RELEASE)
+            {
+                wait = 1;
+            }
+            else
+            {
+                st_DirectShowPointers.erase(st_DirectShowPointers.begin() + findidx);
+                st_DirectShowPointerState.erase(st_DirectShowPointerState.begin() + findidx);
+                releaseone = 1;
+            }
+
+        }
+        LeaveCriticalSection(&st_PointerCS);
         if(wait)
         {
             bret = SwitchToThread();
@@ -142,51 +142,125 @@ int ReleasePointer(IDirect3DDevice9* pPtr)
                 Sleep(10);
             }
         }
-	}while(wait);
+    }
+    while(wait);
 
-	if (releaseone)
-	{
-		pPtr->Release();
-	}
+    if(releaseone)
+    {
+        pPtr->Release();
+    }
 
-	return releaseone ? 0 : 1;
+    return releaseone ? 0 : 1;
 }
 
 int RegisterPointer(IDirect3DDevice9* pPtr)
 {
-	int registered=0;
+    int registered=0;
+    unsigned int i;
+    int findidx;
+    int state;
+
+    findidx = -1;
+
+    EnterCriticalSection(&st_PointerCS);
+    assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+    for(i=0; i<st_DirectShowPointers.size(); i++)
+    {
+        if(pPtr == st_DirectShowPointers[i])
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx < 0)
+    {
+        registered = 1;
+        st_DirectShowPointers.push_back(pPtr);
+        /*for it is the free state as initialized*/
+        state = POINTER_STATE_FREE;
+        st_DirectShowPointerState.push_back(state);
+    }
+    LeaveCriticalSection(&st_PointerCS);
+
+    if(registered)
+    {
+        pPtr->AddRef();
+    }
+
+    return registered ? 1: 0;
+}
+
+
+void FreeAllPointers()
+{
+    int wait,tryagain;
+    IDirect3DDevice9* pPtr=NULL;
 	unsigned int i;
 	int findidx;
-	int state;
 
-	findidx = -1;
-
-	EnterCriticalSection(&st_PointerCS);
-	assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-	for (i=0;i<st_DirectShowPointers.size();i++)
-	{
-		if (pPtr == st_DirectShowPointers[i])
+    do
+    {
+        wait = 0;
+		tryagain=0;
+		assert(pPtr == NULL);
+		EnterCriticalSection(&st_PointerCS);
+		assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+		findidx = -1;
+		for (i=0;i<st_DirectShowPointers.size();i++)
 		{
-			findidx = i;
-			break;
+			if (st_DirectShowPointerState[i] == POINTER_STATE_FREE)
+			{
+				findidx = i;
+				break;
+			}
 		}
-	}
 
-	if (findidx < 0)
-	{
-		registered = 1;
-		st_DirectShowPointers.push_back(pPtr);
-		state = POINTER_STATE_FREE;
-		st_DirectShowPointerState.push_back(state);
-	}
-	LeaveCriticalSection(&st_PointerCS);
+		if (findidx >= 0)
+		{
+			pPtr = st_DirectShowPointers[findidx];
+			st_DirectShowPointers.erase(st_DirectShowPointers.begin()+findidx);
+			st_DirectShowPointerState.erase(st_DirectShowPointerState.begin() + findidx);
+			if (st_DirectShowPointers.size()> 0)
+			{
+				tryagain = 1;
+			}
+		}
+		else
+		{
+			if (st_DirectShowPointers.size() > 0)
+			{
+				wait = 1;
+			}
+		}
+	    LeaveCriticalSection(&st_PointerCS);
 
-	if (registered)
-	{
-		pPtr->AddRef();
-	}
+		if (pPtr)
+		{
+			/*to free the pointer and we will not use this*/
+			pPtr->Release();
+		}
+		pPtr = NULL;
+		if (tryagain)
+		{
+				wait = 1;
+				continue;
+		}
+		
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+		
+    }
+    while(wait);
 
-	return registered ? 1: 0;
+	return;
 }
 
 
@@ -196,6 +270,12 @@ int InitializeEnviron()
     assert(st_DirectShowPointers.size()==0);
     assert(st_DirectShowPointerState.size() == 0);
     return 0;
+}
+
+void FinializeEnviron()
+{
+	FreeAllPointers();
+	/*we do not delete critical section ,so we should not give the critical section ok*/
 }
 
 
@@ -221,9 +301,20 @@ public:
     }
     COM_METHOD(ULONG, Release)(THIS)
     {
-        WriteLogger(L"Release pDevice=%X", m_ptr);
+		ULONG uret,realret;
+		int ret;
 
-        return m_ptr->Release();
+        uret = m_ptr->Release();
+		realret = uret;
+		/*it means that is the just one ,we should return for the job*/
+		if (uret == 1)
+		{
+			ret = ReleasePointer(m_ptr);
+			/*if 1 it means not release one*/
+			realret = ret;
+		}
+
+		return realret;
     }
 
     /*** IDirect3DDevice9 methods ***/
@@ -720,7 +811,7 @@ public:
     }
     COM_METHOD(ULONG, Release)(THIS)
     {
-        /*TODO*/ return m_ptr->Release();
+        return  m_ptr->Release();
     }
 
     /*** IDirect3D9 methods ***/
@@ -778,6 +869,7 @@ public:
     }
     COM_METHOD(HRESULT, CreateDevice)(THIS_ UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
     {
+		int ret;
         HRESULT hr = m_ptr->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
         if(SUCCEEDED(hr))
@@ -790,8 +882,21 @@ public:
                 *ppReturnedDeviceInterface, hr, hFocusWindow, lpszClassName, DeviceType, BehaviorFlags);
 
 
+			ret = RegisterPointer(*ppReturnedDeviceInterface);
+			if (ret == 0)
+			{
+				ULONG uret;
+				/*not register success ,so we return not ok*/
+				uret = (*ppReturnedDeviceInterface)->Release();
+				assert(uret == 0);
+				*ppReturnedDeviceInterface=NULL;
+				hr = E_ABORT;				
+			}
+			else
+			{
+            	*ppReturnedDeviceInterface = static_cast<IDirect3DDevice9*>(new CDirect3DDevice9Hook(*ppReturnedDeviceInterface));
+			}
 
-            *ppReturnedDeviceInterface = static_cast<IDirect3DDevice9*>(new CDirect3DDevice9Hook(*ppReturnedDeviceInterface));
         }
 
         return hr;
@@ -841,6 +946,7 @@ int Routine()
     WriteLogger(L"Blob launched...");
 
     InitializeHook();
+	InitializeEnviron();
 
     return 0;
 }
@@ -849,7 +955,8 @@ int Cleanup()
 {
     WriteLogger(L"Blob closed");
     CloseLogger();
-
+	
+	FinializeEnviron();
     return 0;
 }
 
