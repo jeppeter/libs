@@ -22,9 +22,11 @@ static std::vector<IDirect3DDevice9*> st_DirectShowPointers;
 static std::vector<int> st_DirectShowPointerState;
 static CRITICAL_SECTION st_PointerCS;
 
-IDirect3DDevice9* GrapPointer(int idx)
+IDirect3DDevice9* GrapPointer(int& idx)
 {
     IDirect3DDevice9* pPtr=NULL;
+    unsigned int i;
+    int findidx;
 
     EnterCriticalSection(&st_PointerCS);
     assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
@@ -34,6 +36,25 @@ IDirect3DDevice9* GrapPointer(int idx)
         {
             pPtr = st_DirectShowPointers[idx];
             st_DirectShowPointerState[idx] = POINTER_STATE_GRAB;
+        }
+        else
+        {
+            findidx = -1;
+            for (i=idx+1; i<st_DirectShowPointers.size(); i++)
+            {
+                if (st_DirectShowPointerState[i]==POINTER_STATE_FREE)
+                {
+                    findidx = i;
+                    break;
+                }
+            }
+
+            if (findidx >= 0)
+            {
+                pPtr = st_DirectShowPointers[findidx];
+                st_DirectShowPointerState[findidx] = POINTER_STATE_GRAB;
+                idx = findidx;
+            }
         }
     }
     LeaveCriticalSection(&st_PointerCS);
@@ -196,57 +217,57 @@ void FreeAllPointers()
 {
     int wait,tryagain;
     IDirect3DDevice9* pPtr=NULL;
-	unsigned int i;
-	int findidx;
+    unsigned int i;
+    int findidx;
 
     do
     {
         wait = 0;
-		tryagain=0;
-		assert(pPtr == NULL);
-		EnterCriticalSection(&st_PointerCS);
-		assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-		findidx = -1;
-		for (i=0;i<st_DirectShowPointers.size();i++)
-		{
-			if (st_DirectShowPointerState[i] == POINTER_STATE_FREE)
-			{
-				findidx = i;
-				break;
-			}
-		}
+        tryagain=0;
+        assert(pPtr == NULL);
+        EnterCriticalSection(&st_PointerCS);
+        assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+        findidx = -1;
+        for (i=0; i<st_DirectShowPointers.size(); i++)
+        {
+            if (st_DirectShowPointerState[i] == POINTER_STATE_FREE)
+            {
+                findidx = i;
+                break;
+            }
+        }
 
-		if (findidx >= 0)
-		{
-			pPtr = st_DirectShowPointers[findidx];
-			st_DirectShowPointers.erase(st_DirectShowPointers.begin()+findidx);
-			st_DirectShowPointerState.erase(st_DirectShowPointerState.begin() + findidx);
-			if (st_DirectShowPointers.size()> 0)
-			{
-				tryagain = 1;
-			}
-		}
-		else
-		{
-			if (st_DirectShowPointers.size() > 0)
-			{
-				wait = 1;
-			}
-		}
-	    LeaveCriticalSection(&st_PointerCS);
+        if (findidx >= 0)
+        {
+            pPtr = st_DirectShowPointers[findidx];
+            st_DirectShowPointers.erase(st_DirectShowPointers.begin()+findidx);
+            st_DirectShowPointerState.erase(st_DirectShowPointerState.begin() + findidx);
+            if (st_DirectShowPointers.size()> 0)
+            {
+                tryagain = 1;
+            }
+        }
+        else
+        {
+            if (st_DirectShowPointers.size() > 0)
+            {
+                wait = 1;
+            }
+        }
+        LeaveCriticalSection(&st_PointerCS);
 
-		if (pPtr)
-		{
-			/*to free the pointer and we will not use this*/
-			pPtr->Release();
-		}
-		pPtr = NULL;
-		if (tryagain)
-		{
-				wait = 1;
-				continue;
-		}
-		
+        if (pPtr)
+        {
+            /*to free the pointer and we will not use this*/
+            pPtr->Release();
+        }
+        pPtr = NULL;
+        if (tryagain)
+        {
+            wait = 1;
+            continue;
+        }
+
         if(wait)
         {
             bret = SwitchToThread();
@@ -256,11 +277,11 @@ void FreeAllPointers()
                 Sleep(10);
             }
         }
-		
+
     }
     while(wait);
 
-	return;
+    return;
 }
 
 
@@ -274,22 +295,210 @@ int InitializeEnviron()
 
 void FinializeEnviron()
 {
-	FreeAllPointers();
-	/*we do not delete critical section ,so we should not give the critical section ok*/
+    FreeAllPointers();
+    /*we do not delete critical section ,so we should not give the critical section ok*/
 }
 
-int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filename)
+int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
 {
+    IDirect3D9* pD3D=NULL;
+    int ret=1;
+    HRESULT hr;
+    D3DDISPLAYMODE D3DMode;
+    LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
+    LPWSTR pFileName=NULL;
+    pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
+    if (pD3D==NULL)
+    {
+
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("could not create 9 %d\n",ret);
+        goto fail;
+    }
+    hr = pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &D3DMode);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not get adapter mode 0x%08x\n",hr);
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+
+    hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not get backbuffer\n");
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+    hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
+            D3DMode.Height,
+            D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not create surface\n");
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+    hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not get render target data\n");
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+#ifdef  UNICODE
+    pFileName = new wchar_t[8000];
+    bret = MultiByteToWideChar(CP_ACP,NULL,filetosave,-1,pFileName,8000);
+    if (!bret)
+    {
+        DEBUG_INFO("can not save file %s\n",filetosave);
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+
+    hr = D3DXSaveSurfaceToFile(pFileName, D3DXIFF_BMP, pSurface, NULL, NULL);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not save file %s\n",filetosave);
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+
+#else
+    hr = D3DXSaveSurfaceToFile(filetosave, D3DXIFF_BMP, pSurface, NULL, NULL);
+    if (FAILED(hr))
+    {
+        DEBUG_INFO("could not save file %s\n",filetosave);
+        ret = GetLastError() ? GetLastError():1;
+        goto fail;
+    }
+#endif
+    if (pSurface)
+    {
+        pSurface->Release();
+    }
+    pSurface = NULL;
+
+    if (pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    if (pFileName)
+    {
+        delete [] pFileName;
+    }
+    pFileName = NULL;
+
+    return 0;
+fail:
+    assert(ret > 0);
+    if (pSurface)
+    {
+        pSurface->Release();
+    }
+    pSurface = NULL;
+    if (pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    if (pFileName)
+    {
+        delete [] pFileName;
+    }
+    pFileName = NULL;
+    SetLastError(ret);
+    return -ret;
 }
 
-int Capture3DBackBuffer(const char* filename)
+int PauseAllOtherThreads()
 {
+    return 0;
 }
 
+void ResumeAllOtherThreads()
+{
+    return;
+}
 
+int Capture3DBackBuffer(const char* filetosave)
+{
+    int ret;
+    IDirect3DDevice9* pPtr=NULL;
+    int idx=0,cont;
+    int needresume = 0;
+
+    do
+    {
+        assert(pPtr == NULL);
+        assert(needresume == 0);
+        cont = 0;
+        pPtr = GrapPointer(idx);
+        if (pPtr == NULL)
+        {
+            return E_FAIL;
+        }
+
+        ret = PauseAllOtherThreads();
+        if (ret < 0)
+        {
+            goto fail;
+        }
+
+        needresume = 1;
+
+        ret = __Capture3DBackBuffer(pPtr,filetosave);
+        if (ret == 0)
+        {
+            break;
+        }
+
+        ResumeAllOtherThreads();
+        needresume = 0;
+        assert(pPtr);
+        FreePointer(pPtr);
+        pPtr = NULL;
+        cont = 1;
+        /*for the next one*/
+        idx ++;
+
+
+    }
+    while(cont );
+    if (needresume)
+    {
+        ResumeAllOtherThreads();
+    }
+    needresume = 0;
+    if (pPtr)
+    {
+        FreePointer(pPtr);
+    }
+    pPtr = NULL;
+
+    return 0;
+fail:
+    if (needresume)
+    {
+        ResumeAllOtherThreads();
+    }
+    needresume = 0;
+    if (pPtr)
+    {
+        FreePointer(pPtr);
+    }
+    pPtr = NULL;
+    return ret;
+}
 /*************************************************************************
 *
-*          to make the 
+*          to make the
 *************************************************************************/
 //------------------------------------------------------------------------
 // hook interface IDirect3DDevice9
@@ -313,20 +522,20 @@ public:
     }
     COM_METHOD(ULONG, Release)(THIS)
     {
-		ULONG uret,realret;
-		int ret;
+        ULONG uret,realret;
+        int ret;
 
         uret = m_ptr->Release();
-		realret = uret;
-		/*it means that is the just one ,we should return for the job*/
-		if (uret == 1)
-		{
-			ret = ReleasePointer(m_ptr);
-			/*if 1 it means not release one*/
-			realret = ret;
-		}
+        realret = uret;
+        /*it means that is the just one ,we should return for the job*/
+        if (uret == 1)
+        {
+            ret = ReleasePointer(m_ptr);
+            /*if 1 it means not release one*/
+            realret = ret;
+        }
 
-		return realret;
+        return realret;
     }
 
     /*** IDirect3DDevice9 methods ***/
@@ -881,7 +1090,7 @@ public:
     }
     COM_METHOD(HRESULT, CreateDevice)(THIS_ UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
     {
-		int ret;
+        int ret;
         HRESULT hr = m_ptr->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
         if(SUCCEEDED(hr))
@@ -894,20 +1103,20 @@ public:
                 *ppReturnedDeviceInterface, hr, hFocusWindow, lpszClassName, DeviceType, BehaviorFlags);
 
 
-			ret = RegisterPointer(*ppReturnedDeviceInterface);
-			if (ret == 0)
-			{
-				ULONG uret;
-				/*not register success ,so we return not ok*/
-				uret = (*ppReturnedDeviceInterface)->Release();
-				assert(uret == 0);
-				*ppReturnedDeviceInterface=NULL;
-				hr = E_ABORT;				
-			}
-			else
-			{
-            	*ppReturnedDeviceInterface = static_cast<IDirect3DDevice9*>(new CDirect3DDevice9Hook(*ppReturnedDeviceInterface));
-			}
+            ret = RegisterPointer(*ppReturnedDeviceInterface);
+            if (ret == 0)
+            {
+                ULONG uret;
+                /*not register success ,so we return not ok*/
+                uret = (*ppReturnedDeviceInterface)->Release();
+                assert(uret == 0);
+                *ppReturnedDeviceInterface=NULL;
+                hr = E_ABORT;
+            }
+            else
+            {
+                *ppReturnedDeviceInterface = static_cast<IDirect3DDevice9*>(new CDirect3DDevice9Hook(*ppReturnedDeviceInterface));
+            }
 
         }
 
@@ -958,7 +1167,7 @@ int Routine()
     WriteLogger(L"Blob launched...");
 
     InitializeHook();
-	InitializeEnviron();
+    InitializeEnviron();
 
     return 0;
 }
@@ -967,8 +1176,8 @@ int Cleanup()
 {
     WriteLogger(L"Blob closed");
     CloseLogger();
-	
-	FinializeEnviron();
+
+    FinializeEnviron();
     return 0;
 }
 
