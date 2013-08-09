@@ -3,6 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapVideoTest", "CapVideoTest.vcxproj", "{2A6150C6-DD19-4F47-A662-70FC6BC93138}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scwlapi", "scwlapi\scwlapi.vcxproj", "{0FCC7CCE-E9F7-4F78-9F14-431216C84997}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blob", "blob\blob.vcxproj", "{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detours", "detours\detours.vcxproj", "{26BF3555-F333-436A-9148-B12B0BFBC559}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +19,18 @@ Global
 		{2A6150C6-DD19-4F47-A662-70FC6BC93138}.Debug|Win32.Build.0 = Debug|Win32
 		{2A6150C6-DD19-4F47-A662-70FC6BC93138}.Release|Win32.ActiveCfg = Release|Win32
 		{2A6150C6-DD19-4F47-A662-70FC6BC93138}.Release|Win32.Build.0 = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Win32.Build.0 = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Win32.ActiveCfg = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Win32.Build.0 = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Win32.Build.0 = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Win32.ActiveCfg = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Win32.Build.0 = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Win32.ActiveCfg = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Win32.Build.0 = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Win32.ActiveCfg = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
