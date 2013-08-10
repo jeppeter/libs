@@ -65,56 +65,39 @@ IDirect3DDevice9* GrapPointer(int& idx)
 int FreePointer(IDirect3DDevice9* pPtr)
 {
     int ret=0;
-    int wait=0;
     int findidx;
     unsigned int i;
-    BOOL bret;
     if(pPtr)
     {
-        do
+        findidx = -1;
+        EnterCriticalSection(&st_PointerCS);
+        assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+        for(i=0; i<st_DirectShowPointers.size(); i++)
         {
-            wait = 0;
-            findidx = -1;
-            EnterCriticalSection(&st_PointerCS);
-            assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-            for(i=0; i<st_DirectShowPointers.size(); i++)
+            if(st_DirectShowPointers[i] == pPtr)
             {
-                if(st_DirectShowPointers[i] == pPtr)
-                {
-                    findidx = i;
-                    break;
-                }
-            }
-
-            if(findidx >= 0)
-            {
-                /*already for the free*/
-                if(st_DirectShowPointerState[i] == POINTER_STATE_GRAB ||
-                        st_DirectShowPointerState[i] == POINTER_STATE_RELEASE)
-                {
-                    ret = 1;
-                    st_DirectShowPointerState[i] = POINTER_STATE_FREE;
-                }
-            }
-            LeaveCriticalSection(&st_PointerCS);
-
-            if(wait)
-            {
-                bret = SwitchToThread();
-                if(!bret)
-                {
-                    /*sleep for a while*/
-                    Sleep(10);
-                }
+                findidx = i;
+                break;
             }
         }
-        while(wait);
+
+        if(findidx >= 0)
+        {
+            /*already for the free*/
+            if(st_DirectShowPointerState[i] == POINTER_STATE_GRAB ||
+                    st_DirectShowPointerState[i] == POINTER_STATE_RELEASE)
+            {
+                ret = 1;
+                st_DirectShowPointerState[i] = POINTER_STATE_FREE;
+            }
+        }
+        LeaveCriticalSection(&st_PointerCS);
     }
 
     return ret;
 }
 
-int ReleasePointer(IDirect3DDevice9* pPtr)
+int UnRegisterPointer(IDirect3DDevice9* pPtr)
 {
     int wait,releaseone;
     int ret;
@@ -166,12 +149,14 @@ int ReleasePointer(IDirect3DDevice9* pPtr)
     }
     while(wait);
 
+    /*release one we assume original is 1*/
+    ret = 1;
     if(releaseone)
     {
-        pPtr->Release();
+        ret = pPtr->Release();
     }
 
-    return releaseone ? 0 : 1;
+    return ret ;
 }
 
 int RegisterPointer(IDirect3DDevice9* pPtr)
@@ -224,10 +209,10 @@ void FreeAllPointers()
     {
         wait = 0;
         tryagain=0;
+        findidx = -1;
         assert(pPtr == NULL);
         EnterCriticalSection(&st_PointerCS);
         assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-        findidx = -1;
         for (i=0; i<st_DirectShowPointers.size(); i++)
         {
             if (st_DirectShowPointerState[i] == POINTER_STATE_FREE)
@@ -277,7 +262,6 @@ void FreeAllPointers()
                 Sleep(10);
             }
         }
-
     }
     while(wait);
 
@@ -310,7 +294,6 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
     if (pD3D==NULL)
     {
-
         ret = GetLastError() ? GetLastError() : 1;
         DEBUG_INFO("could not create 9 %d\n",ret);
         goto fail;
@@ -318,8 +301,8 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     hr = pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &D3DMode);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not get adapter mode 0x%08x\n",hr);
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not get adapter mode 0x%08x (%d)\n",hr,ret);
         goto fail;
     }
 
@@ -327,8 +310,8 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not get backbuffer\n");
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not get backbuffer(0x%08x) (%d)\n",hr,ret);
         goto fail;
     }
 
@@ -337,16 +320,16 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
             D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not create surface\n");
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
         goto fail;
     }
 
     hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not get render target data\n");
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not get render target data (0x%08x) (%d)\n",hr,ret);
         goto fail;
     }
 
@@ -355,8 +338,8 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     bret = MultiByteToWideChar(CP_ACP,NULL,filetosave,-1,pFileName,8000);
     if (!bret)
     {
-        DEBUG_INFO("can not save file %s\n",filetosave);
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("can not save file %s (%d)\n",filetosave,ret);
         goto fail;
     }
 
@@ -364,8 +347,8 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     hr = D3DXSaveSurfaceToFile(pFileName, D3DXIFF_BMP, pSurface, NULL, NULL);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not save file %s\n",filetosave);
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
         goto fail;
     }
 
@@ -373,8 +356,8 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     hr = D3DXSaveSurfaceToFile(filetosave, D3DXIFF_BMP, pSurface, NULL, NULL);
     if (FAILED(hr))
     {
-        DEBUG_INFO("could not save file %s\n",filetosave);
         ret = GetLastError() ? GetLastError():1;
+        DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
         goto fail;
     }
 #endif
@@ -394,6 +377,11 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
         delete [] pFileName;
     }
     pFileName = NULL;
+    if (pD3D)
+    {
+        pD3D->Release();
+    }
+    pD3D = NULL;
 
     return 0;
 fail:
@@ -413,13 +401,18 @@ fail:
         delete [] pFileName;
     }
     pFileName = NULL;
+    if (pD3D)
+    {
+        pD3D->Release();
+    }
+    pD3D = NULL;
     SetLastError(ret);
     return -ret;
 }
 
 typedef struct
 {
-    HANDLE m_Handle;
+    DWORD m_ThreadID;
     int m_ResumeCount;
 } THREAD_STATE_t;
 
@@ -430,18 +423,20 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     unsigned int i;
     std::vector<THREAD_STATE_t> tmpthreadstate;
     HANDLE hthr=INVALID_HANDLE_VALUE;
-    HANDLE cthread= INVALID_HANDLE_VALUE ;
+    DWORD cthreadid = 0;
     HANDLE hsnap= INVALID_HANDLE_VALUE ;
     HANDLE hsnapthr=NULL;
     DWORD thrcount=(DWORD)-1;
     THREADENTRY32 threntry32;
     THREAD_STATE_t thrstate;
     BOOL bret;
+    HANDLE hfail=INVALID_HANDLE_VALUE;
     assert(tmpthreadstate.size() == 0);
 
+    threadstate.clear();
 
     /*now first to get the current thread*/
-    cthread = GetCurrentThread();
+    cthreadid = GetCurrentThreadID();
 
     /*now first to get the */
     hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD,GetCurrentProcessID());
@@ -459,15 +454,15 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     }
 
     /*NOW to open the thread*/
-    hsnapthr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,threntry32.th32ThreadID);
-    if (hsnapthr == NULL)
+    if (threntry32.th32ThreadID != cthreadid)
     {
-        ret = GetLastError() ? GetLastError() : 1;
-        goto fail;
-    }
+        hsnapthr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,threntry32.th32ThreadID);
+        if (hsnapthr == NULL)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
 
-    if (hsnapthr != cthread)
-    {
         thrcount = SuspendThread(hsnapthr);
         if (thrcount == (DWORD)-1)
         {
@@ -475,15 +470,10 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
             goto fail;
         }
 
-        thrstate.m_Handle = hsnapthr;
+        thrstate.m_ThreadID = threntry32.th32ThreadID;
         thrstate.m_ResumeCount = thrcount;
-
         tmpthreadstate.push_back(thrstate);
-    }
-    else
-    {
         CloseHandle(hsnapthr);
-        thrcount = 0;
     }
 
     hsnapthr = NULL;
@@ -499,6 +489,7 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
             ret = GetLastError() ? GetLastError() : 1;
             if (ret == ERROR_NO_MORE_FILES )
             {
+                /*it is the last one ,so we do not need any more*/
                 break;
             }
             else
@@ -507,15 +498,15 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
             }
         }
 
-        hsnapthr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,threntry32.th32ThreadID);
-        if (hsnapthr == NULL)
+        if (threntry32.th32ThreadID != cthreadid)
         {
-            ret = GetLastError() ? GetLastError() : 1;
-            goto fail;
-        }
+            hsnapthr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,threntry32.th32ThreadID);
+            if (hsnapthr == NULL)
+            {
+                ret = GetLastError() ? GetLastError() : 1;
+                goto fail;
+            }
 
-        if (hsnapthr != cthread)
-        {
             thrcount = SuspendThread(hsnapthr);
             if (thrcount == (DWORD)-1)
             {
@@ -523,13 +514,10 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
                 goto fail;
             }
 
-            thrstate.m_Handle = hsnapthr;
+            thrstate.m_ThreadID = threntry32.th32ThreadID;
             thrstate.m_ResumeCount = thrcount;
 
             tmpthreadstate.push_back(thrstate);
-        }
-        else
-        {
             CloseHandle(hsnapthr);
         }
         hsnapthr = NULL;
@@ -547,16 +535,27 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     return 0;
 
 fail:
-    if (hsnapthr )
+    if (hsnapthr != NULL)
     {
         CloseHandle(hsnapthr);
     }
     hsnapthr = NULL;
     for (i=0; i<tmpthreadstate; i++)
     {
-        assert (tmpthreadstate[i].m_Handle != cthread);
+        assert(tmpthreadstate[i].m_ThreadID != cthreadid);
         {
-            resret = ResumeThread(tmpthreadstate[i].m_Handle);
+            assert(hfail == INVALID_HANDLE_VALUE);
+
+            hfail = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,tmpthreadstate[i].m_ThreadID);
+            if (hfail == INVALID_HANDLE_VALUE)
+            {
+                resret = GetLastError()?GetLastError() : 1;
+                DEBUG_INFO("[%d]can not open threadid (%d) (%d)",i,tmpthreadstate[i].m_ThreadID,resret);
+                tmpthreadstate[i].m_ThreadID = 0;
+                tmpthreadstate[i].m_ResumeCount = 0;
+                continue;
+            }
+            resret = ResumeThread(hfail);
             if (resret == (DWORD) -1)
             {
                 DEBUG_INFO("resume thread [0x%08x] error %d\n",
@@ -568,8 +567,9 @@ fail:
                            tmpthreadstate[i].m_Handle,
                            tmpthreadstate[i].m_ResumeCount,resret);
             }
-            CloseHandle(tmpthreadstate[i].m_Handle);
-            tmpthreadstate[i].m_Handle = NULL;
+            CloseHandle(hfail);
+            hfail = INVALID_HANDLE_VALUE;
+            tmpthreadstate[i].m_ThreadID =0;
             tmpthreadstate[i].m_ResumeCount = 0;
         }
     }
@@ -588,22 +588,34 @@ void ResumeAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
 {
     unsigned int i;
     DWORD resret;
+    HANDLE hThr=INVALID_HANDLE_VALUE;
     int ret;
     for (i=0; i<threadstate.size(); i++)
     {
-        if (threadstate[i].m_Handle)
+        if (threadstate[i].m_ThreadID!=0)
         {
-            resret = ResumeThread(threadstate[i].m_Handle);
+            assert(hThr == INVALID_HANDLE_VALUE);
+            hThr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,tmpthreadstate[i].m_ThreadID);
+            if (hThr == INVALID_HANDLE_VALUE)
+            {
+                resret = GetLastError();
+                DEBUG_INFO("[%d] could not open threadid [%d] error(%d)\n",
+                           i,threadstate[i].m_ThreadID,resret);
+                threadstate[i].m_ThreadID = 0;
+                threadstate[i].m_ResumeCount = 0;
+                continue;
+            }
+            resret = ResumeThread(hThr);
             if (resret != threadstate[i].m_ResumeCount)
             {
-                DEBUG_INFO("thread [0x%08x] rescount(0x%08x) != resumecount(0x%08x)\n",
-                           threadstate[i].m_Handle,
+                DEBUG_INFO("[%d]thread [%d] rescount(0x%08x) != resumecount(0x%08x)\n",
+                           i, threadstate[i].m_ThreadID,
                            resret,
                            threadstate[i].m_ResumeCount);
-
             }
-            CloseHandle(threadstate[i].m_Handle);
-            threadstate[i].m_Handle = NULL;
+            CloseHandle(hThr);
+            hThr = INVALID_HANDLE_VALUE;
+            threadstate[i].m_ThreadID = 0;
             threadstate[i].m_ResumeCount = 0;
         }
     }
@@ -636,7 +648,6 @@ int Capture3DBackBuffer(const char* filetosave)
         {
             goto fail;
         }
-
         needresume = 1;
 
         ret = __Capture3DBackBuffer(pPtr,filetosave);
@@ -645,6 +656,7 @@ int Capture3DBackBuffer(const char* filetosave)
             break;
         }
 
+        assert(needresume > 0);
         ResumeAllOtherThreads(thrstate);
         thrstate.clear();
         needresume = 0;
@@ -654,14 +666,13 @@ int Capture3DBackBuffer(const char* filetosave)
         cont = 1;
         /*for the next one*/
         idx ++;
-
-
     }
     while(cont );
     if (needresume)
     {
         ResumeAllOtherThreads(thrstate);
     }
+    thrstate.clear();
     needresume = 0;
     if (pPtr)
     {
@@ -718,7 +729,7 @@ public:
         /*it means that is the just one ,we should return for the job*/
         if (uret == 1)
         {
-            ret = ReleasePointer(m_ptr);
+            ret = UnRegisterPointer(m_ptr);
             /*if 1 it means not release one*/
             realret = ret;
         }
