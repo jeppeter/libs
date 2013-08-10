@@ -88,6 +88,7 @@ BEGIN_MESSAGE_MAP(CCapVideoTestDlg, CDialog)
 	ON_WM_DESTROY()
 	ON_COMMAND(IDM_FILE_SAVE, OnFileSave)
 	ON_COMMAND(IDM_OPTIONS_CAPTURE, OnOptionsCapture)
+	ON_COMMAND(IDM_INSERT_DLL_EXECUTE,OnInsertDllExecute)
 	ON_MESSAGE(WM_HOTKEY,OnHotKey)
 	ON_WM_TIMER()
 	//}}AFX_MSG_MAP
@@ -328,6 +329,12 @@ void CCapVideoTestDlg::OnOptionsCapture()
         pMenu->CheckMenuItem(IDM_OPTIONS_CAPTURE, MF_CHECKED | MF_BYCOMMAND);
         this->SetTimer(MYTIMER, 2000, NULL);
     }
+}
+
+void CCapVideoTestDlg::OnInsertDllExecute()
+{
+
+	return ;
 }
 
 void CCapVideoTestDlg::OnTimer(UINT nIDEvent) 

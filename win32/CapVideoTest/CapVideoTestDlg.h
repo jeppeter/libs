@@ -50,6 +50,7 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg void OnFileSave();
 	afx_msg void OnOptionsCapture();
+	afx_msg void OnInsertDllExecute();
 	afx_msg void OnTimer(UINT nIDEvent);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
