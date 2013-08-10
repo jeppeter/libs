@@ -15,3 +15,4 @@ int Cleanup();
 
 
 EXTERN_C __declspec(dllexport) void AceCrash();
+EXTERN_C __declspec(dllexport) int Capture3DBackBuffer(const char* filetosave);

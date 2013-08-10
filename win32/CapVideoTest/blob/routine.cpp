@@ -8,6 +8,9 @@ x509\routin.cpp
 
 #include "iris-int.h"
 #include <vector>
+#include <assert.h>
+#include <TlHelp32.h>
+#include <winbase.h>
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
@@ -21,8 +24,11 @@ x509\routin.cpp
 static std::vector<IDirect3DDevice9*> st_DirectShowPointers;
 static std::vector<int> st_DirectShowPointerState;
 static CRITICAL_SECTION st_PointerCS;
+static IDirect3D9* (WINAPI* Direct3DCreate9Next)(UINT SDKVersion)
+    = Direct3DCreate9;
 
-IDirect3DDevice9* GrapPointer(int& idx)
+
+IDirect3DDevice9* GrapPointer(unsigned int& idx)
 {
     IDirect3DDevice9* pPtr=NULL;
     unsigned int i;
@@ -204,6 +210,7 @@ void FreeAllPointers()
     IDirect3DDevice9* pPtr=NULL;
     unsigned int i;
     int findidx;
+    BOOL bret;
 
     do
     {
@@ -283,7 +290,7 @@ void FinializeEnviron()
     /*we do not delete critical section ,so we should not give the critical section ok*/
 }
 
-int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
+int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
 {
     IDirect3D9* pD3D=NULL;
     int ret=1;
@@ -291,6 +298,7 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pPtr,const char* filetosave)
     D3DDISPLAYMODE D3DMode;
     LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
     LPWSTR pFileName=NULL;
+    BOOL bret;
     pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
     if (pD3D==NULL)
     {
@@ -436,10 +444,10 @@ int PauseAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     threadstate.clear();
 
     /*now first to get the current thread*/
-    cthreadid = GetCurrentThreadID();
+    cthreadid = GetCurrentThreadId();
 
     /*now first to get the */
-    hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD,GetCurrentProcessID());
+    hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD,GetCurrentProcessId());
     if (hsnap == INVALID_HANDLE_VALUE)
     {
         ret = GetLastError() ? GetLastError() : 1;
@@ -540,7 +548,7 @@ fail:
         CloseHandle(hsnapthr);
     }
     hsnapthr = NULL;
-    for (i=0; i<tmpthreadstate; i++)
+    for (i=0; i<tmpthreadstate.size(); i++)
     {
         assert(tmpthreadstate[i].m_ThreadID != cthreadid);
         {
@@ -559,12 +567,12 @@ fail:
             if (resret == (DWORD) -1)
             {
                 DEBUG_INFO("resume thread [0x%08x] error %d\n",
-                           tmpthreadstate[i].m_Handle,GetLastError());
+                           tmpthreadstate[i].m_ThreadID,GetLastError());
             }
             else if (resret != tmpthreadstate[i].m_ResumeCount != resret)
             {
-                DEBUG_INFO("resume thread [0x%08x] resumecount (0x%08x) != retcount (0x%08x)\n",
-                           tmpthreadstate[i].m_Handle,
+                DEBUG_INFO("resume thread [%d] resumecount (0x%08x) != retcount (0x%08x)\n",
+                           tmpthreadstate[i].m_ThreadID,
                            tmpthreadstate[i].m_ResumeCount,resret);
             }
             CloseHandle(hfail);
@@ -589,13 +597,12 @@ void ResumeAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     unsigned int i;
     DWORD resret;
     HANDLE hThr=INVALID_HANDLE_VALUE;
-    int ret;
     for (i=0; i<threadstate.size(); i++)
     {
         if (threadstate[i].m_ThreadID!=0)
         {
             assert(hThr == INVALID_HANDLE_VALUE);
-            hThr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,tmpthreadstate[i].m_ThreadID);
+            hThr = OpenThread(THREAD_SUSPEND_RESUME ,FALSE,threadstate[i].m_ThreadID);
             if (hThr == INVALID_HANDLE_VALUE)
             {
                 resret = GetLastError();
@@ -626,7 +633,8 @@ int Capture3DBackBuffer(const char* filetosave)
 {
     int ret;
     IDirect3DDevice9* pPtr=NULL;
-    int idx=0,cont;
+    unsigned int idx=0;
+    int cont;
     int needresume = 0;
     std::vector<THREAD_STATE_t> thrstate;
 
@@ -1329,8 +1337,6 @@ public:
 
 //------------------------------------------------------------------------
 // hook Direct3DCreate9@d3d9.dll
-static IDirect3D9* (WINAPI* Direct3DCreate9Next)(UINT SDKVersion)
-    = Direct3DCreate9;
 
 IDirect3D9*
 WINAPI
