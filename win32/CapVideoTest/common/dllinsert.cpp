@@ -178,14 +178,54 @@ out:
     return ret;
 }
 
+int __CallRemoteProc(HANDLE hProcess,LPTHREAD_START_ROUTINE startproc,PVOID pRMem,DWORD *pRetVal)
+{
+	HANDLE hThread=NULL;
+	DWORD threadid=0;
+	int ret;
+
+	hThread = CreateRemoteThread(hProcess,NULL,0,startproc,pRMem,0,&threadid);
+	if (hThread == NULL || threadid == 0)
+		{
+			ret = GetLastError() ? GetLastError() : 1;
+			goto fail;
+		}
+
+	
+
+	
+
+	return 0;
+
+fail:
+	if (hThread)
+		{
+			CloseHandle(hThread);
+		}
+	hThread=NULL;
+	return -ret;
+}
+
 extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllName,const char* pDllFullName)
 {
     HANDLE hProcess= NULL;
     int ret;
     PVOID pParam=NULL;
-    DWORD paramsize=0;
+
+    DWORD paramsize=0,paramlen=0;
     int loadlib= 0;
-    PVOID pLoadLibraryFn = NULL,pFreeLibraryFn=NULL,pCaptureFn=NULL;
+    PVOID pLoadLibraryFn = NULL,pFreeLibraryFn=NULL,pGetProcAddrFn=NULL,pCaptureFn=NULL;
+    HANDLE hk32=NULL;
+    int rmodnamesize=0;
+#ifdef _UNICODE
+    PWCSTR pModuleName=NULL;
+    PWCSTR pDllWide=NULL;
+    PWCSTR pRModName=NULL;
+#else
+    char *pModuleName=NULL;
+    char *pDllAnsi = NULL;
+    char *pRModName=NULL;
+#endif
 
     /*not */
     ret = __IsModuleIn(processid,pDllName,pDllFullName);
@@ -201,13 +241,87 @@ extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllN
         ret = GetLastError() ? GetLastError() : 1;
         goto fail;
     }
+#ifdef _UNICODE
+    hk32 = GetModuleHandle(L"kernel32");
+    if (hk32 == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+    pLoadLibraryFn = GetProcAddress(hk32,L"LoadLibraryW");
+    pFreeLibraryFn = GetProcAddress(hk32,L"FreeLibraryW");
+    pGetProcAddrFn = GetProcAddress(hk32,L"GetProcAddressW");
+#else
+    hk32 = GetModuleHandle("kernel32");
+    if (hk32 == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+    pLoadLibraryFn = GetProcAddress(hk32,"LoadLibraryA");
+    pFreeLibraryFn = GetProcAddress(hk32,"FreeLibraryA");
+    pGetProcAddrFn = GetProcAddress(hk32,"GetProcAddressA");
+#endif
+
+    if (pLoadLibraryFn == NULL || pFreeLibraryFn == NULL ||
+            pGetProcAddrFn == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+#ifdef _UNICODE
+    /*now we should allocate the memory*/
+    paramlen = wcslen(L"Capture3DBackBuffer");
+    if (paramlen > paramsize)
+    {
+        paramsize = paramlen;
+    }
+
+    paramlen = strlen(pDllName);
+    if (paramlen > paramsize)
+    {
+        paramsize = paramlen;
+    }
+    paramsize += 1;
+    /*for it will give the size*/
+    paramsize *=2;
+
+    pModuleName = new wchar_t[paramsize];
+#else
+    paramlen = strlen("Capture3DBackBuffer");
+    if (paramlen > paramsize)
+    {
+        paramsize = paramlen;
+    }
+    paramlen = strlen(pDllName);
+    if (paramlen > paramsize)
+    {
+        paramsize = paramlen;
+    }
+    paramsize += 1;
+#endif
+
+    /*now allocate remote address and it will give the ok address*/
+    pParam = VirtualAllocEx(hProcess,NULL,paramsize,MEM_COMMIT,PAGE_READWRITE);
+    if (pParam == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+#ifdef _UNICODE
+	paramlen = strlen(pDllName);
+	/**/
+#else
+#endif
 
 
     return 0;
 fail:
     if (loadlib)
     {
-        assert(pLoadLibraryFn);
+        assert(pLoadLibraryFn && pFreeLibraryFn && p);
+
     }
     if (pParam)
     {
@@ -215,7 +329,13 @@ fail:
         VirtualFreeEx(hProcess,pParam,paramsize,MEM_RELEASE);
     }
     pParam = NULL;
-    paramsize = 0;
+#ifdef _UNICODE
+    if (pModuleName)
+    {
+        delete [] pModuleName;
+    }
+    pModuleName = NULL;
+#endif
     if (hProcess != NULL)
     {
         CloseHandle(hProcess);
