@@ -178,6 +178,11 @@ out:
     return ret;
 }
 
+int __GetRemoteProcAddress(int processid,const char* pDllName,const char* pProcName,PVOID* ppFnAddr)
+{
+	
+}
+
 int __CallRemoteProc(HANDLE hProcess,LPTHREAD_START_ROUTINE startproc,PVOID pRMem,int timeout,DWORD *pRetVal)
 {
     HANDLE hThread=NULL;
