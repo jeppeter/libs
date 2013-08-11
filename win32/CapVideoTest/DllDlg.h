@@ -25,6 +25,8 @@ protected:
 
 	// Generated message map functions
 	//{{AFX_MSG(CEnterDlg)
+	afx_msg void OnSelectExe();
+	afx_msg void OnSelectDll();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

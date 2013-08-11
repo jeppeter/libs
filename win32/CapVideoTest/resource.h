@@ -10,15 +10,15 @@
 #define IDR_MAINFRAME                   128
 #define IDR_MENU_CAPVIDEOSCRN           129
 #define IDC_BUTTON_CAPTURE              1000
+#define IDC_BTN_SEL_EXE                 1000
 #define IDC_EDT_EXECUTE                 1001
 #define IDC_EXE_STATIC                  1002
-#define IDC_BTN_EXE_OPEN                1003
 #define IDC_STC_PARAM                   1004
 #define IDC_EDT_PARAM                   1005
 #define IDC_EDT_DLL                     1006
 #define IDC_STC_DLL                     1007
-#define IDC_BTN_EXE_OPEN2               1008
 #define IDC_BTN_DLL_OPEN                1008
+#define IDC_BTN_SEL_DLL                 1008
 #define IDM_FILE_SAVE                   32771
 #define IDM_EXIT                        32772
 #define IDM_OPTIONS_CAPTURE             32773

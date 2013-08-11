@@ -1,6 +1,7 @@
 // dlldlg.cpp : implementation file
 
 #include "stdafx.h"
+#include "CapVideoTest.h"
 #include "Dlldlg.h"
 
 #ifdef _DEBUG
@@ -30,8 +31,32 @@ void CDllDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 }
 
+void CDllDlg::OnSelectExe()
+{
+#ifdef _UNICODE
+	CFileDialog m_fdlg(true,NULL,NULL,OFN_HIDEREADONLY,
+		L"Exe Files (*.exe)|*.exe||");
+#else
+	CFileDialog m_fdlg(true,NULL,NULL,OFN_HIDEREADONLY,
+		"Exe Files (*.exe)|*.exe||");
+#endif
+	if(m_fdlg.DoModal()==IDOK)
+	{
+		m_strExe = m_fdlg.GetPathName();
+		UpdateData(false);
+	}
+	return;
+}
+
+void CDllDlg::OnSelectDll()
+{
+	return ;
+}
+
 BEGIN_MESSAGE_MAP(CDllDlg, CDialog)
-	//{{AFX_MSG_MAP(CEnterDlg)
+	//{{AFX_MSG_MAP(CDllDlg)
+	ON_BN_CLICKED(IDC_BTN_SEL_EXE, OnSelectExe)
+	ON_BN_CLICKED(IDC_BTN_SEL_DLL,OnSelectDll)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
