@@ -178,32 +178,83 @@ out:
     return ret;
 }
 
-int __CallRemoteProc(HANDLE hProcess,LPTHREAD_START_ROUTINE startproc,PVOID pRMem,DWORD *pRetVal)
+int __CallRemoteProc(HANDLE hProcess,LPTHREAD_START_ROUTINE startproc,PVOID pRMem,int timeout,DWORD *pRetVal)
 {
-	HANDLE hThread=NULL;
-	DWORD threadid=0;
-	int ret;
+    HANDLE hThread=NULL;
+    DWORD threadid=0;
+    int ret;
+    ULONGLONG stime,etime,ctime;
+    DWORD ltime,wret;
+    int succ = 0;
+    BOOL bret;
 
-	hThread = CreateRemoteThread(hProcess,NULL,0,startproc,pRMem,0,&threadid);
-	if (hThread == NULL || threadid == 0)
-		{
-			ret = GetLastError() ? GetLastError() : 1;
-			goto fail;
-		}
+    hThread = CreateRemoteThread(hProcess,NULL,0,startproc,pRMem,0,&threadid);
+    if (hThread == NULL || threadid == 0)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+    stime = GetTickCount64();
+    etime = stime + timeout * 1000;
+    ctime = stime;
 
-	
+    succ = 0;
+    while (ctime < etime
+            || timeout == 0)
+    {
+        if (timeout == 0)
+        {
+            ltime = INFINITE;
+        }
+        else
+        {
+            ltime = etime - ctime;
+        }
 
-	
+        wret = WaitForSingleObject(hThread,ltime);
+        if (wret == WAIT_ABANDONED ||
+                wret == WAIT_TIMEOUT ||
+                wret == WAIT_FAILED)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
 
-	return 0;
+        /*now to get the exit value*/
+        bret = GetExitCodeThread(hThread,pRetVal);
+        if (bret)
+        {
+            succ = 1;
+            break;
+        }
+        ret = GetLastError() ;
+        if (ret == STILL_ACTIVE)
+        {
+            ctime = GetTickCount64();
+            continue;
+        }
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    if (succ == 0)
+    {
+        ret = WAIT_TIMEOUT;
+        goto fail;
+    }
+
+    assert(hThread);
+    CloseHandle(hThread);
+
+    return 0;
 
 fail:
-	if (hThread)
-		{
-			CloseHandle(hThread);
-		}
-	hThread=NULL;
-	return -ret;
+    if (hThread)
+    {
+        CloseHandle(hThread);
+    }
+    hThread=NULL;
+    return -ret;
 }
 
 extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllName,const char* pDllFullName)
@@ -217,6 +268,8 @@ extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllN
     PVOID pLoadLibraryFn = NULL,pFreeLibraryFn=NULL,pGetProcAddrFn=NULL,pCaptureFn=NULL;
     HANDLE hk32=NULL;
     int rmodnamesize=0;
+    BOOL bret;
+    DWORD retval;
 #ifdef _UNICODE
     PWCSTR pModuleName=NULL;
     PWCSTR pDllWide=NULL;
@@ -310,11 +363,44 @@ extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllN
     }
 
 #ifdef _UNICODE
-	paramlen = strlen(pDllName);
-	/**/
+    paramlen = strlen(pDllName);
+    paramlen += 1;
+    /**/
+    bret = MultiByteToWideChar(CP_ACP,NULL,pDllName,-1,pModuleName,paramlen*2);
+    if (!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    assert((paramlen * 2 ) <= paramsize);
+    bret = WriteProcessMemory(hProcess,pParam,pModuleName,paramlen*2);
+    if (!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+
+
 #else
+    paramlen = strlen(pDllName);
+    paramlen += 1;
+    assert(paramlen <= paramsize);
+    bret = WriteProcessMemory(hProcess,pParam,pDllName,paramlen);
+    if (!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
 #endif
 
+    /*now call function*/
+    ret = __CallRemoteProc(hProcess,pLoadLibraryFn,pParam,3,&retval);
+    if (ret < 0)
+    {
+        goto fail;
+    }
 
     return 0;
 fail:
