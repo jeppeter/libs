@@ -11,6 +11,9 @@ class CDIDialogDlg : public CDialogEx
 // Construction
 public:
 	CDIDialogDlg(CWnd* pParent = NULL);	// standard constructor
+	CString m_strExe;
+	CString m_strDll;
+	CString m_strBmp;
 
 // Dialog Data
 	enum { IDD = IDD_DIDIALOG_DIALOG };

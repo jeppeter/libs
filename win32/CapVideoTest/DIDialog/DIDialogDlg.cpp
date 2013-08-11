@@ -21,6 +21,15 @@ CDIDialogDlg::CDIDialogDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CDIDialogDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+#ifdef _UNICODE
+	m_strExe = L"";
+	m_strDll = L"";
+	m_strBmp = L"";
+#else
+	m_strExe = "";
+	m_strDll = "";
+	m_strBmp = "";
+#endif
 }
 
 void CDIDialogDlg::DoDataExchange(CDataExchange* pDX)
