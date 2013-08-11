@@ -39,6 +39,12 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\output_debug.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\dllinsert.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DIDialog.cpp">
@@ -48,6 +54,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\output_debug.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\dllinsert.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

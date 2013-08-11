@@ -6,6 +6,7 @@
 #include "DIDialog.h"
 #include "DIDialogDlg.h"
 #include "afxdialogex.h"
+#include "..\\common\\output_debug.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,6 +41,7 @@ void CDIDialogDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDIDialogDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_COMMAND(ID_BTN_LOAD,OnLoad)
 END_MESSAGE_MAP()
 
 
@@ -97,3 +99,8 @@ HCURSOR CDIDialogDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CDIDialogDlg::OnLoad()
+{
+	DEBUG_INFO("\n");
+	return;
+}
