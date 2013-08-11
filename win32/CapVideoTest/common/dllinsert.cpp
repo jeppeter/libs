@@ -67,13 +67,36 @@ int __IsModuleIn(DWORD processid,const char* pDllName,const char* pDllFullName)
     HANDLE hProcess=NULL;
     int ret=0;
     BOOL bret;
-    TCHAR *pFullName=NULL;
+    int fulllen=0,dlllen=0;
 #ifdef _UNICODE
-    char* pFullAnsi=NULL;
-    pFullAnsi = new char[MAX_MODULE_NAME32 + 1+MAX_PATH];
+    wchar_t *pFullWide=NULL;
+    wchar_t *pDllWide=NULL;
+    wchar_t *pFullDllWide = NULL;
+    pFullWide = new wchar_t[MAX_MODULE_NAME32 + 2+MAX_PATH];
+    pDllWide = new wchar_t[MAX_MODULE_NAME32 + 2];
+    fulllen = strlen(pDllFullName);
+    dlllen = strlen(pDllName);
+    pFullDllWide = new wchar_t[fulllen + dlllen + 3];
+    bret =MultiByteToWideChar(CP_ACP,NULL,pDllFullName,-1,pFullWide,fulllen*2);
+    if (!bret)
+    {
+        ret = 0;
+        goto out;
+    }
+    bret =MultiByteToWideChar(CP_ACP,NULL,pDllFullName,-1,pDllWide,fulllen*2);
+    if (!bret)
+    {
+        ret = 0;
+        goto out;
+    }
+#else
+    char* pFullDllAnsi=NULL;
+
+    fulllen = strlen(pDllFullName);
+    dlllen = strlen(pDllName);
+    pFullDllAnsi = new char[MAX_MODULE_NAME32 + 2+MAX_PATH];
 #endif
     pModule32 = new MODULEENTRY32;
-    pFullName = new TCHAR[MAX_MODULE_NAME32 + 1+MAX_PATH];
     hProcess = OpenProcess(PROCESS_ALL_ACCESS,FALSE,processid);
     if (hProcess == NULL)
     {
@@ -91,13 +114,28 @@ int __IsModuleIn(DWORD processid,const char* pDllName,const char* pDllFullName)
     for (bret = Module32First(hsnap,pModule32); bret ; bret = Module32Next(hsnap,pModule32))
     {
 #ifdef _UNICODE
-	/*now we should copy the full name*/
-	bret = 
+        /*now we should copy the full name copy name*/
+        wcscpy(pFullDllWide,pModule32->szExePath);
+        wcscat(pFullDllWide,L"\\");
+        wcscat(pFullDllWide,pModule32->szModule);
+        if (wcscmp(pFullDllWide ,pFullWide )== 0
+                && wcscmp(pDllWide,pModule32->szModule) == 0)
+        {
+            ret = 1;
+            break;
+        }
 #else
+        strcpy(pFullDllAnsi,pModule32->szExePath);
+        strcat(pFullDllAnsi,"\\");
+        strcat(pFullDllAnsi,pModule32->szModule);
+        if (strcmp(pFullDllAnsi,pDllFullName) == 0 &&
+                strcmp(pDllName,pModule32->szModule) == 0)
+        {
+            ret = 1;
+            break;
+        }
 #endif
     }
-
-
 
 out:
     if (hsnap != INVALID_HANDLE_VALUE)
@@ -110,12 +148,34 @@ out:
         CloseHandle(hProcess);
     }
     hProcess = NULL;
-    delete pModule32;
-    delete [] pFullName ;
+    if (pModule32)
+    {
+        delete pModule32;
+    }
 #ifdef _UNICODE
-    delete [] pFullAnsi;
+    if (pDllWide)
+    {
+        delete [] pDllWide;
+    }
+    pDllWide = NULL;
+    if (pFullWide)
+    {
+        delete [] pFullWide;
+    }
+    pFullWide = NULL;
+    if (pFullDllWide)
+    {
+        delete [] pFullDllWide;
+    }
+    pFullDllWide = NULL;
+#else
+    if (pFullDllAnsi)
+    {
+        delete [] pFullDllAnsi;
+    }
+    pFullDllAnsi = NULL;
 #endif
-    return 0;
+    return ret;
 }
 
 extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllName,const char* pDllFullName)
@@ -124,6 +184,16 @@ extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllN
     int ret;
     PVOID pParam=NULL;
     DWORD paramsize=0;
+    int loadlib= 0;
+    PVOID pLoadLibraryFn = NULL,pFreeLibraryFn=NULL,pCaptureFn=NULL;
+
+    /*not */
+    ret = __IsModuleIn(processid,pDllName,pDllFullName);
+    if (ret <= 0)
+    {
+        SetLastError(ERROR_MOD_NOT_FOUND);
+        return -ERROR_MOD_NOT_FOUND;
+    }
 
     hProcess = OpenProcess(PROCESS_ALL_ACCESS,FALSE,processid);
     if (hProcess == NULL)
@@ -135,6 +205,10 @@ extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllN
 
     return 0;
 fail:
+    if (loadlib)
+    {
+        assert(pLoadLibraryFn);
+    }
     if (pParam)
     {
         assert(hProcess != NULL);
