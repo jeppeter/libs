@@ -126,8 +126,11 @@ BOOL CCapVideoTestDlg::OnInitDialog()
 	
 	// TODO: Add extra initialization here
     m_hBmp = NULL;
-
+#ifdef _UNICODE
+	m_objHog.SetVideo(L"hog.dat");
+#else
     m_objHog.SetVideo("hog.dat");
+#endif
     m_objHog.Hog();
 
 	DEBUG_INFO("Init hotkey begin\n");
@@ -137,14 +140,22 @@ BOOL CCapVideoTestDlg::OnInitDialog()
 		m_InitHotKey = RegisterHotKey(this->m_hWnd,101,MOD_WIN|MOD_SHIFT,0x41);
 		if (!m_InitHotKey)
 		{
+#ifdef _UNICODE
+			AfxMessageBox(L"Can not Register WIN+SHIFT+b");
+#else
 			AfxMessageBox("Can not Register WIN+SHIFT+b");
+#endif
 
 			UnregisterHotKey(this->m_hWnd,100);
 		}
 	}
 	else
 	{
+#ifdef _UNICODE
+		AfxMessageBox(L"Can not Register WIN+b");
+#else
 		AfxMessageBox("Can not Register WIN+b");
+#endif
 	}
 	DEBUG_INFO("init succ\n");	
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -256,7 +267,7 @@ void CCapVideoTestDlg::OnFileSave()
             if (SUCCEEDED(hRes))
             {
                 // write the stream to the file
-                HANDLE hFile =  CreateFile("out.bmp",
+                HANDLE hFile =  CreateFileA("out.bmp",
                                             GENERIC_WRITE, FILE_SHARE_READ, NULL,
                                             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL
                                             );
@@ -284,11 +295,19 @@ void CCapVideoTestDlg::OnFileSave()
 
     if (result)
     {
+#ifdef _UNICODE
+		MessageBox(L"Save to out.bmp");
+#else
         MessageBox("Save to out.bmp");
+#endif
     }
     else
     {
+#ifdef _UNICODE
+		MessageBox(L"Fail to save to file");
+#else
         MessageBox("Fail to save to file");
+#endif
     }
 
     return;
@@ -367,7 +386,11 @@ LRESULT CCapVideoTestDlg::OnHotKey(WPARAM wParam, LPARAM lParam)
             m_hBmp = NULL;
         }
 
+#ifdef _UNICODE
+		mstr.Format(L"wparam 0x%08x lparam 0x%08x",wParam,lParam);
+#else
 		mstr.Format("wparam 0x%08x lparam 0x%08x",wParam,lParam);
+#endif
 		//AfxMessageBox((LPCSTR)mstr);
 
 		if (wParam == 0x64)

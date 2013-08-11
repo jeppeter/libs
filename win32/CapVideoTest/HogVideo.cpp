@@ -119,7 +119,7 @@ void CHogVideo::Cleanup()
 void CHogVideo::SetVideo(LPCTSTR szFilename)
 {
 #ifdef _UNICODE
-    wcsncpy(m_szFilename, szFilename, MAX_PATH);
+    memcpy(m_wszFilename, szFilename, MAX_PATH*2);
 #else
     mbstowcs(m_wszFilename, szFilename, MAX_PATH);
 #endif
