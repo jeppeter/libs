@@ -4,6 +4,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <TlHelp32.h>
+#include <windows.h>
+#include <assert.h>
 
 #define  DEBUG_INFO(fmt,...) \
 do\
@@ -21,7 +24,7 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
     PVOID pBaseAddr = NULL;
     LPMODULEENTRY32 pMEntry=NULL;
 #ifdef _UNICODE
-    PWCSTR pDllWide=NULL;
+    LPWSTR pDllWide=NULL;
     int len;
     len = strlen(pDllName);
     pDllWide = new wchar_t[len + 1];
