@@ -10,7 +10,7 @@
 #pragma comment(lib,"dllex.lib")
 int _tmain(int argc, _TCHAR* argv[])
 {
-	fprintf(stdout,"call proc\n");
+	fprintf(stdout,"call proc (%d) PrintFunc 0x%p RepeatFunc 0x%p\n",GetCurrentProcessId(),&PrintFunc,&RepeatFunc);
 	PrintFunc("main function");
 	RepeatFunc("main function");
 	while(1)
