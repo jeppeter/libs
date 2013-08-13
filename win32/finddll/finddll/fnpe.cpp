@@ -23,10 +23,9 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
 #ifdef _UNICODE
     PWCSTR pDllWide=NULL;
     int len;
-    pDllWide = new wchar_t[MAX_MODULE_NAME32 + 1];
-    assert(pDllWide);
-
     len = strlen(pDllName);
+    pDllWide = new wchar_t[len + 1];
+    assert(pDllWide);
     bret = MultiByteToWideChar(CP_ACP,NULL,pDllName,-1,pDllWide,len*2);
     if(!bret)
     {
@@ -45,7 +44,7 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
 
     pMEntry = new MODULEENTRY32;
     assert(pMEntry);
-    SetLastError(0);
+	pBaseAddr = NULL;
     for(bret = Module32First(hsnap,pMEntry); bret; bret = Module32Next(hsnap,pMEntry))
     {
 #ifdef _UNICODE
@@ -112,6 +111,37 @@ fail:
     return NULL;
 }
 
+
+
+BOOL __ReallocateSize(PVOID* ppBuffer,int buflen,int*pBufsize)
+{
+    PVOID pBuffer = NULL;
+    int bufsize=*pBufsize;
+    BOOL bret;
+
+    if(buflen > 0)
+    {
+        pBuffer = VirtualAllocEx(GetCurrentProcess(),NULL,buflen,MEM_COMMIT,PAGE_READWRITE);
+        if(pBuffer == NULL)
+        {
+            return FALSE;
+        }
+    }
+
+    if(*ppBuffer)
+    {
+        bret = VirtualFreeEx(GetCurrentProcess(),*ppBuffer,bufsize,MEM_RELEASE);
+        if(!bret)
+        {
+            DEBUG_INFO("Free[0x%p] %d error(%d)\n",*ppBuffer,bufsize,GetLastError());
+        }
+    }
+    *ppBuffer = pBuffer;
+    *pBufsize = buflen;
+    return TRUE;
+}
+
+
 DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
 {
     PIMAGE_DOS_HEADER pDosHeader=NULL;
@@ -127,6 +157,7 @@ DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
     BOOL bret;
     PVOID pRPtr=NULL;
     SIZE_t rsize;
+	bufsize = 0;
     buflen = sizeof(*pDosHeader);
     if(buflen > bufsize)
     {
@@ -138,10 +169,11 @@ DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
         bufsize = buflen;
     }
 
-    pBuffer = VirtualAllocEx(GetCurrentProcess(),NULL,bufsize,MEM_COMMIT,PAGE_READWRITE);
-    if(pBuffer == NULL)
+	bret = __ReallocateSize(&pBuffer,buflen,&bufsize);
+	if (!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -200,61 +232,15 @@ DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
     pDataDir = &(pOptional32->DataDirectory[0]);
 
     pTableAddr = pDataDir->VirtualAddress;
-
-    if(pBuffer)
-    {
-        bret = VirtualFreeEx(GetCurrentProcess(),pBuffer,bufsize,MEM_RELEASE);
-        if(!bret)
-        {
-            DEBUG_INFO("free 0x%p [0x%08x] size error %d\n",pBuffer,bufsize,GetLastError());
-        }
-    }
-    pBuffer = NULL;
+	__ReallocateSize(&pBuffer,0,&bufsize);
 
     return pTableAddr;
 
 
 fail:
-    if(pBuffer)
-    {
-        bret = VirtualFreeEx(GetCurrentProcess(),pBuffer,bufsize,MEM_RELEASE);
-        if(!bret)
-        {
-            DEBUG_INFO("free 0x%p [0x%08x] size error %d\n",pBuffer,bufsize,GetLastError());
-        }
-    }
-    pBuffer = NULL;
+	__ReallocateSize(&pBuffer,0,&bufsize);
     SetLastError(ret);
     return NULL;
-}
-
-
-BOOL __ReallocateSize(PVOID* ppBuffer,int buflen,int*pBufsize)
-{
-    PVOID pBuffer = NULL;
-    int bufsize=*pBufsize;
-    BOOL bret;
-
-    if(buflen > 0)
-    {
-        pBuffer = VirtualAllocEx(GetCurrentProcess(),NULL,buflen,MEM_COMMIT,PAGE_READWRITE);
-        if(pBuffer == NULL)
-        {
-            return FALSE;
-        }
-    }
-
-    if(*ppBuffer)
-    {
-        bret = VirtualFreeEx(GetCurrentProcess(),*ppBuffer,bufsize,MEM_RELEASE);
-        if(!bret)
-        {
-            DEBUG_INFO("Free[0x%p] %d error(%d)\n",*ppBuffer,bufsize,GetLastError());
-        }
-    }
-    *ppBuffer = pBuffer;
-    *pBufsize = buflen;
-    return TRUE;
 }
 
 int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skipbyte,int* pBufSize)
@@ -265,7 +251,6 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skip
     PVOID pCurPtr=NULL;
     PVOID pTmpBuf=NULL;
     PVOID pCurAddr;
-    int tmpnamesize=*pBufSize,tmpnamelen=0;
     int tmpsize=0,tmplen=0;
     BOOL bret;
     int ret;
@@ -276,49 +261,18 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skip
     readlen = 0;
     /*now first to read for the readnum*/
 
-    if(tmpnamesize < readnum)
-    {
-        bret = __ReallocateSize(ppBuffer,readnum,pBufSize);
-        if(!bret)
-        {
-            ret = GetLastError() ? GetLastError() : 1;
-            goto fail;
-        }
-    }
     pCurPtr = *ppBuffer;
-    pCurAddr = pModBase + rva;
-    tmpnamesize = *pBufSize;
-
-    if(skipbyte > 0)
-    {
-        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,skipbyte,&rsize);
-        if(!bret)
-        {
-            ret = GetLastError() ? GetLastError() : 1;
-            goto fail;
-        }
-        if(rsize != skipbyte)
-        {
-            ret = ERROR_INVALID_BLOCK;
-            goto fail;
-        }
-
-
-        readlen = 0 ;
-        pCurPtr = *ppBuffer;
-        /*to skip the bytes*/
-        pCurAddr += rsize;
-    }
+    pCurAddr = pModBase + rva+skipbyte;
 
     for(;;)
     {
         if(readlen >= *pBufSize)
         {
             /*we will expand the buffer size*/
-            tmpnamelen = (*pBufSize) << 1 ? (*pBufSize) << 1 : 0x1000;
-            assert(tmpnamesize == 0);
-            assert(pTmpName == NULL);
-            bret = __ReallocateSize(&pTmpBuf,tmpnamelen,&tmpsize);
+            tmplen = (*pBufSize) << 1 ? (*pBufSize) << 1 : 0x1000;
+            assert(tmpsize == 0);
+            assert(pTmpBuf == NULL);
+            bret = __ReallocateSize(&pTmpBuf,tmplen,&tmpsize);
             if(!bret)
             {
                 ret = GetLastError() ? GetLastError() : 1;
@@ -328,7 +282,7 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skip
             /*now to copy memory*/
             if(readlen > 0)
             {
-                memcpy(pTmpName,*ppBuffer,readlen);
+                memcpy(pTmpBuf,*ppBuffer,readlen);
             }
             /*free buffer*/
             __ReallocateSize(ppBuffer,0,pBufSize);
@@ -375,8 +329,8 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 {
     int buflen=0,bufsize=0;
     PVOID pBuffer=NULL;
-    int namelen = 0,namesize=0,tmpnamelen=0,tmpnamesize=0;
-    PVOID pNameBuf=NULL,pTmpName=NULL;
+    int namelen = 0,namesize=0;
+    PVOID pNameBuf=NULL;
 
     int ret;
     SIZE_T rsize;
@@ -418,13 +372,13 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 
     /*now we should get the table address */
     pExportDir = pBuffer;
-    bret = ReadProcessMemory(hProcess,pModBase + tablerva,pExportDir,buflen,&rsize);
+    bret = ReadProcessMemory(hProcess,pModBase + tablerva,pExportDir,sizeof(*pExportDir),&rsize);
     if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
         goto fail;
     }
-    if(rsize != buflen)
+    if(rsize != sizeof(*pExportDir))
     {
         ret = ERROR_INVALID_BLOCK;
         goto fail;
@@ -469,6 +423,7 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
         goto fail;
     }
 
+	/*name table is less than the functions ,if it has no name ,the value is 0 ,so we should set NumberOfFunctions not NumberOfNames*/
     nametablelen = sizeof(DWORD)*pExportDir->NumberOfFunctions;
     bret = __ReallocateSize(&pNameTable,nametablelen,&nametablesize);
     if(!bret)
@@ -529,7 +484,6 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 
     __ReallocateSize(&pNameTable,0,nametablesize);
     __ReallocateSize(&pFnTable,0,fntablesize);
-    __ReallocateSize(&pTmpName,0,&tmpnamesize);
     __ReallocateSize(&pNameBuf,0,&namesize);
     __ReallocateSize(&pBuffer,0,&bufsize);
 
@@ -537,7 +491,6 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 fail:
     __ReallocateSize(&pNameTable,0,nametablesize);
     __ReallocateSize(&pFnTable,0,fntablesize);
-    __ReallocateSize(&pTmpName,0,&tmpnamesize);
     __ReallocateSize(&pNameBuf,0,&namesize);
     __ReallocateSize(&pBuffer,0,&bufsize);
     SetLastError(ret);
