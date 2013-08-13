@@ -2,6 +2,17 @@
 
 #include "fnpe.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#define  DEBUG_INFO(fmt,...) \
+do\
+{\
+	printf("%s:%d\t",__FILE__,__LINE__);\
+    printf(fmt,__VA_ARGS__);\
+} while(0)
+
+
 PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
 {
     HANDLE hsnap=INVALID_HANDLE_VALUE;
@@ -101,14 +112,15 @@ fail:
     return NULL;
 }
 
-PVOID __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
+DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
 {
     PIMAGE_DOS_HEADER pDosHeader=NULL;
     PIMAGE_FILE_HEADER pFileHeader=NULL;
     PIMAGE_OPTIONAL_HEADER32 pOptional32=NULL;
     PIMAGE_NT_HEADER pNtHeader=NULL;
     PIMAGE_DATA_DIRECTORY pDataDir=NULL;
-    PVOID pBuffer=NULL,pTableAddr=NULL;
+    PVOID pBuffer=NULL;
+    DWORD pTableAddr=NULL;
     int bufsize=0;
     int buflen=0;
     int ret;
@@ -245,7 +257,7 @@ BOOL __ReallocateSize(PVOID* ppBuffer,int buflen,int*pBufsize)
     return TRUE;
 }
 
-int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int readnum,int* pBufSize)
+int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skipbyte,int* pBufSize)
 {
     int done;
     int readlen ;
@@ -277,28 +289,24 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int read
     pCurAddr = pModBase + rva;
     tmpnamesize = *pBufSize;
 
-    if(readnum > 0)
+    if(skipbyte > 0)
     {
-        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,readnum,&rsize);
+        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,skipbyte,&rsize);
         if(!bret)
         {
             ret = GetLastError() ? GetLastError() : 1;
             goto fail;
         }
-
-        /*now we test if we have the data read ok*/
-        pChar = pCurPtr;
-        for(i=0; i<rsize; i++)
+        if(rsize != skipbyte)
         {
-            if(pChar[i] == '\0')
-            {
-                /*we got the end of char ,so return the length of chars*/
-                return (i+1);
-            }
+            ret = ERROR_INVALID_BLOCK;
+            goto fail;
         }
 
-        readlen += rsize;
-        pCurPtr += rsize;
+
+        readlen = 0 ;
+        pCurPtr = *ppBuffer;
+        /*to skip the bytes*/
         pCurAddr += rsize;
     }
 
@@ -374,11 +382,12 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
     SIZE_T rsize;
     BOOL bret;
     int fntablesize=0,fntablelen=0;
-    PVOID pFnAddr = NULL,pFnTable=NULL;
+    PVOID pFnAddr = NULL;
+    DOWRD *pFnTable=NULL;
     int nametablesize=0,nametablelen=0;
-    PVOID pNameTable=NULL;
+    DWORD *pNameTable=NULL;
     PIMAGE_EXPORT_DIRECTORY pExportDir=NULL;
-    int i,j,done,readlen;
+    int i,j,readlen,findidx;
     DWORD rva;
     PVOID pCurPtr;
 
@@ -460,7 +469,7 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
         goto fail;
     }
 
-    nametablelen = sizeof(DWORD)*pExportDir->NumberOfNames;
+    nametablelen = sizeof(DWORD)*pExportDir->NumberOfFunctions;
     bret = __ReallocateSize(&pNameTable,nametablelen,&nametablesize);
     if(!bret)
     {
@@ -482,20 +491,43 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
         goto fail;
     }
 
+    findidx = -1;
     /*now to get the name and */
-    for(i = 0; i<pExportDir->NumberOfNames; i++)
+    for(i = 0; i<pExportDir->NumberOfFunctions; i++)
     {
-		
+        /*now to test if */
+        if(pNameTable[i] == 0)
+        {
+            continue;
+        }
+
+        /*now it is not has name ,so we should search for it*/
+        rva = pNameTable[i];
+        ret = __ReadName(hProcess,pModBase,rva,&pNameBuf,2,&namesize);
+        if(ret < 0)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
+
+        /*now to compare the jobs*/
+        if(strcmp(pNameBuf,pProcName)==0)
+        {
+            findidx = i;
+            break;
+        }
     }
 
+    if(findidx < 0)
+    {
+        ret = ERROR_INVALID_NAME;
+        goto fail;
+    }
 
-
-
-
-
+    /*ok we should set the function pointer*/
+    pFnAddr = pModBase + pFnTable[findidx];
 
     __ReallocateSize(&pNameTable,0,nametablesize);
-
     __ReallocateSize(&pFnTable,0,fntablesize);
     __ReallocateSize(&pTmpName,0,&tmpnamesize);
     __ReallocateSize(&pNameBuf,0,&namesize);
@@ -516,6 +548,7 @@ extern "C" int __GetRemoteProcAddress(unsigned int processid,const char* pDllNam
 {
     HANDLE hProcess=NULL;
     PVOID pBaseAddr=NULL,pFuncAddr=NULL;
+    DWORD exporttablerva = 0;
     int ret;
 
     pBaseAddr = __GetModuleBaseAddr(processid,pDllName);
@@ -533,7 +566,31 @@ extern "C" int __GetRemoteProcAddress(unsigned int processid,const char* pDllNam
         goto fail;
     }
 
-    /*now we should */
+    pBaseAddr= __GetModuleBaseAddr(unsigned int processid,const char * pDllName);
+    if(pBaseAddr == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    exporttablerva = __GetExportTableAddr(hProcess,pBaseAddr);
+    if(exporttablerva == 0)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    pFuncAddr = __GetProcAddr(hProcess,pBaseAddr,exporttablerva,pDllName,pProcName);
+    if(pFuncAddr == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+    *ppFnAddr = pFuncAddr;
+
+    assert(hProcess != NULL);
+    CloseHandle(hProcess);
+
 
     return 0;
 fail:
