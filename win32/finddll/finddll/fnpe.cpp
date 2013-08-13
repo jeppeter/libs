@@ -245,23 +245,72 @@ BOOL __ReallocateSize(PVOID* ppBuffer,int buflen,int*pBufsize)
     return TRUE;
 }
 
-int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int* pBufSize)
+int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int readnum,int* pBufSize)
 {
-	int done;
-	int readlen ;
-	
+    int done;
+    int readlen ;
+    SIZE_T rsize;
+    PVOID pCurPtr=NULL;
+    PVOID pTmpBuf=NULL;
+    PVOID pCurAddr;
+    int tmpnamesize=*pBufSize,tmpnamelen=0;
+    int tmpsize=0,tmplen=0;
+    BOOL bret;
+    int ret;
+    int i;
+    unsigned char* pChar=NULL;
+
     done = 0;
     readlen = 0;
-    pCurPtr = pNameBuf;
-    for(readlen=0; done==0; readlen++)
+    /*now first to read for the readnum*/
+
+    if(tmpnamesize < readnum)
     {
-        if(readlen >= bufsize)
+        bret = __ReallocateSize(ppBuffer,readnum,pBufSize);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
+    }
+    pCurPtr = *ppBuffer;
+    pCurAddr = pModBase + rva;
+    tmpnamesize = *pBufSize;
+
+    if(readnum > 0)
+    {
+        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,readnum,&rsize);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
+
+        /*now we test if we have the data read ok*/
+        pChar = pCurPtr;
+        for(i=0; i<rsize; i++)
+        {
+            if(pChar[i] == '\0')
+            {
+                /*we got the end of char ,so return the length of chars*/
+                return (i+1);
+            }
+        }
+
+        readlen += rsize;
+        pCurPtr += rsize;
+        pCurAddr += rsize;
+    }
+
+    for(;;)
+    {
+        if(readlen >= *pBufSize)
         {
             /*we will expand the buffer size*/
-            tmpnamelen = bufsize << 1;
+            tmpnamelen = (*pBufSize) << 1 ? (*pBufSize) << 1 : 0x1000;
             assert(tmpnamesize == 0);
             assert(pTmpName == NULL);
-            bret = __ReallocateSize(&pTmpName,tmpnamelen,&tmpnamesize);
+            bret = __ReallocateSize(&pTmpBuf,tmpnamelen,&tmpsize);
             if(!bret)
             {
                 ret = GetLastError() ? GetLastError() : 1;
@@ -269,20 +318,21 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int* pBu
             }
 
             /*now to copy memory*/
-            memcpy(pTmpName,pNameBuf,readlen);
+            if(readlen > 0)
+            {
+                memcpy(pTmpName,*ppBuffer,readlen);
+            }
             /*free buffer*/
-            __ReallocateSize(&pNameBuf,0,&namesize);
+            __ReallocateSize(ppBuffer,0,pBufSize);
             /*to replace the buffer*/
-            namelen = tmpnamelen;
-            namesize = tmpnamesize;
-            pNameBuf = pTmpName;
-            pTmpName = NULL;
-            namelen = 0 ;
-            namesize = 0;
-            pCurPtr = (pNameBuf + readlen);
+            *ppBuffer = pTmpBuf;
+            *pBufSize = tmpsize;
+            pTmpBuf = NULL;
+            tmpsize = 0;
+            pCurPtr = (*ppBuffer + readlen);
         }
 
-        bret = ReadProcessMemory(hProcess,pModBase+ rva + readlen,pCurPtr,1,&rsize);
+        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,1,&rsize);
         if(!bret)
         {
             ret = GetLastError() ? GetLastError() : 1;
@@ -296,9 +346,20 @@ int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int* pBu
         if(*pCurPtr == '\0')
         {
             done =1;
+            break;
         }
         pCurPtr += 1;
+        readlen += 1;
+        pCurAddr += 1;
     }
+
+    assert(pTmpBuf == NULL);
+    return readlen;
+
+fail:
+    __ReallocateSize(&pTmpBuf,0,&tmpsize);
+    SetLastError(ret);
+    return -ret;
 }
 
 
@@ -312,7 +373,10 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
     int ret;
     SIZE_T rsize;
     BOOL bret;
-    PVOID pFnAddr = NULL;
+    int fntablesize=0,fntablelen=0;
+    PVOID pFnAddr = NULL,pFnTable=NULL;
+    int nametablesize=0,nametablelen=0;
+    PVOID pNameTable=NULL;
     PIMAGE_EXPORT_DIRECTORY pExportDir=NULL;
     int i,j,done,readlen;
     DWORD rva;
@@ -359,66 +423,88 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 
     /*now we should compare module name ,this will give it check*/
     rva = pExportDir->Name;
-    done = 0;
-    readlen = 0;
-    pCurPtr = pNameBuf;
-    for(readlen=0; done==0; readlen++)
+    readlen = __ReadName(hProcess,pModBase,rva,&pNameBuf,0,&namesize);
+    if(readlen < 0)
     {
-        if(readlen >= bufsize)
-        {
-            /*we will expand the buffer size*/
-            tmpnamelen = bufsize << 1;
-            assert(tmpnamesize == 0);
-            assert(pTmpName == NULL);
-            bret = __ReallocateSize(&pTmpName,tmpnamelen,&tmpnamesize);
-            if(!bret)
-            {
-                ret = GetLastError() ? GetLastError() : 1;
-                goto fail;
-            }
-
-            /*now to copy memory*/
-            memcpy(pTmpName,pNameBuf,readlen);
-            /*free buffer*/
-            __ReallocateSize(&pNameBuf,0,&namesize);
-            /*to replace the buffer*/
-            namelen = tmpnamelen;
-            namesize = tmpnamesize;
-            pNameBuf = pTmpName;
-            pTmpName = NULL;
-            namelen = 0 ;
-            namesize = 0;
-            pCurPtr = (pNameBuf + readlen);
-        }
-
-        bret = ReadProcessMemory(hProcess,pModBase+ rva + readlen,pCurPtr,1,&rsize);
-        if(!bret)
-        {
-            ret = GetLastError() ? GetLastError() : 1;
-            goto fail;
-        }
-        if(rsize != 1)
-        {
-            ret = ERROR_INVALID_BLOCK;
-            goto fail;
-        }
-        if(*pCurPtr == '\0')
-        {
-            done =1;
-        }
-        pCurPtr += 1;
+        ret = -readlen;
+        goto fail;
     }
 
-	/*ok read name */
+    /*now to compare the name*/
+    if(strcmp(pNameBuf,pDllName)!= 0)
+    {
+        ret = ERROR_INVALID_NAME;
+        goto fail;
+    }
+
+    /*now we should get for the functions scanning*/
+    fntablelen = sizeof(DWORD)*pExportDir->NumberOfFunctions;
+    bret = __ReallocateSize(&pFnTable,fntablelen,&fntablesize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    rva = pExportDir->AddressOfFunctions;
+    bret = ReadProcessMemory(hProcess,pModBase+rva ,pFnTable,fntablelen,&rsize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    if(rsize != fntablelen)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    nametablelen = sizeof(DWORD)*pExportDir->NumberOfNames;
+    bret = __ReallocateSize(&pNameTable,nametablelen,&nametablesize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    rva = pExportDir->AddressOfNames;
+    bret = ReadProcessMemory(hProcess,pModBase+rva ,pNameTable,nametablelen,&rsize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    if(rsize != nametablelen)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    /*now to get the name and */
+    for(i = 0; i<pExportDir->NumberOfNames; i++)
+    {
+		
+    }
 
 
 
+
+
+
+
+    __ReallocateSize(&pNameTable,0,nametablesize);
+
+    __ReallocateSize(&pFnTable,0,fntablesize);
     __ReallocateSize(&pTmpName,0,&tmpnamesize);
     __ReallocateSize(&pNameBuf,0,&namesize);
     __ReallocateSize(&pBuffer,0,&bufsize);
 
     return pFnAddr;
 fail:
+    __ReallocateSize(&pNameTable,0,nametablesize);
+    __ReallocateSize(&pFnTable,0,fntablesize);
     __ReallocateSize(&pTmpName,0,&tmpnamesize);
     __ReallocateSize(&pNameBuf,0,&namesize);
     __ReallocateSize(&pBuffer,0,&bufsize);
