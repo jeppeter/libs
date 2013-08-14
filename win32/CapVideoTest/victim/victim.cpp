@@ -86,6 +86,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		printf("[%d] param %s\n",i,argv[i]);
 	}
 #endif
+	printf("process id %d\n",GetCurrentProcessId());
 	while(1)
 	{
 		Sleep(1000);
