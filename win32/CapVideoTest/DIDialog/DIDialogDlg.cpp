@@ -106,19 +106,10 @@ void CDIDialogDlg::OnLoad()
 	/*now we should test for the job*/
 	char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL;
 	int dllnamesize=0,fulldllnamesize=0,execnamesize=0,bmpfilesize=0;
-	int ret;
 #ifdef _UNICODE
-	ret = UnicodeToAnsi(m_strDllName.c_str(),&pDllName,&dllnamesize);
-	if (ret < 0)
-	{
-		goto out;
-	}
-	ret = UnicodToAnsi(m_str);
-#else
 #endif
 
 
-out:
 #ifdef _UNICODE
 	UnicodeToAnsi(NULL,&pDllName,&dllnamesize);
 	UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);

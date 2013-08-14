@@ -669,7 +669,7 @@ static BOOL UpdateImports(HANDLE hProcess, LPCSTR *plpDlls, DWORD nDlls)
 
 //////////////////////////////////////////////////////////////////////////////
 //
-BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
+int WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
                                         __in_z LPSTR lpCommandLine,
                                         LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                         LPSECURITY_ATTRIBUTES lpThreadAttributes,
@@ -685,6 +685,8 @@ BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
 {
     DWORD dwMyCreationFlags = (dwCreationFlags | CREATE_SUSPENDED);
     PROCESS_INFORMATION pi;
+	int ret;
+	DWORD processid=0;
 
     if (pfCreateProcessA == NULL) {
         pfCreateProcessA = CreateProcessA;
@@ -700,7 +702,7 @@ BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
                           lpCurrentDirectory,
                           lpStartupInfo,
                           &pi)) {
-        return FALSE;
+        return -1;
     }
 
     LPCSTR rlpDlls[2];
@@ -713,8 +715,9 @@ BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
     }
 
     if (!UpdateImports(pi.hProcess, rlpDlls, nDlls)) {
-        return FALSE;
+        return -1;
     }
+	processid = GetProcessId(pi.hProcess);
 
     if (lpProcessInformation) {
         CopyMemory(lpProcessInformation, &pi, sizeof(pi));
@@ -723,11 +726,12 @@ BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
     if (!(dwCreationFlags & CREATE_SUSPENDED)) {
         ResumeThread(pi.hThread);
     }
-    return TRUE;
+	ret = processid;
+    return ret;
 }
 
 
-BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
+int WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
                                         __in_z LPWSTR lpCommandLine,
                                         LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                         LPSECURITY_ATTRIBUTES lpThreadAttributes,
@@ -743,6 +747,8 @@ BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
 {
     DWORD dwMyCreationFlags = (dwCreationFlags | CREATE_SUSPENDED);
     PROCESS_INFORMATION pi;
+	DWORD processid;
+	int ret;
 
     if (pfCreateProcessW == NULL) {
         pfCreateProcessW = CreateProcessW;
@@ -758,7 +764,7 @@ BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
                           lpCurrentDirectory,
                           lpStartupInfo,
                           &pi)) {
-        return FALSE;
+        return -1;
     }
 
     LPCSTR rlpDlls[2];
@@ -773,8 +779,9 @@ BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
     }
 
     if (!UpdateImports(pi.hProcess, rlpDlls, nDlls)) {
-        return FALSE;
+        return -1;
     }
+	processid = GetProcessId(pi.hProcess);
 
     if (lpProcessInformation) {
         CopyMemory(lpProcessInformation, &pi, sizeof(pi));
@@ -783,7 +790,8 @@ BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
     if (!(dwCreationFlags & CREATE_SUSPENDED)) {
         ResumeThread(pi.hThread);
     }
-    return TRUE;
+	ret = processid;
+    return ret;
 }
 
 BOOL WINAPI DetourCopyPayloadToProcess(HANDLE hProcess,

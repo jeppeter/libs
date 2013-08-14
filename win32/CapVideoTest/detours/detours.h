@@ -290,7 +290,7 @@ typedef BOOL (WINAPI *PDETOUR_CREATE_PROCESS_ROUTINEW)
      LPSTARTUPINFOW lpStartupInfo,
      LPPROCESS_INFORMATION lpProcessInformation);
 
-BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
+int WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
                                         __in_z LPSTR lpCommandLine,
                                         LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                         LPSECURITY_ATTRIBUTES lpThreadAttributes,
@@ -305,7 +305,7 @@ BOOL WINAPI DetourCreateProcessWithDllA(LPCSTR lpApplicationName,
                                         PDETOUR_CREATE_PROCESS_ROUTINEA
                                         pfCreateProcessA);
 
-BOOL WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
+int WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
                                         __in_z LPWSTR lpCommandLine,
                                         LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                         LPSECURITY_ATTRIBUTES lpThreadAttributes,
