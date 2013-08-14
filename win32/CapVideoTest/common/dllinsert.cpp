@@ -1,65 +1,69 @@
 
 
 #include "dllinsert.h"
+#include "uniansi.h"
 #include "..\\detours\\detours.h"
 #include <windows.h>
 #include <TlHelp32.h>
 #include <assert.h>
 
-int __LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName)
+int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFullName,const char* pDllName)
 {
-    BOOL bret;
     PROCESS_INFORMATION pi = {0};
     STARTUPINFO si = {0};
     int ret;
     si.cb = sizeof(si);
 #ifdef _UNICODE
     LPWSTR pExecWide=NULL;
-    int execnamelen=0;
-    if (pExec == NULL )
+    LPWSTR pCommandWide=NULL;
+    int execsize=0,commandsize = 0;
+    int execlen=0,commandlen = 0;
+    if(pExec == NULL)
     {
         ret = ERROR_INVALID_DATA;
         return -ret;
     }
-    execnamelen = strlen(pExec);
-    pExecWide = new wchar_t[execnamelen+1];
-
-    bret = MultiByteToWideChar(CP_ACP,NULL,pExec,-1,pExecWide,(execnamelen));
-    if (!bret)
+    execlen = AnsiToUnicode((char*)pExec,&pExecWide,&execsize);
+    if(execlen < 0)
     {
-        ret = GetLastError() ? GetLastError() : 1;
-        delete [] pExecWide;
-        pExecWide =NULL;
-        return -ret;
+        return execlen;
+    }
+    if(pCommandLine)
+    {
+        commandlen = AnsiToUnicode((char*)pCommandLine,&pCommandWide,&commandsize);
+        if(commandlen < 0)
+        {
+            AnsiToUnicode(NULL,&pExecWide,&execsize);
+            return commandlen;
+        }
     }
 
-    bret = DetourCreateProcessWithDllW(pExecWide,NULL,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE,
+    ret = DetourCreateProcessWithDllW(pExecWide,pCommandWide,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE,
                                        NULL,NULL,
                                        &si,&pi,pDllFullName,pDllName,NULL);
 
 
-    delete [] pExecWide ;
-    pExecWide = NULL;
+    AnsiToUnicode(NULL,&pCommandWide,&commandsize);
+    AnsiToUnicode(NULL,&pExecWide,&execsize);
 
 #else
-    bret = DetourCreateProcessWithDllA(pExec,NULL,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE
+    ret = DetourCreateProcessWithDllA(pExec,pCommandLine,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE
                                        NULL,NULL,
                                        &si,&pi,pDllFullName,pDllName,NULL);
 #endif
-
-    ret = 0;
-    if (!bret)
+    
+    if(ret < 0)
     {
-        ret = GetLastError() ? GetLastError() : 1;
+        return ret;
     }
-    return -ret;
+    return ret;
 }
 
-extern "C" int LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName)
+extern "C" int LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFullName,const char* pDllName)
 {
 
-	DEBUG_INFO("load %s exe with fullname (%s) dll (%s)\n",pExec,pDllFullName,pDllName);
-    return __LoadInsert(pExec,pDllFullName,pDllName);
+    DEBUG_INFO("load %s exe command(%s) with fullname (%s) dll (%s)\n",pExec,pCommandLine ? pCommandLine : "null",pDllFullName,pDllName);
+    return __LoadInsert(pExec,pCommandLine,pDllFullName,pDllName);
 }
 
 
@@ -649,6 +653,34 @@ fail:
     return -ret;
 }
 
+
+int __TimeExpire(ULONGLONG ctime,ULONGLONG etime)
+{
+    if(ctime >= etime)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+#define  BIT32_MASK  0xffffffff
+
+ULONGLONG __GetCurrentTime(ULONGLONG *pCtime)
+{
+    ULONGLONG ctime = GetTickCount() & BIT32_MASK;
+    ULONGLONG lastltime = *pCtime & BIT32_MASK;
+    ULONGLONG lasthtime = ((*pCtime) >> 32) & BIT32_MASK;
+
+    /*this means overflow */
+    if(ctime < lastltime)
+    {
+        lasthtime +=1;
+    }
+    *pCtime = (lasthtime << 32) | ctime;
+    return *pCtime;
+
+}
+
 extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char* pParam,int timeout,void** ppRetVal)
 {
     PVOID pRemoteAddr=NULL;
@@ -729,29 +761,30 @@ extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char*
     }
 
     /**/
-    stime = GetTickCount64();
+    stime = GetTickCount();
     etime = stime + timeout* 1000;
     ctime = stime;
 
-    while(ctime < etime || timeout == 0)
+    while(__TimeExpire(ctime, etime)== 0|| timeout == 0)
     {
-        waitmils = INFINITE;
+        waitmils = 2000;
         if(timeout)
         {
-            waitmils =(DWORD) (etime - ctime);
+            if((etime - ctime) < waitmils)
+            {
+                waitmils =(DWORD)(etime - ctime);
+            }
         }
 
         wret = WaitForSingleObject(hThread,waitmils);
         if(wret == WAIT_OBJECT_0)
         {
-			retcode = 0;
-			SetLastError(0);
             bret = GetExitCodeThread(hThread,&retcode);
             if(bret)
             {
                 break;
             }
-            else if(GetLastError() != STILL_ACTIVE && retcode != STILL_ACTIVE)
+            else if(GetLastError() != STILL_ACTIVE)
             {
                 ret = GetLastError() ? GetLastError() : 1;
                 DEBUG_INFO("\n");
@@ -759,13 +792,18 @@ extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char*
             }
             /*still alive ,continue*/
         }
+        else if(wret == WAIT_TIMEOUT)
+        {
+            /*wait timeout*/
+            ;
+        }
         else
         {
             ret = GetLastError() ? GetLastError() : 1;
             DEBUG_INFO("wait error %d\n",ret);
             goto fail;
         }
-        ctime = GetTickCount64();
+        __GetCurrentTime(&ctime);
     }
 
     if(ctime >= etime && timeout > 0)
@@ -829,29 +867,29 @@ fail:
 
 extern "C" int CaptureFile(DWORD processid,const char* pDllName,const char* pFuncName,const char* bmpfile)
 {
-	int ret;
-	PVOID pFnAddr=NULL;
-	PVOID pRetVal;
+    int ret;
+    PVOID pFnAddr=NULL;
+    PVOID pRetVal;
 
-	ret = __GetRemoteProcAddress(processid,pDllName,pFuncName,&pFnAddr);
-	if (ret < 0)
-	{
-		return ret;
-	}
+    ret = __GetRemoteProcAddress(processid,pDllName,pFuncName,&pFnAddr);
+    if(ret < 0)
+    {
+        return ret;
+    }
 
-	ret = __CallRemoteFunc(processid,pFnAddr,bmpfile,0,&pRetVal);
-	if (ret < 0)
-	{
-		return ret;
-	}
+    ret = __CallRemoteFunc(processid,pFnAddr,bmpfile,0,&pRetVal);
+    if(ret < 0)
+    {
+        return ret;
+    }
 
-	ret = (int)pRetVal;
-	if (ret != 0)
-	{
-		ret = ret > 0 ? 0 : ret;
-	}
+    ret = (int)pRetVal;
+    if(ret != 0)
+    {
+        ret = ret > 0 ? 0 : ret;
+    }
 
-	return ret;	
+    return ret;
 }
 
 

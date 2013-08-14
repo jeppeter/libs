@@ -620,6 +620,33 @@ fail:
     return -ret;
 }
 
+int __TimeExpire(ULONGLONG ctime,ULONGLONG etime)
+{
+    if(ctime >= etime)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+#define  BIT32_MASK  0xffffffff
+
+ULONGLONG __GetCurrentTime(ULONGLONG *pCtime)
+{
+    ULONGLONG ctime = GetTickCount() & BIT32_MASK;
+    ULONGLONG lastltime = *pCtime & BIT32_MASK;
+    ULONGLONG lasthtime = ((*pCtime) >> 32) & BIT32_MASK;
+
+    /*this means overflow */
+    if(ctime < lastltime)
+    {
+        lasthtime +=1;
+    }
+    *pCtime = (lasthtime << 32) | ctime;
+    return *pCtime;
+
+}
+
 extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char* pParam,int timeout,void** ppRetVal)
 {
     PVOID pRemoteAddr=NULL;
@@ -700,16 +727,19 @@ extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char*
     }
 
     /**/
-    stime = GetTickCount64();
+    stime = GetTickCount();
     etime = stime + timeout* 1000;
     ctime = stime;
 
-    while(ctime < etime || timeout == 0)
+    while(__TimeExpire(ctime, etime)== 0|| timeout == 0)
     {
-        waitmils = INFINITE;
+        waitmils = 2000;
         if(timeout)
         {
-            waitmils =(DWORD) (etime - ctime);
+            if((etime - ctime) < waitmils)
+            {
+                waitmils =(DWORD)(etime - ctime);
+            }
         }
 
         wret = WaitForSingleObject(hThread,waitmils);
@@ -728,13 +758,18 @@ extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char*
             }
             /*still alive ,continue*/
         }
+        else if(wret == WAIT_TIMEOUT)
+        {
+            /*wait timeout*/
+            ;
+        }
         else
         {
             ret = GetLastError() ? GetLastError() : 1;
             DEBUG_INFO("wait error %d\n",ret);
             goto fail;
         }
-        ctime = GetTickCount64();
+        __GetCurrentTime(&ctime);
     }
 
     if(ctime >= etime && timeout > 0)
