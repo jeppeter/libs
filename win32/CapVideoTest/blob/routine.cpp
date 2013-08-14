@@ -317,6 +317,12 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     }
 
     DEBUG_INFO("\n");
+//    hr = pDevice->Present(NULL,NULL,NULL,NULL);
+//    if(FAILED(hr))
+//    {
+//        DEBUG_INFO("not preset\n");
+//    }
+    DEBUG_INFO("\n");
 
     hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
     if(FAILED(hr))
@@ -345,13 +351,14 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     if(FAILED(hr))
     {
         ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not get render target data (0x%08x) (%d)\n",hr,ret);
+        DEBUG_INFO("could not get render target data (0x%08x)  (%d)\n",hr,ret);
         goto fail;
     }
     DEBUG_INFO("\n");
 
 #ifdef  UNICODE
     pFileName = new wchar_t[8000];
+    memset(pFileName,0,8000 * 2);
     bret = MultiByteToWideChar(CP_ACP,NULL,filetosave,-1,pFileName,8000);
     if(!bret)
     {
@@ -360,7 +367,7 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         goto fail;
     }
 
-    DEBUG_INFO("\n");
+    DEBUG_INFO("save file %s\n",filetosave);
 
     hr = D3DXSaveSurfaceToFile(pFileName, D3DXIFF_BMP, pSurface, NULL, NULL);
     if(FAILED(hr))
@@ -651,6 +658,8 @@ void ResumeAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     return;
 }
 
+//#define THREAD_PAUSE_HANDLE 1
+
 int Capture3DBackBuffer(const char* filetosave)
 {
     int ret;
@@ -686,6 +695,7 @@ int Capture3DBackBuffer(const char* filetosave)
         ret = __Capture3DBackBuffer(pPtr,filetosave);
         if(ret == 0)
         {
+            DEBUG_INFO("captuer %s succ\n",filetosave);
             break;
         }
 #if THREAD_PAUSE_HANDLE
