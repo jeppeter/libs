@@ -166,10 +166,6 @@ void ParseParam(int argc,char* argv[])
         Usage(3,"please specify -d|--dll");
     }
 
-    if(st_Param == NULL)
-    {
-        Usage(3,"please specify -P|--param");
-    }
     return;
 }
 
@@ -186,10 +182,13 @@ int AnsiMain(int argc,char *argv[])
         return ret;
     }
 
-    ret = __CallRemoteFunc(st_ProcessPid,pFuncAddr,st_Param,2,&pRetVal);
-    if(ret < 0)
+    if(st_Param)
     {
-        return ret;
+        ret = __CallRemoteFunc(st_ProcessPid,pFuncAddr,st_Param,2,&pRetVal);
+        if(ret < 0)
+        {
+            return ret;
+        }
     }
     return ret;
 }
