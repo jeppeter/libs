@@ -45,6 +45,15 @@
     <ClInclude Include="..\common\dllinsert.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\detours\detours.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\detours\detoured.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\uniansi.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DIDialog.cpp">
@@ -60,6 +69,24 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\common\dllinsert.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\detours\detours.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\detours\creatwth.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\detours\modules.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\detours\disasm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\detours\detoured.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\uniansi.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

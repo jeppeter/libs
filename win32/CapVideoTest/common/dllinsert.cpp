@@ -2,7 +2,9 @@
 
 #include "dllinsert.h"
 #include "..\\detours\\detours.h"
-
+#include <windows.h>
+#include <TlHelp32.h>
+#include <assert.h>
 
 int __LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName)
 {
@@ -22,7 +24,7 @@ int __LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName
     execnamelen = strlen(pExec);
     pExecWide = new wchar_t[execnamelen+1];
 
-    bret = MultiByteToWideChar(CP_ACP,NULL,pFmtStr,-1,pWide,(execnamelen)*2);
+    bret = MultiByteToWideChar(CP_ACP,NULL,pExec,-1,pExecWide,(execnamelen));
     if (!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
@@ -31,7 +33,7 @@ int __LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName
         return -ret;
     }
 
-    bret = DetourCreateProcessWithDllW(pExecWide,NULL,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE
+    bret = DetourCreateProcessWithDllW(pExecWide,NULL,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE,
                                        NULL,NULL,
                                        &si,&pi,pDllFullName,pDllName,NULL);
 
@@ -56,381 +58,800 @@ int __LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName
 extern "C" int LoadInsert(const char* pExec,const char* pDllFullName,const char* pDllName)
 {
 
+	DEBUG_INFO("load %s exe with fullname (%s) dll (%s)\n",pExec,pDllFullName,pDllName);
     return __LoadInsert(pExec,pDllFullName,pDllName);
 }
 
 
-int __IsModuleIn(DWORD processid,const char* pDllName,const char* pDllFullName)
+
+int LowerCaseName(const char* pName)
+{
+    char* pCurPtr=(char*)pName;
+
+    while((*pCurPtr) != '\0')
+    {
+        if((*pCurPtr) >= 'A' && (*pCurPtr) <= 'Z')
+        {
+            *pCurPtr -= 'A' ;
+            *pCurPtr += 'a';
+        }
+        pCurPtr ++;
+    }
+    return (pCurPtr - pName);
+}
+
+PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
 {
     HANDLE hsnap=INVALID_HANDLE_VALUE;
-    PMODULEENTRY32 *pModule32=NULL;
-    HANDLE hProcess=NULL;
-    int ret=0;
+    int ret;
     BOOL bret;
-    int fulllen=0,dlllen=0;
+    PVOID pBaseAddr = NULL;
+    LPMODULEENTRY32 pMEntry=NULL;
 #ifdef _UNICODE
-    wchar_t *pFullWide=NULL;
-    wchar_t *pDllWide=NULL;
-    wchar_t *pFullDllWide = NULL;
-    pFullWide = new wchar_t[MAX_MODULE_NAME32 + 2+MAX_PATH];
-    pDllWide = new wchar_t[MAX_MODULE_NAME32 + 2];
-    fulllen = strlen(pDllFullName);
-    dlllen = strlen(pDllName);
-    pFullDllWide = new wchar_t[fulllen + dlllen + 3];
-    bret =MultiByteToWideChar(CP_ACP,NULL,pDllFullName,-1,pFullWide,fulllen*2);
-    if (!bret)
-    {
-        ret = 0;
-        goto out;
-    }
-    bret =MultiByteToWideChar(CP_ACP,NULL,pDllFullName,-1,pDllWide,fulllen*2);
-    if (!bret)
-    {
-        ret = 0;
-        goto out;
-    }
-#else
-    char* pFullDllAnsi=NULL;
-
-    fulllen = strlen(pDllFullName);
-    dlllen = strlen(pDllName);
-    pFullDllAnsi = new char[MAX_MODULE_NAME32 + 2+MAX_PATH];
+    char* pDebugString=NULL;
+    int len;
+    pDebugString = new char[sizeof(pMEntry->szModule)];
+    assert(pDebugString);
 #endif
-    pModule32 = new MODULEENTRY32;
-    hProcess = OpenProcess(PROCESS_ALL_ACCESS,FALSE,processid);
-    if (hProcess == NULL)
-    {
-        ret = 0;
-        goto out;
-    }
 
     hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,processid);
-    if (hsnap == INVALID_HANDLE_VALUE)
+    if(hsnap == INVALID_HANDLE_VALUE)
     {
-        ret = 0;
-        goto out;
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
     }
 
-    for (bret = Module32First(hsnap,pModule32); bret ; bret = Module32Next(hsnap,pModule32))
+
+    pMEntry = new MODULEENTRY32;
+    assert(pMEntry);
+    pBaseAddr = NULL;
+    SetLastError(0);
+    memset(pMEntry,0,sizeof(*pMEntry));
+    pMEntry->dwSize = sizeof(*pMEntry);
+    DEBUG_INFO("\n");
+    for(bret = Module32First(hsnap,pMEntry); bret; bret = Module32Next(hsnap,pMEntry))
     {
 #ifdef _UNICODE
-        /*now we should copy the full name copy name*/
-        wcscpy(pFullDllWide,pModule32->szExePath);
-        wcscat(pFullDllWide,L"\\");
-        wcscat(pFullDllWide,pModule32->szModule);
-        if (wcscmp(pFullDllWide ,pFullWide )== 0
-                && wcscmp(pDllWide,pModule32->szModule) == 0)
+        len = wcslen(pMEntry->szModule);
+        SetLastError(0);
+        memset(pDebugString,0,sizeof(pMEntry->szModule));
+        ret = WideCharToMultiByte(CP_ACP,0,pMEntry->szModule,len,pDebugString,(len+1),NULL,NULL);
+        if(ret == 0 && GetLastError())
         {
-            ret = 1;
-            break;
+            ret = GetLastError();
+            goto fail;
         }
+        LowerCaseName(pDebugString);
+        DEBUG_INFO("module (%s)\n",pDebugString);
+
+        if(strcmp(pDebugString,pDllName)==0)
 #else
-        strcpy(pFullDllAnsi,pModule32->szExePath);
-        strcat(pFullDllAnsi,"\\");
-        strcat(pFullDllAnsi,pModule32->szModule);
-        if (strcmp(pFullDllAnsi,pDllFullName) == 0 &&
-                strcmp(pDllName,pModule32->szModule) == 0)
+        LowerCaseName(pMEntry->szModule);
+        if(strcmp(pMEntry->szModule,pDllName)==0)
+#endif
         {
-            ret = 1;
+            pBaseAddr = pMEntry->modBaseAddr;
             break;
         }
-#endif
+        memset(pMEntry,0,sizeof(*pMEntry));
+        pMEntry->dwSize = sizeof(*pMEntry);
     }
 
-out:
-    if (hsnap != INVALID_HANDLE_VALUE)
+
+    if(pBaseAddr == NULL)
+    {
+        DEBUG_INFO("Error %d\n",GetLastError());
+        ret = ERROR_MOD_NOT_FOUND;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+#ifdef _UNICODE
+    if(pDebugString)
+    {
+        delete [] pDebugString;
+    }
+    pDebugString = NULL;
+#endif
+
+    /*ok ,we find ,so we should close handle*/
+    if(pMEntry)
+    {
+        delete pMEntry;
+    }
+    pMEntry = NULL;
+
+    if(hsnap != INVALID_HANDLE_VALUE)
     {
         CloseHandle(hsnap);
     }
     hsnap = INVALID_HANDLE_VALUE;
-    if (hProcess != NULL)
-    {
-        CloseHandle(hProcess);
-    }
-    hProcess = NULL;
-    if (pModule32)
-    {
-        delete pModule32;
-    }
+
+
+    return pBaseAddr;
+fail:
 #ifdef _UNICODE
-    if (pDllWide)
+    if(pDebugString)
     {
-        delete [] pDllWide;
+        delete [] pDebugString;
     }
-    pDllWide = NULL;
-    if (pFullWide)
-    {
-        delete [] pFullWide;
-    }
-    pFullWide = NULL;
-    if (pFullDllWide)
-    {
-        delete [] pFullDllWide;
-    }
-    pFullDllWide = NULL;
-#else
-    if (pFullDllAnsi)
-    {
-        delete [] pFullDllAnsi;
-    }
-    pFullDllAnsi = NULL;
+    pDebugString = NULL;
 #endif
-    return ret;
+    if(pMEntry)
+    {
+        delete pMEntry;
+    }
+    pMEntry = NULL;
+
+    if(hsnap != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hsnap);
+    }
+    hsnap = INVALID_HANDLE_VALUE;
+    SetLastError(ret);
+    return NULL;
 }
 
-int __GetRemoteProcAddress(int processid,const char* pDllName,const char* pProcName,PVOID* ppFnAddr)
-{
-	
-}
 
-int __CallRemoteProc(HANDLE hProcess,LPTHREAD_START_ROUTINE startproc,PVOID pRMem,int timeout,DWORD *pRetVal)
+
+BOOL __ReallocateSize(PVOID* ppBuffer,int buflen,int*pBufsize)
 {
-    HANDLE hThread=NULL;
-    DWORD threadid=0;
-    int ret;
-    ULONGLONG stime,etime,ctime;
-    DWORD ltime,wret;
-    int succ = 0;
+    PVOID pBuffer = NULL;
+    int bufsize=*pBufsize;
     BOOL bret;
 
-    hThread = CreateRemoteThread(hProcess,NULL,0,startproc,pRMem,0,&threadid);
-    if (hThread == NULL || threadid == 0)
+    if(buflen > 0)
+    {
+        pBuffer = VirtualAllocEx(GetCurrentProcess(),NULL,buflen,MEM_COMMIT,PAGE_READWRITE);
+        if(pBuffer == NULL)
+        {
+            return FALSE;
+        }
+    }
+
+    if(*ppBuffer)
+    {
+        SetLastError(0);
+        bret = VirtualFreeEx(GetCurrentProcess(),*ppBuffer,bufsize,MEM_DECOMMIT);
+        if(!bret)
+        {
+            DEBUG_INFO("Free 0x%p [%d] error(%d)\n",*ppBuffer,bufsize,GetLastError());
+        }
+    }
+    *ppBuffer = pBuffer;
+    *pBufsize = buflen;
+    return TRUE;
+}
+
+
+DWORD __GetExportTableAddr(HANDLE hProcess,PVOID pModBase)
+{
+    PIMAGE_DOS_HEADER pDosHeader=NULL;
+    PIMAGE_FILE_HEADER pFileHeader=NULL;
+    PIMAGE_OPTIONAL_HEADER32 pOptional32=NULL;
+    PIMAGE_NT_HEADERS pNtHeader=NULL;
+    PIMAGE_DATA_DIRECTORY pDataDir=NULL;
+    PVOID pBuffer=NULL;
+    DWORD pTableAddr=NULL;
+    int bufsize=0;
+    int buflen=0;
+    int ret;
+    BOOL bret;
+    unsigned char* pRPtr=NULL;
+    SIZE_T rsize;
+    bufsize = 0;
+    buflen = sizeof(*pDosHeader);
+    if(buflen > bufsize)
+    {
+        bufsize = buflen;
+    }
+    buflen = sizeof(*pNtHeader);
+    if(buflen > bufsize)
+    {
+        bufsize = buflen;
+    }
+
+    bret = __ReallocateSize(&pBuffer,buflen,&bufsize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    /*now we should read the memory of DOS header*/
+    pRPtr =(unsigned char*) pModBase;
+    pDosHeader = (PIMAGE_DOS_HEADER) pBuffer;
+    bret = ReadProcessMemory(hProcess,pRPtr,pDosHeader,sizeof(*pDosHeader),&rsize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
         goto fail;
     }
-    stime = GetTickCount64();
-    etime = stime + timeout * 1000;
-    ctime = stime;
-
-    succ = 0;
-    while (ctime < etime
-            || timeout == 0)
+    if(rsize != sizeof(*pDosHeader))
     {
-        if (timeout == 0)
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    /*header of MZ*/
+    if(pDosHeader->e_magic != 0x5a4d)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    pRPtr += pDosHeader->e_lfanew;
+    pNtHeader =(PIMAGE_NT_HEADERS) pBuffer;
+    bret = ReadProcessMemory(hProcess,pRPtr,pNtHeader,sizeof(*pNtHeader),&rsize);
+    if(!bret)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    if(rsize != sizeof(*pNtHeader))
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    /*header of PE\0\0*/
+    if(pNtHeader->Signature != 0x00004550)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    /*now we get the PE header so we should get the export table*/
+    pOptional32 = &(pNtHeader->OptionalHeader);
+    if(pOptional32->Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        goto fail;
+    }
+
+    pDataDir = &(pOptional32->DataDirectory[0]);
+
+    pTableAddr = pDataDir->VirtualAddress;
+    __ReallocateSize(&pBuffer,0,&bufsize);
+
+    return pTableAddr;
+
+
+fail:
+    __ReallocateSize(&pBuffer,0,&bufsize);
+    SetLastError(ret);
+    return NULL;
+}
+
+int __ReadName(HANDLE hProcess,PVOID pModBase,DWORD rva,PVOID *ppBuffer,int skipbyte,int* pBufSize)
+{
+    int done;
+    int readlen ;
+    SIZE_T rsize;
+    unsigned char* pCurPtr=NULL;
+    PVOID pTmpBuf=NULL;
+    unsigned char* pCurAddr;
+    int tmpsize=0,tmplen=0;
+    BOOL bret;
+    int ret;
+    unsigned char* pChar=NULL;
+
+    done = 0;
+    readlen = 0;
+    /*now first to read for the readnum*/
+
+    pCurPtr =(unsigned char*) *ppBuffer;
+    pCurAddr = (unsigned char*)pModBase + rva+skipbyte;
+
+    for(;;)
+    {
+        if(readlen >= *pBufSize)
         {
-            ltime = INFINITE;
-        }
-        else
-        {
-            ltime = etime - ctime;
+            /*we will expand the buffer size*/
+            tmplen = (*pBufSize) << 1 ? (*pBufSize) << 1 : 0x1000;
+            assert(tmpsize == 0);
+            assert(pTmpBuf == NULL);
+            bret = __ReallocateSize(&pTmpBuf,tmplen,&tmpsize);
+            if(!bret)
+            {
+                ret = GetLastError() ? GetLastError() : 1;
+                goto fail;
+            }
+
+            /*now to copy memory*/
+            if(readlen > 0)
+            {
+                memcpy(pTmpBuf,*ppBuffer,readlen);
+            }
+            /*free buffer*/
+            __ReallocateSize(ppBuffer,0,pBufSize);
+            /*to replace the buffer*/
+            *ppBuffer = pTmpBuf;
+            *pBufSize = tmpsize;
+            pTmpBuf = NULL;
+            tmpsize = 0;
+            pCurPtr = ((unsigned char*)(*ppBuffer) + readlen);
         }
 
-        wret = WaitForSingleObject(hThread,ltime);
-        if (wret == WAIT_ABANDONED ||
-                wret == WAIT_TIMEOUT ||
-                wret == WAIT_FAILED)
+        bret = ReadProcessMemory(hProcess,pCurAddr,pCurPtr,1,&rsize);
+        if(!bret)
         {
             ret = GetLastError() ? GetLastError() : 1;
             goto fail;
         }
-
-        /*now to get the exit value*/
-        bret = GetExitCodeThread(hThread,pRetVal);
-        if (bret)
+        if(rsize != 1)
         {
-            succ = 1;
+            ret = ERROR_INVALID_BLOCK;
+            goto fail;
+        }
+        if((*pCurPtr) == '\0')
+        {
+            done =1;
             break;
         }
-        ret = GetLastError() ;
-        if (ret == STILL_ACTIVE)
-        {
-            ctime = GetTickCount64();
-            continue;
-        }
-        ret = GetLastError() ? GetLastError() : 1;
-        goto fail;
+        pCurPtr += 1;
+        readlen += 1;
+        pCurAddr += 1;
     }
 
-    if (succ == 0)
-    {
-        ret = WAIT_TIMEOUT;
-        goto fail;
-    }
-
-    assert(hThread);
-    CloseHandle(hThread);
-
-    return 0;
+    assert(pTmpBuf == NULL);
+    return readlen;
 
 fail:
-    if (hThread)
-    {
-        CloseHandle(hThread);
-    }
-    hThread=NULL;
+    __ReallocateSize(&pTmpBuf,0,&tmpsize);
+    SetLastError(ret);
     return -ret;
 }
 
-extern "C" int CaptureFile(DWORD processid,const char* bmpfile,const char* pDllName,const char* pDllFullName)
+
+PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pDllName,const char* pProcName)
 {
-    HANDLE hProcess= NULL;
+    int buflen=0,bufsize=0;
+    PVOID pBuffer=NULL;
+    int namelen = 0,namesize=0;
+    PVOID pNameBuf=NULL;
     int ret;
-    PVOID pParam=NULL;
-
-    DWORD paramsize=0,paramlen=0;
-    int loadlib= 0;
-    PVOID pLoadLibraryFn = NULL,pFreeLibraryFn=NULL,pGetProcAddrFn=NULL,pCaptureFn=NULL;
-    HANDLE hk32=NULL;
-    int rmodnamesize=0;
+    SIZE_T rsize;
     BOOL bret;
-    DWORD retval;
-#ifdef _UNICODE
-    PWCSTR pModuleName=NULL;
-    PWCSTR pDllWide=NULL;
-    PWCSTR pRModName=NULL;
-#else
-    char *pModuleName=NULL;
-    char *pDllAnsi = NULL;
-    char *pRModName=NULL;
-#endif
+    int fntablesize=0,fntablelen=0;
+    PVOID pFnAddr = NULL;
+    DWORD *pFnTable=NULL;
+    int nametablesize=0,nametablelen=0;
+    DWORD *pNameTable=NULL;
+    PIMAGE_EXPORT_DIRECTORY pExportDir=NULL;
+    unsigned int i;
+    int findidx,readlen;
+    DWORD rva;
 
-    /*not */
-    ret = __IsModuleIn(processid,pDllName,pDllFullName);
-    if (ret <= 0)
-    {
-        SetLastError(ERROR_MOD_NOT_FOUND);
-        return -ERROR_MOD_NOT_FOUND;
-    }
-
-    hProcess = OpenProcess(PROCESS_ALL_ACCESS,FALSE,processid);
-    if (hProcess == NULL)
+    buflen = 0x1000;
+    bret = __ReallocateSize(&pBuffer,buflen,&bufsize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
-#ifdef _UNICODE
-    hk32 = GetModuleHandle(L"kernel32");
-    if (hk32 == NULL)
+    namelen = 0x1000;
+    bret = __ReallocateSize(&pNameBuf,namelen,&namesize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
-    pLoadLibraryFn = GetProcAddress(hk32,L"LoadLibraryW");
-    pFreeLibraryFn = GetProcAddress(hk32,L"FreeLibraryW");
-    pGetProcAddrFn = GetProcAddress(hk32,L"GetProcAddressW");
-#else
-    hk32 = GetModuleHandle("kernel32");
-    if (hk32 == NULL)
+    buflen = sizeof(*pExportDir);
+    if(buflen > bufsize)
+    {
+        bret = __ReallocateSize(&pBuffer,buflen,&bufsize);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("\n");
+            goto fail;
+        }
+    }
+
+    /*now we should get the table address */
+    pExportDir = (PIMAGE_EXPORT_DIRECTORY)pBuffer;
+    bret = ReadProcessMemory(hProcess,(unsigned char*)pModBase + tablerva,pExportDir,sizeof(*pExportDir),&rsize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
-    pLoadLibraryFn = GetProcAddress(hk32,"LoadLibraryA");
-    pFreeLibraryFn = GetProcAddress(hk32,"FreeLibraryA");
-    pGetProcAddrFn = GetProcAddress(hk32,"GetProcAddressA");
-#endif
+    if(rsize != sizeof(*pExportDir))
+    {
+        ret = ERROR_INVALID_BLOCK;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
 
-    if (pLoadLibraryFn == NULL || pFreeLibraryFn == NULL ||
-            pGetProcAddrFn == NULL)
+    /*now we should compare module name ,this will give it check*/
+    rva = pExportDir->Name;
+    readlen = __ReadName(hProcess,pModBase,rva,&pNameBuf,0,&namesize);
+    if(readlen < 0)
+    {
+        ret = -(int)readlen;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    LowerCaseName((const char*)pNameBuf);
+    /*now to compare the name*/
+    if(strcmp((const char*)pNameBuf,pDllName)!= 0)
+    {
+        ret = ERROR_INVALID_NAME;
+        DEBUG_INFO("dllname (%s) pNameBuf (%s)\n",pDllName,pNameBuf);
+        goto fail;
+    }
+
+    /*now we should get for the functions scanning*/
+    fntablelen = sizeof(DWORD)*pExportDir->NumberOfFunctions;
+    bret = __ReallocateSize((PVOID*)&pFnTable,fntablelen,&fntablesize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
-#ifdef _UNICODE
-    /*now we should allocate the memory*/
-    paramlen = wcslen(L"Capture3DBackBuffer");
-    if (paramlen > paramsize)
-    {
-        paramsize = paramlen;
-    }
 
-    paramlen = strlen(pDllName);
-    if (paramlen > paramsize)
-    {
-        paramsize = paramlen;
-    }
-    paramsize += 1;
-    /*for it will give the size*/
-    paramsize *=2;
-
-    pModuleName = new wchar_t[paramsize];
-#else
-    paramlen = strlen("Capture3DBackBuffer");
-    if (paramlen > paramsize)
-    {
-        paramsize = paramlen;
-    }
-    paramlen = strlen(pDllName);
-    if (paramlen > paramsize)
-    {
-        paramsize = paramlen;
-    }
-    paramsize += 1;
-#endif
-
-    /*now allocate remote address and it will give the ok address*/
-    pParam = VirtualAllocEx(hProcess,NULL,paramsize,MEM_COMMIT,PAGE_READWRITE);
-    if (pParam == NULL)
+    rva = pExportDir->AddressOfFunctions;
+    bret = ReadProcessMemory(hProcess,(unsigned char*)pModBase+rva ,pFnTable,fntablelen,&rsize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
 
-#ifdef _UNICODE
-    paramlen = strlen(pDllName);
-    paramlen += 1;
-    /**/
-    bret = MultiByteToWideChar(CP_ACP,NULL,pDllName,-1,pModuleName,paramlen*2);
-    if (!bret)
+    if(rsize != fntablelen)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    /*name table is less than the functions ,if it has no name ,the value is 0 ,so we should set NumberOfFunctions not NumberOfNames*/
+    nametablelen = sizeof(DWORD)*pExportDir->NumberOfFunctions;
+    bret = __ReallocateSize((PVOID*)&pNameTable,nametablelen,&nametablesize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
 
-    assert((paramlen * 2 ) <= paramsize);
-    bret = WriteProcessMemory(hProcess,pParam,pModuleName,paramlen*2);
-    if (!bret)
+    rva = pExportDir->AddressOfNames;
+    bret = ReadProcessMemory(hProcess,(unsigned char*)pModBase+rva ,pNameTable,nametablelen,&rsize);
+    if(!bret)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
 
+    if(rsize != nametablelen)
+    {
+        ret = ERROR_INVALID_BLOCK;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
 
+    findidx = -1;
+    /*now to get the name and */
+    for(i = 0; i<pExportDir->NumberOfFunctions; i++)
+    {
+        /*now to test if */
+        if(pNameTable[i] == 0)
+        {
+            continue;
+        }
 
-#else
-    paramlen = strlen(pDllName);
-    paramlen += 1;
-    assert(paramlen <= paramsize);
-    bret = WriteProcessMemory(hProcess,pParam,pDllName,paramlen);
-    if (!bret)
+        /*now it is not has name ,so we should search for it*/
+        rva = pNameTable[i];
+        ret = __ReadName(hProcess,pModBase,rva,&pNameBuf,0,&namesize);
+        if(ret < 0)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            goto fail;
+        }
+        /*now to compare the jobs*/
+        if(strcmp((const char*)pNameBuf,pProcName)==0)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx < 0)
+    {
+        ret = ERROR_INVALID_NAME;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    /*ok we should set the function pointer*/
+    pFnAddr = (unsigned char*)pModBase + pFnTable[findidx];
+
+    __ReallocateSize((PVOID*)&pNameTable,0,&nametablesize);
+    __ReallocateSize((PVOID*)&pFnTable,0,&fntablesize);
+    __ReallocateSize(&pNameBuf,0,&namesize);
+    __ReallocateSize(&pBuffer,0,&bufsize);
+
+    return pFnAddr;
+fail:
+    __ReallocateSize((PVOID*)&pNameTable,0,&nametablesize);
+    __ReallocateSize((PVOID*)&pFnTable,0,&fntablesize);
+    __ReallocateSize(&pNameBuf,0,&namesize);
+    __ReallocateSize(&pBuffer,0,&bufsize);
+    SetLastError(ret);
+    return NULL;
+}
+
+extern "C" int __GetRemoteProcAddress(unsigned int processid,const char* pDllName,const char* pProcName,void** ppFnAddr)
+{
+    HANDLE hProcess=NULL;
+    PVOID pBaseAddr=NULL,pFuncAddr=NULL;
+    DWORD exporttablerva = 0;
+    int ret;
+
+    pBaseAddr = __GetModuleBaseAddr(processid,pDllName);
+    if(pBaseAddr == NULL)
     {
         ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
-#endif
 
-    /*now call function*/
-    ret = __CallRemoteProc(hProcess,pLoadLibraryFn,pParam,3,&retval);
-    if (ret < 0)
+    hProcess = OpenProcess(PROCESS_VM_OPERATION |
+                           PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE,processid);
+    if(hProcess == NULL)
     {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
         goto fail;
     }
+
+
+    exporttablerva = __GetExportTableAddr(hProcess,pBaseAddr);
+    if(exporttablerva == 0)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    pFuncAddr = __GetProcAddr(hProcess,pBaseAddr,exporttablerva,pDllName,pProcName);
+    if(pFuncAddr == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+    *ppFnAddr = pFuncAddr;
+
+    assert(hProcess != NULL);
+    CloseHandle(hProcess);
+    DEBUG_INFO("%s.%s address 0x%p\n",pDllName,pProcName,pFuncAddr);
 
     return 0;
 fail:
-    if (loadlib)
-    {
-        assert(pLoadLibraryFn && pFreeLibraryFn && p);
-
-    }
-    if (pParam)
-    {
-        assert(hProcess != NULL);
-        VirtualFreeEx(hProcess,pParam,paramsize,MEM_RELEASE);
-    }
-    pParam = NULL;
-#ifdef _UNICODE
-    if (pModuleName)
-    {
-        delete [] pModuleName;
-    }
-    pModuleName = NULL;
-#endif
-    if (hProcess != NULL)
+    if(hProcess)
     {
         CloseHandle(hProcess);
     }
-    hProcess= NULL;
+    hProcess = NULL;
+    SetLastError(ret);
     return -ret;
 }
+
+extern "C" int __CallRemoteFunc(unsigned int processid,void* pFnAddr,const char* pParam,int timeout,void** ppRetVal)
+{
+    PVOID pRemoteAddr=NULL;
+    char* pNullPtr="\x00";
+    int remotesize=0;
+    int len;
+    HANDLE hProcess = NULL;
+    HANDLE hThread=NULL;
+    int ret;
+    BOOL bret;
+    SIZE_T wsize;
+    DWORD threadid=0,waitmils,wret,retcode;
+    ULONGLONG stime,etime,ctime;
+
+    /*first to allocate the memory for it*/
+    hProcess = OpenProcess(PROCESS_VM_OPERATION |
+                           PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD ,FALSE,processid);
+    if(hProcess == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+    if(pParam)
+    {
+        len = strlen(pParam);
+    }
+    else
+    {
+        len = 0;
+    }
+    if(len > 0)
+    {
+        remotesize = len+1;
+        pRemoteAddr = VirtualAllocEx(hProcess,NULL,remotesize,MEM_COMMIT,PAGE_READWRITE);
+        if(pRemoteAddr == NULL)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("\n");
+            goto fail;
+        }
+
+        bret = WriteProcessMemory(hProcess,pRemoteAddr,pParam,len,&wsize);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("write %s=> 0x%p size %d error (%d)\n",pParam,pRemoteAddr,len,ret);
+            goto fail;
+        }
+        if(wsize != (len))
+        {
+            ret = ERROR_INVALID_BLOCK;
+            DEBUG_INFO("\n");
+            goto fail;
+        }
+
+        bret = WriteProcessMemory(hProcess,(unsigned char*)pRemoteAddr+len,pNullPtr,1,&wsize);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("\n");
+            goto fail;
+        }
+        if(wsize != 1)
+        {
+            ret = ERROR_INVALID_BLOCK;
+            DEBUG_INFO("\n");
+            goto fail;
+        }
+    }
+
+    hThread = CreateRemoteThread(hProcess,NULL,0,(LPTHREAD_START_ROUTINE)pFnAddr,pRemoteAddr,0,&threadid);
+    if(hThread == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+    /**/
+    stime = GetTickCount64();
+    etime = stime + timeout* 1000;
+    ctime = stime;
+
+    while(ctime < etime || timeout == 0)
+    {
+        waitmils = INFINITE;
+        if(timeout)
+        {
+            waitmils =(DWORD) (etime - ctime);
+        }
+
+        wret = WaitForSingleObject(hThread,waitmils);
+        if(wret == WAIT_OBJECT_0)
+        {
+			retcode = 0;
+			SetLastError(0);
+            bret = GetExitCodeThread(hThread,&retcode);
+            if(bret)
+            {
+                break;
+            }
+            else if(GetLastError() != STILL_ACTIVE && retcode != STILL_ACTIVE)
+            {
+                ret = GetLastError() ? GetLastError() : 1;
+                DEBUG_INFO("\n");
+                goto fail;
+            }
+            /*still alive ,continue*/
+        }
+        else
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("wait error %d\n",ret);
+            goto fail;
+        }
+        ctime = GetTickCount64();
+    }
+
+    if(ctime >= etime && timeout > 0)
+    {
+        ret = WAIT_TIMEOUT;
+        DEBUG_INFO("\n");
+        goto fail;
+    }
+
+
+    *ppRetVal = (void*)retcode;
+    DEBUG_INFO("call 0x%p with param %s retcode(%d)\n",pFnAddr,pParam,retcode);
+
+    if(hThread)
+    {
+        CloseHandle(hThread);
+    }
+    hThread = NULL;
+    if(pRemoteAddr)
+    {
+        bret = VirtualFreeEx(hProcess,pRemoteAddr,remotesize,MEM_DECOMMIT);
+        if(!bret)
+        {
+            DEBUG_INFO("could not free 0x%p (%d) (%d)\n",pRemoteAddr,remotesize,GetLastError());
+        }
+    }
+    pRemoteAddr = NULL;
+    remotesize = 0;
+    if(hProcess)
+    {
+        CloseHandle(hProcess);
+    }
+    hProcess = NULL;
+
+    return 0;
+fail:
+    if(hThread)
+    {
+        CloseHandle(hThread);
+    }
+    hThread = NULL;
+    if(pRemoteAddr)
+    {
+        bret = VirtualFreeEx(hProcess,pRemoteAddr,remotesize,MEM_DECOMMIT);
+        if(!bret)
+        {
+            DEBUG_INFO("could not free 0x%p (%d) (%d)\n",pRemoteAddr,remotesize,GetLastError());
+        }
+    }
+    pRemoteAddr = NULL;
+    remotesize = 0;
+    if(hProcess)
+    {
+        CloseHandle(hProcess);
+    }
+    hProcess = NULL;
+    SetLastError(ret);
+    return -ret;
+}
+
+
+extern "C" int CaptureFile(DWORD processid,const char* pDllName,const char* pFuncName,const char* bmpfile)
+{
+	int ret;
+	PVOID pFnAddr=NULL;
+	PVOID pRetVal;
+
+	ret = __GetRemoteProcAddress(processid,pDllName,pFuncName,&pFnAddr);
+	if (ret < 0)
+	{
+		return ret;
+	}
+
+	ret = __CallRemoteFunc(processid,pFnAddr,bmpfile,0,&pRetVal);
+	if (ret < 0)
+	{
+		return ret;
+	}
+
+	ret = (int)pRetVal;
+	if (ret != 0)
+	{
+		ret = ret > 0 ? 0 : ret;
+	}
+
+	return ret;	
+}
+
+

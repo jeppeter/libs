@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detours", "detours\detours.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DIDialog", "DIDialog\DIDialog.vcxproj", "{A3557AA0-33EB-484B-8C0E-E5640538D906}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "capcall", "capcall\capcall.vcxproj", "{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -37,6 +39,10 @@ Global
 		{A3557AA0-33EB-484B-8C0E-E5640538D906}.Debug|Win32.Build.0 = Debug|Win32
 		{A3557AA0-33EB-484B-8C0E-E5640538D906}.Release|Win32.ActiveCfg = Release|Win32
 		{A3557AA0-33EB-484B-8C0E-E5640538D906}.Release|Win32.Build.0 = Release|Win32
+		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Debug|Win32.Build.0 = Debug|Win32
+		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Release|Win32.ActiveCfg = Release|Win32
+		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
