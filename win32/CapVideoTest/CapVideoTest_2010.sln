@@ -13,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DIDialog", "DIDialog\DIDial
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "capcall", "capcall\capcall.vcxproj", "{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "victim", "victim\victim.vcxproj", "{B54241B8-C6FF-4CCA-8906-2BCB16C1F76A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "victim", "victim\victim.vcxproj", "{9C01C252-D82F-4CCE-AF4E-629CF4CF82AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,10 +45,10 @@ Global
 		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Debug|Win32.Build.0 = Debug|Win32
 		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Release|Win32.ActiveCfg = Release|Win32
 		{A0931B64-B6F5-4B44-BE51-2D73D51E2CC2}.Release|Win32.Build.0 = Release|Win32
-		{B54241B8-C6FF-4CCA-8906-2BCB16C1F76A}.Debug|Win32.ActiveCfg = Debug|Win32
-		{B54241B8-C6FF-4CCA-8906-2BCB16C1F76A}.Debug|Win32.Build.0 = Debug|Win32
-		{B54241B8-C6FF-4CCA-8906-2BCB16C1F76A}.Release|Win32.ActiveCfg = Release|Win32
-		{B54241B8-C6FF-4CCA-8906-2BCB16C1F76A}.Release|Win32.Build.0 = Release|Win32
+		{9C01C252-D82F-4CCE-AF4E-629CF4CF82AC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9C01C252-D82F-4CCE-AF4E-629CF4CF82AC}.Debug|Win32.Build.0 = Debug|Win32
+		{9C01C252-D82F-4CCE-AF4E-629CF4CF82AC}.Release|Win32.ActiveCfg = Release|Win32
+		{9C01C252-D82F-4CCE-AF4E-629CF4CF82AC}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
