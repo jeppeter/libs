@@ -18,15 +18,13 @@ int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFull
     LPWSTR pCommandWide=NULL;
     int execsize=0,commandsize = 0;
     int execlen=0,commandlen = 0;
-    if(pExec == NULL)
+    if(pExec)
     {
-        ret = ERROR_INVALID_DATA;
-        return -ret;
-    }
-    execlen = AnsiToUnicode((char*)pExec,&pExecWide,&execsize);
-    if(execlen < 0)
-    {
-        return execlen;
+        execlen = AnsiToUnicode((char*)pExec,&pExecWide,&execsize);
+        if(execlen < 0)
+        {
+            return execlen;
+        }
     }
     if(pCommandLine)
     {
@@ -39,8 +37,8 @@ int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFull
     }
 
     ret = DetourCreateProcessWithDllW(pExecWide,pCommandWide,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE,
-                                       NULL,NULL,
-                                       &si,&pi,pDllFullName,pDllName,NULL);
+                                      NULL,NULL,
+                                      &si,&pi,pDllFullName,pDllName,NULL);
 
 
     AnsiToUnicode(NULL,&pCommandWide,&commandsize);
@@ -48,10 +46,10 @@ int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFull
 
 #else
     ret = DetourCreateProcessWithDllA(pExec,pCommandLine,NULL,NULL,TRUE,CREATE_DEFAULT_ERROR_MODE
-                                       NULL,NULL,
-                                       &si,&pi,pDllFullName,pDllName,NULL);
+                                      NULL,NULL,
+                                      &si,&pi,pDllFullName,pDllName,NULL);
 #endif
-    
+
     if(ret < 0)
     {
         return ret;
@@ -62,7 +60,7 @@ int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFull
 extern "C" int LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFullName,const char* pDllName)
 {
 
-    DEBUG_INFO("load %s exe command(%s) with fullname (%s) dll (%s)\n",pExec,pCommandLine ? pCommandLine : "null",pDllFullName,pDllName);
+    DEBUG_INFO("load %s exe command(%s) with fullname (%s) dll (%s)\n",pExec ? pExec : "null",pCommandLine ? pCommandLine : "null",pDllFullName,pDllName);
     return __LoadInsert(pExec,pCommandLine,pDllFullName,pDllName);
 }
 
@@ -97,6 +95,11 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
     pDebugString = new char[sizeof(pMEntry->szModule)];
     assert(pDebugString);
 #endif
+	if (pDllName == NULL)
+	{
+		ret = ERROR_INVALID_PARAMETER;
+		goto fail;
+	}
 
     hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,processid);
     if(hsnap == INVALID_HANDLE_VALUE)

@@ -35,6 +35,7 @@ extern "C" int UnicodeToAnsi(wchar_t* pWideChar,char** ppChar,int*pCharSize)
 		ret = ERROR_INVALID_BLOCK;
 		goto fail;
 	}
+	pRetChar[needlen] = '\0';
 
 	if ((*ppChar) && (*ppChar) != pRetChar)
 	{
@@ -89,6 +90,7 @@ extern "C" int AnsiToUnicode(char* pChar,wchar_t **ppWideChar,int*pWideCharSize)
 		ret = ERROR_INVALID_BLOCK;
 		goto fail;
 	}
+	pRetWideChar[needlen] = '\0';
 
 	if ( (*ppWideChar) && (*ppWideChar) != pRetWideChar)
 	{

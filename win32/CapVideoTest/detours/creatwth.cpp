@@ -764,9 +764,11 @@ int WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
                           lpCurrentDirectory,
                           lpStartupInfo,
                           &pi)) {
+                          DEBUG_INFO("lasterror %d\n",GetLastError());
         return -1;
     }
 
+	DEBUG_INFO("\n");
     LPCSTR rlpDlls[2];
     DWORD nDlls = 0;
     if (lpDetouredDllFullName != NULL) {
@@ -777,8 +779,10 @@ int WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
         rlpDlls[nDlls++] = lpDllName;
 		DEBUG_INFO("lpDllName %s\n",lpDllName);
     }
+	DEBUG_INFO("\n");
 
     if (!UpdateImports(pi.hProcess, rlpDlls, nDlls)) {
+		DEBUG_INFO("\n");
         return -1;
     }
 	processid = GetProcessId(pi.hProcess);
@@ -790,6 +794,7 @@ int WINAPI DetourCreateProcessWithDllW(LPCWSTR lpApplicationName,
     if (!(dwCreationFlags & CREATE_SUSPENDED)) {
         ResumeThread(pi.hThread);
     }
+	DEBUG_INFO("processid %d\n",processid);
 	ret = processid;
     return ret;
 }

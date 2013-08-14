@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "..\\common\\dllinsert.h"
+#include "..\\common\\output_debug.h"
 
 
 #ifdef _UNICODE
@@ -148,7 +149,7 @@ void ParseParam(int argc,char* argv[])
             {
                 Usage(3,"%s need args",argv[i]);
             }
-            st_pFullDllName = argv[i+1];
+            st_pFuncName = argv[i+1];
             i ++;
         }
         else if(strcmp(argv[i],"-P")==0 ||
@@ -203,6 +204,20 @@ void ParseParam(int argc,char* argv[])
         Usage(3,"please specify -f|--func");
     }
 
+	if (st_pDllName == NULL)
+	{
+		st_pDllName = strrchr(st_pFullDllName,'\\');
+		if (st_pDllName == NULL )
+		{
+			st_pDllName = st_pFullDllName;
+		}
+		else
+		{
+			st_pDllName += 1;
+		}
+		DEBUG_INFO("dllname %s\n",st_pDllName);
+	}
+
     return;
 }
 
@@ -220,6 +235,8 @@ int AnsiMain(int argc,char* argv[])
     {
         /*now we should make the command line*/
         commandlen = 0;
+		commandlen += strlen(st_pExecName);
+		commandlen += 2;
         for(i=st_RunParamIdx; i<argc; i++)
         {
             commandlen += strlen(argv[i]);
@@ -230,6 +247,9 @@ int AnsiMain(int argc,char* argv[])
         assert(pCommandLine);
         pCurCommand = pCommandLine;
         leftlen = commandlen;
+		ret = _snprintf_s(pCurCommand,leftlen,leftlen,"%s ",st_pExecName);
+		pCurCommand += ret;
+		leftlen -= ret;
         for(i=st_RunParamIdx; i<argc; i++)
         {
             ret = _snprintf_s(pCurCommand,leftlen,leftlen,"%s ",argv[i]);
@@ -238,9 +258,17 @@ int AnsiMain(int argc,char* argv[])
         }
     }
 
-    ret = LoadInsert(st_pExecName,pCommandLine,st_pFullDllName,st_pDllName);
+	if (pCommandLine)
+	{
+    	ret = LoadInsert(NULL,pCommandLine,st_pFullDllName,st_pDllName);
+	}
+	else
+	{
+		ret = LoadInsert(st_pExecName,NULL,st_pFullDllName,st_pDllName);
+	}
     if(ret < 0)
     {
+		DEBUG_INFO("\n");
         goto out;
     }
 
@@ -253,12 +281,14 @@ int AnsiMain(int argc,char* argv[])
     ret = __GetRemoteProcAddress(processid,st_pDllName,st_pFuncName,&pFnAddr);
     if(ret < 0)
     {
+		DEBUG_INFO("\n");
         goto out;
     }
 
 	ret = __CallRemoteFunc(processid,pFnAddr,st_pParam,st_WaitTime,&pRetVal);
 	if (ret < 0)
 	{
+		DEBUG_INFO("\n");
 		goto out;
 	}
 	ret = 0;
@@ -284,6 +314,7 @@ int _tmain(int argc, _TCHAR* argv[])
     {
         ret = GetLastError() ? GetLastError() : 1;
         ret = -ret;
+		DEBUG_INFO("\n");
         goto out;
     }
     ret = AnsiMain(argc,ppArgv);
