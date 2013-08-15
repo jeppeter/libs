@@ -3,6 +3,7 @@
 #include "uniansi.h"
 #include <Windows.h>
 #include <assert.h>
+#include "output_debug.h"
 
 extern "C" int UnicodeToAnsi(wchar_t* pWideChar,char** ppChar,int*pCharSize)
 {

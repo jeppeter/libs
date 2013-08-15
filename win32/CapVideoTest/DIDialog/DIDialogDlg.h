@@ -14,6 +14,7 @@ public:
 	CString m_strExe;
 	CString m_strDll;
 	CString m_strBmp;
+	CString m_strParam;
 
 // Dialog Data
 	enum { IDD = IDD_DIDIALOG_DIALOG };
@@ -31,5 +32,8 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnLoad();
+	afx_msg void OnSelExe();
+	afx_msg void OnSelDll();
+	afx_msg void OnSelBmp();
 	DECLARE_MESSAGE_MAP()
 };
