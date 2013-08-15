@@ -39,7 +39,6 @@ CDIDialogDlg::CDIDialogDlg(CWnd* pParent /*=NULL*/)
 void CDIDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
     CDialogEx::DoDataExchange(pDX);
-    DDX_Text(pDX,IDC_EDT_EXE,m_strExe);
 }
 
 BEGIN_MESSAGE_MAP(CDIDialogDlg, CDialogEx)
@@ -56,6 +55,7 @@ END_MESSAGE_MAP()
 
 BOOL CDIDialogDlg::OnInitDialog()
 {
+	CComboBox * pCombo=NULL;
     CDialogEx::OnInitDialog();
 
     // Set the icon for this dialog.  The framework does this automatically
@@ -67,6 +67,20 @@ BOOL CDIDialogDlg::OnInitDialog()
 
     // TODO: Add extra initialization here
 	/*set the select mask*/
+	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_MASK);
+	/*now to add string*/
+	pCombo->AddString(TEXT("MC_CTRL"));
+	pCombo->AddString(TEXT("MC_ALT"));
+	pCombo->AddString(TEXT("MC_WIN"));
+	pCombo->AddString(TEXT("MC_CTRL|MC_ALT"));
+	pCombo->AddString(TEXT("MC_CTRL|MC_WIN"));
+	pCombo->AddString(TEXT("MC_ALT|MC_WIN"));
+	pCombo->AddString(TEXT("MC_CTRL|MC_SHIFT"));
+	pCombo->AddString(TEXT("MC_ALT|MC_SHIFT"));
+	pCombo->AddString(TEXT("MC_WIN|MC_SHIFT"));
+	pCombo->AddString(TEXT("MC_CTRL|MC_ALT|MC_SHIFT"));
+	pCombo->AddString(TEXT("MC_CTRL|MC_WIN|MC_SHIFT"));
+	pCombo->AddString(TEXT("MC_ALT|MC_WIN|MC_SHIFT"));
 	
 	
 
