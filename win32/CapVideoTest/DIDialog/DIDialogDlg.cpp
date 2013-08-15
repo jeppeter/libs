@@ -67,22 +67,29 @@ BOOL CDIDialogDlg::OnInitDialog()
 
     // TODO: Add extra initialization here
 	/*set the select mask*/
-	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_MASK);
+	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_CTRL_MASK);
 	/*now to add string*/
-	pCombo->AddString(TEXT("MC_CTRL"));
-	pCombo->AddString(TEXT("MC_ALT"));
-	pCombo->AddString(TEXT("MC_WIN"));
-	pCombo->AddString(TEXT("MC_CTRL|MC_ALT"));
-	pCombo->AddString(TEXT("MC_CTRL|MC_WIN"));
-	pCombo->AddString(TEXT("MC_ALT|MC_WIN"));
-	pCombo->AddString(TEXT("MC_CTRL|MC_SHIFT"));
-	pCombo->AddString(TEXT("MC_ALT|MC_SHIFT"));
-	pCombo->AddString(TEXT("MC_WIN|MC_SHIFT"));
-	pCombo->AddString(TEXT("MC_CTRL|MC_ALT|MC_SHIFT"));
-	pCombo->AddString(TEXT("MC_CTRL|MC_WIN|MC_SHIFT"));
-	pCombo->AddString(TEXT("MC_ALT|MC_WIN|MC_SHIFT"));
-	
-	
+	pCombo->InsertString(0,TEXT("MC_CTRL"));
+	pCombo->InsertString(1,TEXT("MC_ALT"));
+	pCombo->InsertString(2,TEXT("MC_WIN"));
+	pCombo->InsertString(3,TEXT("MC_CTRL|MC_ALT"));
+	pCombo->InsertString(4,TEXT("MC_CTRL|MC_WIN"));
+	pCombo->InsertString(5,TEXT("MC_ALT|MC_WIN"));
+	pCombo->InsertString(6,TEXT("MC_CTRL|MC_SHIFT"));
+	pCombo->InsertString(7,TEXT("MC_ALT|MC_SHIFT"));
+	pCombo->InsertString(8,TEXT("MC_WIN|MC_SHIFT"));
+	pCombo->InsertString(9,TEXT("MC_CTRL|MC_ALT|MC_SHIFT"));
+	pCombo->InsertString(10,TEXT("MC_CTRL|MC_WIN|MC_SHIFT"));
+	pCombo->InsertString(11,TEXT("MC_ALT|MC_WIN|MC_SHIFT"));
+
+	CString str;
+	unsigned int i;
+	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_CHAR);	
+	for (i=0;i<26;i++)
+	{
+		str.Format(TEXT("%c"),'A'+i);
+		pCombo->InsertString(i,str);
+	}
 
     return TRUE;  // return TRUE  unless you set the focus to a control
 }
