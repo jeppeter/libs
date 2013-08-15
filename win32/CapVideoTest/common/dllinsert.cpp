@@ -132,10 +132,10 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
         LowerCaseName(pDebugString);
         DEBUG_INFO("module (%s)\n",pDebugString);
 
-        if(strcmp(pDebugString,pDllName)==0)
+        if(_stricmp(pDebugString,pDllName)==0)
 #else
         LowerCaseName(pMEntry->szModule);
-        if(strcmp(pMEntry->szModule,pDllName)==0)
+        if(_stricmp(pMEntry->szModule,pDllName)==0)
 #endif
         {
             pBaseAddr = pMEntry->modBaseAddr;
@@ -489,7 +489,7 @@ PVOID __GetProcAddr(HANDLE hProcess,PVOID pModBase,DWORD tablerva,const char* pD
 
     LowerCaseName((const char*)pNameBuf);
     /*now to compare the name*/
-    if(strcmp((const char*)pNameBuf,pDllName)!= 0)
+    if(_stricmp((const char*)pNameBuf,pDllName)!= 0)
     {
         ret = ERROR_INVALID_NAME;
         DEBUG_INFO("dllname (%s) pNameBuf (%s)\n",pDllName,pNameBuf);
