@@ -11,6 +11,7 @@ class CDIDialogDlg : public CDialogEx
 // Construction
 public:
 	CDIDialogDlg(CWnd* pParent = NULL);	// standard constructor
+	LRESULT OnHotKey(WPARAM wParam, LPARAM lParam);
 	CString m_strExe;
 	CString m_strDll;
 	CString m_strBmp;

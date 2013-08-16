@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include "..\\common\\output_debug.h"
 #include "..\\common\\uniansi.h"
+#include "..\\common\\dllinsert.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -48,14 +49,19 @@ BEGIN_MESSAGE_MAP(CDIDialogDlg, CDialogEx)
     ON_COMMAND(ID_BTN_SEL_EXE,OnSelExe)
     ON_COMMAND(ID_BTN_SEL_DLL,OnSelDll)
     ON_COMMAND(ID_BTN_SEL_BMP,OnSelBmp)
+    ON_MESSAGE(WM_HOTKEY,OnHotKey)
 END_MESSAGE_MAP()
+
 
 
 // CDIDialogDlg message handlers
 
 BOOL CDIDialogDlg::OnInitDialog()
 {
-	CComboBox * pCombo=NULL;
+    CComboBox * pCombo=NULL;
+    unsigned int i;
+    CString str;
+    CButton *pCheck=NULL;
     CDialogEx::OnInitDialog();
 
     // Set the icon for this dialog.  The framework does this automatically
@@ -66,30 +72,23 @@ BOOL CDIDialogDlg::OnInitDialog()
     ShowWindow(SW_SHOWDEFAULT);
 
     // TODO: Add extra initialization here
-	/*set the select mask*/
-	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_CTRL_MASK);
-	/*now to add string*/
-	pCombo->InsertString(0,TEXT("MC_CTRL"));
-	pCombo->InsertString(1,TEXT("MC_ALT"));
-	pCombo->InsertString(2,TEXT("MC_WIN"));
-	pCombo->InsertString(3,TEXT("MC_CTRL|MC_ALT"));
-	pCombo->InsertString(4,TEXT("MC_CTRL|MC_WIN"));
-	pCombo->InsertString(5,TEXT("MC_ALT|MC_WIN"));
-	pCombo->InsertString(6,TEXT("MC_CTRL|MC_SHIFT"));
-	pCombo->InsertString(7,TEXT("MC_ALT|MC_SHIFT"));
-	pCombo->InsertString(8,TEXT("MC_WIN|MC_SHIFT"));
-	pCombo->InsertString(9,TEXT("MC_CTRL|MC_ALT|MC_SHIFT"));
-	pCombo->InsertString(10,TEXT("MC_CTRL|MC_WIN|MC_SHIFT"));
-	pCombo->InsertString(11,TEXT("MC_ALT|MC_WIN|MC_SHIFT"));
+    /*set the select mask*/
+    pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_CHAR);
+    for(i=0; i<26; i++)
+    {
+        str.Format(TEXT("%c"),'A'+i);
+        pCombo->InsertString(i,str);
+    }
 
-	CString str;
-	unsigned int i;
-	pCombo = (CComboBox*)this->GetDlgItem(IDC_COMBO_CHAR);	
-	for (i=0;i<26;i++)
-	{
-		str.Format(TEXT("%c"),'A'+i);
-		pCombo->InsertString(i,str);
-	}
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_CTRL);
+    pCheck->SetCheck(BST_UNCHECKED);
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_ALT);
+    pCheck->SetCheck(BST_UNCHECKED);
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_WIN);
+    pCheck->SetCheck(BST_UNCHECKED);
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_SHIFT);
+    pCheck->SetCheck(BST_UNCHECKED);
+
 
     return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -123,6 +122,8 @@ void CDIDialogDlg::OnPaint()
     }
 }
 
+#define  CAPTURE_HOTKEY_ID      131
+
 // The system calls this function to obtain the cursor to display while the user drags
 //  the minimized window.
 HCURSOR CDIDialogDlg::OnQueryDragIcon()
@@ -138,6 +139,14 @@ void CDIDialogDlg::OnLoad()
     int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
     int ret;
     CEdit* pEdt=NULL;
+    CButton *pCheck=NULL;
+    CComboBox *pCombo=NULL;
+    int ctrlcheck=BST_UNCHECKED,altcheck=BST_UNCHECKED,wincheck=BST_UNCHECKED,shiftcheck=BST_UNCHECKED,charsel=-1;
+    char* pCommandLine=NULL;
+    int commandlinesize=0;
+    CString errstr;
+    UINT hkmask,hkvk;
+    BOOL bret;
 
     /*now to get the string*/
     pEdt = (CEdit*) this->GetDlgItem(IDC_EDT_EXE);
@@ -148,6 +157,23 @@ void CDIDialogDlg::OnLoad()
     pEdt->GetWindowText(m_strBmp);
     pEdt = (CEdit*) this->GetDlgItem(IDC_EDT_PARAM);
     pEdt->GetWindowText(m_strParam);
+
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_CTRL);
+    ctrlcheck=pCheck->GetCheck();
+
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_ALT);
+    altcheck=pCheck->GetCheck();
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_WIN);
+    wincheck=pCheck->GetCheck();
+    pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_SHIFT);
+    shiftcheck=pCheck->GetCheck();
+
+    pCombo = (CComboBox*) this->GetDlgItem(IDC_COMBO_CHAR);
+    charsel = pCombo->GetCurSel();
+
+
+
+
 
 #ifdef _UNICODE
     ret = UnicodeToAnsi((wchar_t*)((LPCWSTR)m_strExe),&pExecName,&execnamesize);
@@ -177,7 +203,7 @@ void CDIDialogDlg::OnLoad()
     pExecName = (const char*)m_strExe;
     pFullDllName = (const char*) m_strDll;
     pBmpFile = (const char*) m_strBmp;
-
+	pParam = (const char*)m_strParam;
 #endif
     pDllName = strrchr(pFullDllName,'\\');
     if(pDllName)
@@ -204,21 +230,103 @@ void CDIDialogDlg::OnLoad()
         goto out;
     }
 
-	if (pDllName == NULL || pFullDllName == NULL || strlen(pFullDllName) == 0)
-	{
-		AfxMessageBox(TEXT("Must Specify Insert Dll"));
-		goto out;
-	}
+    if(pDllName == NULL || pFullDllName == NULL || strlen(pFullDllName) == 0)
+    {
+        errstr.Format(TEXT("Can not Run(%s)"),pCommandLine);
+        AfxMessageBox(errstr);
+        goto out;
+    }
 
-	
+    if(ctrlcheck != BST_CHECKED && altcheck != BST_CHECKED &&
+            wincheck != BST_CHECKED)
+    {
+        AfxMessageBox(TEXT("Ctrl Alt Win Must specify one"));
+        goto out;
+    }
+
+    if(charsel == CB_ERR || charsel < 0 || charsel >= 26)
+    {
+        AfxMessageBox(TEXT("Must Select one char"));
+        goto out;
+    }
+
+
     DEBUG_INFO("exename (%s)\n",pExecName);
     DEBUG_INFO("dllname (%s)\n",pDllName);
     DEBUG_INFO("param (%s)\n",pParam);
     DEBUG_INFO("bmpfile (%s)\n",pBmpFile);
     DEBUG_INFO("FullDllName (%s)\n",pFullDllName);
 
-#ifdef _UNICODE
+    /*now to start for the running*/
+    commandlinesize = strlen(pExecName);
+    if(strlen(pParam))
+    {
+        commandlinesize += 1;
+        commandlinesize += strlen(pParam);
+    }
+
+    commandlinesize += 1;
+
+    pCommandLine = new char[commandlinesize];
+    if(strlen(pParam))
+    {
+        ret = _snprintf_s(pCommandLine,commandlinesize,commandlinesize,"%s %s",pExecName,pParam);
+    }
+    else
+    {
+        ret = _snprintf_s(pCommandLine,commandlinesize,commandlinesize,"%s",pExecName);
+    }
+
+    ret = LoadInsert(NULL,pCommandLine,pFullDllName,pDllName);
+    if(ret < 0)
+    {
+        errstr.Format(TEXT("Can not run(%s)"),pCommandLine);
+        AfxMessageBox(errstr);
+        goto out;
+    }
+
+    /*now to register hotkey ,first to unregister hotkey*/
+    UnregisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID);
+    hkmask = 0;
+    if(altcheck)
+    {
+        hkmask |= MOD_ALT;
+    }
+    if(ctrlcheck)
+    {
+        hkmask |= MOD_CONTROL;
+    }
+    if(wincheck)
+    {
+        hkmask |= MOD_WIN;
+    }
+    if(shiftcheck)
+    {
+        hkmask |= MOD_SHIFT;
+    }
+
+    /*this is for VK_A*/
+    hkvk = 0x41;
+    hkvk += charsel;
+
+    bret = RegisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID,hkmask,hkvk);
+    if(!bret)
+    {
+        errstr.Format(TEXT("Register Hotkey Error %d"),GetLastError());
+        AfxMessageBox(errstr);
+        UnregisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID);
+        goto out;
+    }
+    /*all is ok*/
+
 out:
+    if(pCommandLine)
+    {
+        delete [] pCommandLine;
+    }
+    pCommandLine = NULL;
+
+#ifdef _UNICODE
     /*pDllName is the pointer in the pFullDllName so do not free two times*/
     UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);
     UnicodeToAnsi(NULL,&pExecName,&execnamesize);
@@ -278,6 +386,80 @@ void CDIDialogDlg::OnSelBmp()
         pEdt->SetWindowText(fname);
     }
 
+}
+
+
+LRESULT CDIDialogDlg::OnHotKey(WPARAM wParam, LPARAM lParam)
+{
+    if(wParam == CAPTURE_HOTKEY_ID)
+    {
+
+        /*now to get top window*/
+        HWND hWnd=NULL;
+        char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL,*pParam = NULL;
+        int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
+        unsigned int processid;
+        int ret;
+        CString errstr;
+        hWnd = ::GetDesktopWindow();
+        GetWindowThreadProcessId(hWnd,(LPDWORD)&processid);
+
+#ifdef _UNICODE
+        ret = UnicodeToAnsi((wchar_t*)((LPCWSTR)m_strExe),&pExecName,&execnamesize);
+        if(ret < 0)
+        {
+            goto out;
+        }
+        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strDll),&pFullDllName,&fulldllnamesize);
+        if(ret < 0)
+        {
+            goto out;
+        }
+
+        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strBmp),&pBmpFile,&bmpfilesize);
+        if(ret < 0)
+        {
+            goto out;
+        }
+
+        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strParam),&pParam,&paramsize);
+        if(ret < 0)
+        {
+            goto out;
+        }
+
+#else
+        pExecName = (const char*)m_strExe;
+        pFullDllName = (const char*) m_strDll;
+        pBmpFile = (const char*) m_strBmp;
+		pParam = (const char*)m_strParam;
+
+#endif
+        pDllName = strrchr(pFullDllName,'\\');
+        if(pDllName)
+        {
+            pDllName += 1;
+        }
+        else
+        {
+            pDllName = pFullDllName;
+        }
+
+        ret = CaptureFile(processid,pDllName,"Capture3DBackBuffer",pBmpFile);
+        if(ret != 0)
+        {
+            errstr.Format(TEXT("Could not capture on process[%d] in %s error (%d)"),processid,pBmpFile,ret);
+            goto out;
+        }
+out:
+#ifdef _UNICODE
+        UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);
+        UnicodeToAnsi(NULL,&pExecName,&execnamesize);
+        UnicodeToAnsi(NULL,&pBmpFile,&bmpfilesize);
+        UnicodeToAnsi(NULL,&pParam,&paramsize);
+#endif
+    }
+    return 0;
 }
 
 
