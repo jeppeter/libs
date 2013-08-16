@@ -73,7 +73,7 @@ int FreePointer(IDirect3DDevice9* pPtr)
     int ret=0;
     int findidx;
     unsigned int i;
-	int errorstate = POINTER_STATE_UNCERNTAIN;
+    int errorstate = POINTER_STATE_UNCERNTAIN;
     if(pPtr)
     {
         findidx = -1;
@@ -96,19 +96,19 @@ int FreePointer(IDirect3DDevice9* pPtr)
                 ret = 1;
                 st_DirectShowPointerState[findidx] = POINTER_STATE_FREE;
             }
-			else
-			{
-				errorstate = st_DirectShowPointerState[findidx];
-			}
+            else
+            {
+                errorstate = st_DirectShowPointerState[findidx];
+            }
         }
         LeaveCriticalSection(&st_PointerCS);
     }
 
-	if (errorstate != POINTER_STATE_UNCERNTAIN)
-	{
-		DEBUG_INFO("pointer 0x%p state %d\n",errorstate);
-	}
-	
+    if(errorstate != POINTER_STATE_UNCERNTAIN)
+    {
+        DEBUG_INFO("pointer 0x%p state %d\n",errorstate);
+    }
+
 
     return ret;
 }
@@ -117,37 +117,37 @@ BOOL HoldPointer(IDirect3DDevice9* pPtr)
 {
     int wait;
     BOOL bret=FALSE;
-	int findidx = -1;
-	unsigned int i;
+    int findidx = -1;
+    unsigned int i;
     do
     {
-		wait = 0;
-		findidx = -1;
-		EnterCriticalSection(&st_PointerCS);
-		assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-		for (i=0;i<st_DirectShowPointers.size() ;i++)
-		{
-			if (st_DirectShowPointers[i] == pPtr)
-			{
-				findidx = i;
-				break;
-			}
-		}
-		if (findidx >= 0)
-		{
-			if (st_DirectShowPointerState[findidx] == POINTER_STATE_FREE)
-			{
-				bret = TRUE;
-				st_DirectShowPointerState[findidx] = POINTER_STATE_HOLD;
-			}
-			else
-			{
-				/*we should wait*/
-				wait = 1;
-			}
-		}
-		
-		LeaveCriticalSection(&st_PointerCS);
+        wait = 0;
+        findidx = -1;
+        EnterCriticalSection(&st_PointerCS);
+        assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+        for(i=0; i<st_DirectShowPointers.size() ; i++)
+        {
+            if(st_DirectShowPointers[i] == pPtr)
+            {
+                findidx = i;
+                break;
+            }
+        }
+        if(findidx >= 0)
+        {
+            if(st_DirectShowPointerState[findidx] == POINTER_STATE_FREE)
+            {
+                bret = TRUE;
+                st_DirectShowPointerState[findidx] = POINTER_STATE_HOLD;
+            }
+            else
+            {
+                /*we should wait*/
+                wait = 1;
+            }
+        }
+
+        LeaveCriticalSection(&st_PointerCS);
         if(wait)
         {
             bret = SwitchToThread();
@@ -165,40 +165,40 @@ BOOL HoldPointer(IDirect3DDevice9* pPtr)
 
 BOOL UnHoldPointer(IDirect3DDevice9* pPtr)
 {
-	BOOL bret=FALSE;
-	int findidx = -1;
-	unsigned int i;
-	int errorstate=POINTER_STATE_UNCERNTAIN;
-	EnterCriticalSection(&st_PointerCS);
-	assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
-	for (i=0;i<st_DirectShowPointers.size() ;i++)
-	{
-		if (st_DirectShowPointers[i] == pPtr)
-		{
-			findidx = i;
-			break;
-		}				
-	}
-	if (findidx >= 0)
-	{
-		if (st_DirectShowPointerState[findidx] == POINTER_STATE_HOLD)
-		{
-			bret = TRUE;
-			st_DirectShowPointerState[findidx] = POINTER_STATE_FREE;
-		}
-		else
-		{
-			errorstate = st_DirectShowPointerState[findidx];
-		}
-	}
-	LeaveCriticalSection(&st_PointerCS);
+    BOOL bret=FALSE;
+    int findidx = -1;
+    unsigned int i;
+    int errorstate=POINTER_STATE_UNCERNTAIN;
+    EnterCriticalSection(&st_PointerCS);
+    assert(st_DirectShowPointers.size() == st_DirectShowPointerState.size());
+    for(i=0; i<st_DirectShowPointers.size() ; i++)
+    {
+        if(st_DirectShowPointers[i] == pPtr)
+        {
+            findidx = i;
+            break;
+        }
+    }
+    if(findidx >= 0)
+    {
+        if(st_DirectShowPointerState[findidx] == POINTER_STATE_HOLD)
+        {
+            bret = TRUE;
+            st_DirectShowPointerState[findidx] = POINTER_STATE_FREE;
+        }
+        else
+        {
+            errorstate = st_DirectShowPointerState[findidx];
+        }
+    }
+    LeaveCriticalSection(&st_PointerCS);
 
-	if (errorstate != POINTER_STATE_UNCERNTAIN)
-	{
-		DEBUG_INFO("pointer 0x%p not valid state %d\n",pPtr,errorstate);
-	}
+    if(errorstate != POINTER_STATE_UNCERNTAIN)
+    {
+        DEBUG_INFO("pointer 0x%p not valid state %d\n",pPtr,errorstate);
+    }
 
-	return bret;
+    return bret;
 }
 
 int UnRegisterPointer(IDirect3DDevice9* pPtr)
@@ -261,6 +261,8 @@ int UnRegisterPointer(IDirect3DDevice9* pPtr)
         ret = pPtr->Release();
     }
 
+    DEBUG_INFO("Unregister [0x%p] (%d:%d)\n",pPtr,releaseone,ret);
+
     return ret ;
 }
 
@@ -298,6 +300,7 @@ int RegisterPointer(IDirect3DDevice9* pPtr)
     {
         pPtr->AddRef();
     }
+    DEBUG_INFO("register [0x%p](%d)\n",pPtr);
 
     return registered ? 1: 0;
 }
@@ -399,93 +402,103 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     LPWSTR pFileName=NULL;
     BOOL bret;
     DEBUG_INFO("\n");
-    pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
-    if(pD3D==NULL)
+    __try
     {
-        ret = GetLastError() ? GetLastError() : 1;
-        DEBUG_INFO("could not create 9 %d\n",ret);
-        goto fail;
-    }
-    DEBUG_INFO("\n");
-    hr = pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &D3DMode);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not get adapter mode 0x%08x (%d)\n",hr,ret);
-        goto fail;
-    }
+        pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
+        if(pD3D==NULL)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("could not create 9 %d\n",ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+        hr = pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &D3DMode);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get adapter mode 0x%08x (%d)\n",hr,ret);
+            goto fail;
+        }
 
-    DEBUG_INFO("\n");
-//    hr = pDevice->Present(NULL,NULL,NULL,NULL);
-//    if(FAILED(hr))
-//    {
-//        DEBUG_INFO("not preset\n");
-//    }
-    DEBUG_INFO("\n");
+        DEBUG_INFO("\n");
+		//    hr = pDevice->Present(NULL,NULL,NULL,NULL);
+		//    if(FAILED(hr))
+		//    {
+		//        DEBUG_INFO("not preset\n");
+		//    }
+        DEBUG_INFO("\n");
 
-    hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not get backbuffer(0x%08x) (%d)\n",hr,ret);
-        goto fail;
-    }
-    DEBUG_INFO("\n");
+        hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get backbuffer(0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
 
-    //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-    //        D3DMode.Height,
-    //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-    hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-            D3DMode.Height,
-            D3DMode.Format,D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
-        goto fail;
-    }
-    DEBUG_INFO("\n");
+        //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
+        //        D3DMode.Height,
+        //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
+                D3DMode.Height,
+                D3DMode.Format,D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        DEBUG_INFO("hr 0x%08x\n",hr);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
 
-	SetLastError(0);
-    hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not get render target data (0x%08x)  (%d)\n",hr,ret);
-        goto fail;
-    }
-    DEBUG_INFO("\n");
+        SetLastError(0);
+        hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get render target data (0x%08x)  (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
 
 #ifdef  UNICODE
-    pFileName = new wchar_t[8000];
-    memset(pFileName,0,8000 * 2);
-    bret = MultiByteToWideChar(CP_ACP,NULL,filetosave,-1,pFileName,8000);
-    if(!bret)
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("can not save file %s (%d)\n",filetosave,ret);
-        goto fail;
-    }
+        pFileName = new wchar_t[8000];
+        memset(pFileName,0,8000 * 2);
+        bret = MultiByteToWideChar(CP_ACP,NULL,filetosave,-1,pFileName,8000);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("can not save file %s (%d)\n",filetosave,ret);
+            goto fail;
+        }
 
-    DEBUG_INFO("save file %s\n",filetosave);
+        DEBUG_INFO("save file %s\n",filetosave);
 
-    hr = D3DXSaveSurfaceToFile(pFileName, D3DXIFF_BMP, pSurface, NULL, NULL);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
-        goto fail;
-    }
+        hr = D3DXSaveSurfaceToFile(pFileName, D3DXIFF_BMP, pSurface, NULL, NULL);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
+            goto fail;
+        }
 
 #else
-    hr = D3DXSaveSurfaceToFile(filetosave, D3DXIFF_BMP, pSurface, NULL, NULL);
-    if(FAILED(hr))
-    {
-        ret = GetLastError() ? GetLastError():1;
-        DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
-        goto fail;
-    }
+        hr = D3DXSaveSurfaceToFile(filetosave, D3DXIFF_BMP, pSurface, NULL, NULL);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not save file %s (%d)\n",filetosave,ret);
+            goto fail;
+        }
 #endif
+    }
+	__except(EXCEPTION_EXECUTE_HANDLER)
+	{
+		ret = GetLastError() ? GetLastError() : 1;
+		DEBUG_INFO("catch exception %d\n",GetExceptionCode());
+		goto fail;
+	}
     DEBUG_INFO("\n");
     if(pSurface)
     {
@@ -759,7 +772,7 @@ void ResumeAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
     return;
 }
 
-#define THREAD_PAUSE_HANDLE 1
+//#define THREAD_PAUSE_HANDLE 1
 
 int Capture3DBackBuffer(const char* filetosave)
 {
