@@ -23,7 +23,9 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
-
+private:
+	DWORD m_CallProcessId;
+	int m_BmpId;
 // Implementation
 protected:
 	HICON m_hIcon;
