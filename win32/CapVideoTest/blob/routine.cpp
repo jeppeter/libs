@@ -403,6 +403,7 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     BOOL bret;
     D3DSURFACE_DESC desc;
     DEBUG_INFO("\n");
+	int rebackbuffer=0;
     __try
     {
         pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
@@ -437,6 +438,15 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
             goto fail;
         }
         DEBUG_INFO("\n");
+		hr = pDevice->GetRenderTarget(0,&pBackBuffer);
+		if (FAILED(hr))
+		{
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get backbuffer rendertarget(0x%08x) (%d)\n",hr,ret);
+			goto fail;
+		}
+		rebackbuffer = 1;
+		DEBUG_INFO("\n");
 
         //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
         //        D3DMode.Height,
@@ -532,6 +542,11 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     if(pBackBuffer)
     {
         pBackBuffer->Release();
+		if (rebackbuffer)
+		{
+			pBackBuffer->Release();
+		}
+		rebackbuffer = 0;
     }
     pBackBuffer = NULL;
     if(pFileName)
@@ -555,7 +570,13 @@ fail:
     pSurface = NULL;
     if(pBackBuffer)
     {
+		
         pBackBuffer->Release();
+		if (rebackbuffer)
+		{
+			pBackBuffer->Release();
+		}
+		rebackbuffer = 0;
     }
     pBackBuffer = NULL;
     if(pFileName)
