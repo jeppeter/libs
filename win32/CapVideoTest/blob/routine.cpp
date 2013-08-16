@@ -401,6 +401,7 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
     LPWSTR pFileName=NULL;
     BOOL bret;
+    D3DSURFACE_DESC desc;
     DEBUG_INFO("\n");
     __try
     {
@@ -421,11 +422,11 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         }
 
         DEBUG_INFO("\n");
-		//    hr = pDevice->Present(NULL,NULL,NULL,NULL);
-		//    if(FAILED(hr))
-		//    {
-		//        DEBUG_INFO("not preset\n");
-		//    }
+        hr = pDevice->Present(NULL,NULL,NULL,NULL);
+        if(FAILED(hr))
+        {
+            DEBUG_INFO("not preset (0x%08x)\n",hr);
+        }
         DEBUG_INFO("\n");
 
         hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
@@ -440,6 +441,7 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
         //        D3DMode.Height,
         //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        DEBUG_INFO("width %d height %d format 0x%x\n",D3DMode.Width,D3DMode.Height,D3DMode.Format);
         hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
                 D3DMode.Height,
                 D3DMode.Format,D3DPOOL_SYSTEMMEM, &pSurface, NULL);
@@ -451,6 +453,27 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
             goto fail;
         }
         DEBUG_INFO("\n");
+
+        hr = pBackBuffer->GetDesc(&desc);
+		if (!FAILED(hr))
+		{
+			DEBUG_INFO("pBackBuffer Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
+					desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
+		}
+		else
+		{
+			DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)\n",hr);
+		}
+		hr = pSurface->GetDesc(&desc);
+		if (!FAILED(hr))
+		{
+			DEBUG_INFO("pSurface    Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
+					desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
+		}
+		else
+		{
+			DEBUG_INFO("pSurface->GetDesc Failed(0x%08x)\n",hr);
+		}
 
         SetLastError(0);
         hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
@@ -493,12 +516,12 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         }
 #endif
     }
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		ret = GetLastError() ? GetLastError() : 1;
-		DEBUG_INFO("catch exception %d\n",GetExceptionCode());
-		goto fail;
-	}
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("catch exception %d\n",GetExceptionCode());
+        goto fail;
+    }
     DEBUG_INFO("\n");
     if(pSurface)
     {
