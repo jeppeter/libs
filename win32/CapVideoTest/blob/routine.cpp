@@ -1275,8 +1275,13 @@ public:
     COM_METHOD(HRESULT, EndScene)(THIS)
     {
         HRESULT hr;
+		unsigned int tick;
         DX_DEBUG_FUNC_IN();
+		tick = GetTickCount();
+		DEBUG_INFO("0x%08x EndScene in\n",tick);
         hr = m_ptr->EndScene();
+		tick = GetTickCount();
+		DEBUG_INFO("0x%08x EndScene out\n",tick);
         DX_DEBUG_FUNC_OUT();
         return hr;
     }
