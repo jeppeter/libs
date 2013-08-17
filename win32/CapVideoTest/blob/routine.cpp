@@ -447,23 +447,6 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         }
         rebackbuffer = 1;
         DEBUG_INFO("\n");
-
-        //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-        //        D3DMode.Height,
-        //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-        DEBUG_INFO("width %d height %d format 0x%x\n",D3DMode.Width,D3DMode.Height,D3DMode.Format);
-        hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-                D3DMode.Height,
-                D3DMode.Format,D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-        DEBUG_INFO("hr 0x%08x\n",hr);
-        if(FAILED(hr))
-        {
-            ret = GetLastError() ? GetLastError():1;
-            DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
-            goto fail;
-        }
-        DEBUG_INFO("\n");
-
         hr = pBackBuffer->GetDesc(&desc);
         if(!FAILED(hr))
         {
@@ -474,6 +457,25 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         {
             DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)\n",hr);
         }
+
+        //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
+        //        D3DMode.Height,
+        //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        DEBUG_INFO("width %d height %d format 0x%x\n",D3DMode.Width,D3DMode.Height,D3DMode.Format);
+        hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
+                D3DMode.Height,
+                //D3DMode.Format,
+                desc.Format,
+                D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        DEBUG_INFO("hr 0x%08x\n",hr);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+
         hr = pSurface->GetDesc(&desc);
         if(!FAILED(hr))
         {
@@ -1278,13 +1280,7 @@ public:
     }
     COM_METHOD(HRESULT, EndScene)(THIS)
     {
-        static int st_EndCount = 0;
-        static int st_EndSucc=0;
-        int ret;
         HRESULT hr;
-        unsigned int tick;
-        DX_DEBUG_FUNC_IN();
-        tick = GetTickCount();
         //DEBUG_INFO("0x%08x EndScene in\n",tick);
         st_EndCount ++;
         if((st_EndCount%200) == 0 && st_EndSucc == 0)
