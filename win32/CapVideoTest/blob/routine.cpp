@@ -261,7 +261,7 @@ int UnRegisterPointer(IDirect3DDevice9* pPtr)
         ret = pPtr->Release();
     }
 
-    DEBUG_INFO("Unregister [0x%p] (%d:%d)\n",pPtr,releaseone,ret);
+    DEBUG_INFO("Unregister [0x%p] (release[%d]ret[%d])\n",pPtr,releaseone,ret);
 
     return ret ;
 }
@@ -394,39 +394,22 @@ void FinializeEnviron()
 
 int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
 {
-    IDirect3D9* pD3D=NULL;
     int ret=1;
     HRESULT hr;
-    D3DDISPLAYMODE D3DMode;
     LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
     LPWSTR pFileName=NULL;
     BOOL bret;
     D3DSURFACE_DESC desc;
     DEBUG_INFO("\n");
-    int rebackbuffer=0;
     __try
     {
-        pD3D = Direct3DCreate9Next(D3D_SDK_VERSION);
-        if(pD3D==NULL)
-        {
-            ret = GetLastError() ? GetLastError() : 1;
-            DEBUG_INFO("could not create 9 %d\n",ret);
-            goto fail;
-        }
-        DEBUG_INFO("\n");
-        hr = pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &D3DMode);
-        if(FAILED(hr))
-        {
-            ret = GetLastError() ? GetLastError():1;
-            DEBUG_INFO("could not get adapter mode 0x%08x (%d)\n",hr,ret);
-            goto fail;
-        }
-
         DEBUG_INFO("\n");
         hr = pDevice->Present(NULL,NULL,NULL,NULL);
         if(FAILED(hr))
         {
+            ret = GetLastError() ? GetLastError() : 1;
             DEBUG_INFO("not preset (0x%08x)\n",hr);
+            goto fail;
         }
         DEBUG_INFO("\n");
 
@@ -438,15 +421,6 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
             goto fail;
         }
         DEBUG_INFO("\n");
-        hr = pDevice->GetRenderTarget(0,&pBackBuffer);
-        if(FAILED(hr))
-        {
-            ret = GetLastError() ? GetLastError():1;
-            DEBUG_INFO("could not get backbuffer rendertarget(0x%08x) (%d)\n",hr,ret);
-            goto fail;
-        }
-        rebackbuffer = 1;
-        DEBUG_INFO("\n");
         hr = pBackBuffer->GetDesc(&desc);
         if(!FAILED(hr))
         {
@@ -455,19 +429,15 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         }
         else
         {
-            DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)\n",hr);
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
+            goto fail;
         }
 
-        //hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-        //        D3DMode.Height,
-        //        D3DMode.Format, D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-        DEBUG_INFO("width %d height %d format 0x%x\n",D3DMode.Width,D3DMode.Height,D3DMode.Format);
-        hr = pDevice->CreateOffscreenPlainSurface(D3DMode.Width,
-                D3DMode.Height,
-                //D3DMode.Format,
+        hr = pDevice->CreateOffscreenPlainSurface(desc.Width,
+                desc.Height,
                 desc.Format,
                 D3DPOOL_SYSTEMMEM, &pSurface, NULL);
-        DEBUG_INFO("hr 0x%08x\n",hr);
         if(FAILED(hr))
         {
             ret = GetLastError() ? GetLastError():1;
@@ -477,15 +447,15 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         DEBUG_INFO("\n");
 
         hr = pSurface->GetDesc(&desc);
-        if(!FAILED(hr))
+        if(FAILED(hr))
         {
-            DEBUG_INFO("pSurface    Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
-                       desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("pSurface->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
+            goto fail;
         }
-        else
-        {
-            DEBUG_INFO("pSurface->GetDesc Failed(0x%08x)\n",hr);
-        }
+
+        DEBUG_INFO("pSurface    Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
+                   desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
 
         SetLastError(0);
         hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
@@ -544,11 +514,6 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
     if(pBackBuffer)
     {
         pBackBuffer->Release();
-        if(rebackbuffer)
-        {
-            pBackBuffer->Release();
-        }
-        rebackbuffer = 0;
     }
     pBackBuffer = NULL;
     if(pFileName)
@@ -556,12 +521,6 @@ int __Capture3DBackBuffer(IDirect3DDevice9* pDevice,const char* filetosave)
         delete [] pFileName;
     }
     pFileName = NULL;
-    if(pD3D)
-    {
-        pD3D->Release();
-    }
-    pD3D = NULL;
-
     return 0;
 fail:
     assert(ret > 0);
@@ -572,13 +531,7 @@ fail:
     pSurface = NULL;
     if(pBackBuffer)
     {
-
         pBackBuffer->Release();
-        if(rebackbuffer)
-        {
-            pBackBuffer->Release();
-        }
-        rebackbuffer = 0;
     }
     pBackBuffer = NULL;
     if(pFileName)
@@ -586,11 +539,6 @@ fail:
         delete [] pFileName;
     }
     pFileName = NULL;
-    if(pD3D)
-    {
-        pD3D->Release();
-    }
-    pD3D = NULL;
     SetLastError(ret);
     return -ret;
 }
@@ -1002,10 +950,6 @@ public:
         HRESULT hr;
         DX_DEBUG_FUNC_IN();
         hr =  m_ptr->GetDeviceCaps(pCaps);
-        if(!FAILED(hr) && pCaps)
-        {
-            DEBUG_BUFFER(pCaps,sizeof(*pCaps));
-        }
         DX_DEBUG_FUNC_OUT();
         return hr;
     }
@@ -1281,19 +1225,8 @@ public:
     COM_METHOD(HRESULT, EndScene)(THIS)
     {
         HRESULT hr;
-        //DEBUG_INFO("0x%08x EndScene in\n",tick);
-        st_EndCount ++;
-        if((st_EndCount%200) == 0 && st_EndSucc == 0)
-        {
-            ret = __Capture3DBackBuffer(m_ptr,"z:\nodir\book.bmp");
-            if(ret >= 0)
-            {
-                st_EndSucc = 1;
-            }
-        }
+        DX_DEBUG_FUNC_IN();
         hr = m_ptr->EndScene();
-        tick = GetTickCount();
-        //DEBUG_INFO("0x%08x EndScene out\n",tick);
         DX_DEBUG_FUNC_OUT();
         return hr;
     }
