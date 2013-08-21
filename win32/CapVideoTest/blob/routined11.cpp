@@ -1459,6 +1459,71 @@ public:
         return;
     }
 
+    COM_METHOD(void,IASetInputLayout)(THIS_ ID3D11InputLayout *pInputLayout)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IASetInputLayout(pInputLayout);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,IASetVertexBuffers)(THIS_ UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppVertexBuffers,const UINT *pStrides,const UINT *pOffsets)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IASetVertexBuffers(StartSlot,NumBuffers,ppVertexBuffers,pStrides,pOffsets);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,IASetIndexBuffer)(THIS_ ID3D11Buffer *pIndexBuffer,DXGI_FORMAT Format,UINT Offset)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IASetIndexBuffer(pIndexBuffer,Format,Offset);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,DrawIndexedInstanced)(THIS_ UINT IndexCountPerInstance,UINT InstanceCount,UINT StartIndexLocation,INT BaseVertexLocation,UINT StartInstanceLocation)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawIndexedInstanced(IndexCountPerInstance,InstanceCount,StartIndexLocation,BaseVertexLocation,StartInstanceLocation);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,DrawInstanced)(THIS_ UINT VertexCountPerInstance,UINT InstanceCount,UINT StartVertexLocation,UINT StartInstanceLocation)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawInstanced(VertexCountPerInstance,InstanceCount,StartVertexLocation,StartInstanceLocation);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,GSSetConstantBuffers)(THIS_ UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,GSSetShader)(THIS_ ID3D11GeometryShader *pShader,ID3D11ClassInstance *const *ppClassInstances,	UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSSetShader(pShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,IASetPrimitiveTopology)(THIS_ D3D11_PRIMITIVE_TOPOLOGY Topology)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IASetPrimitiveTopology(Topology);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+
 };
 
 
