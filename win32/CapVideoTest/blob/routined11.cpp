@@ -1685,7 +1685,22 @@ public:
         return ;
     }
 
+    COM_METHOD(void,RSSetScissorRects)(THIS_ UINT NumRects,const D3D11_RECT *pRects)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSSetScissorRects(NumRects,pRects);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
 
+    COM_METHOD(void,CopySubresourceRegion)(THIS_ ID3D11Resource *pDstResource,UINT DstSubresource,
+                                           UINT DstX,UINT DstY,UINT DstZ,ID3D11Resource *pSrcResource,UINT SrcSubresource,const D3D11_BOX *pSrcBox)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CopySubresourceRegion(pDstResource,DstSubresource,DstX,DstY,DstZ,pSrcResource,SrcSubresource,pSrcBox);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
 
 };
 
