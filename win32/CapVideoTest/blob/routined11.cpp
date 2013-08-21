@@ -246,15 +246,44 @@ public:
         return hr;
     }
 
-	
-	COM_METHOD(HRESULT,SetFullscreenState )(THIS_ BOOL Fullscreen,IDXGIOutput *pTarget)
-	{
+
+    COM_METHOD(HRESULT,SetFullscreenState)(THIS_ BOOL Fullscreen,IDXGIOutput *pTarget)
+    {
         HRESULT hr;
         SWAP_CHAIN_IN();
         hr = m_ptr->SetFullscreenState(Fullscreen,pTarget);
         SWAP_CHAIN_OUT();
-        return hr;		
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,GetFullscreenState)(THIS_ BOOL *pFullscreen,IDXGIOutput **ppTarget)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->GetFullscreenState(pFullscreen,ppTarget);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetDesc)(THIS_ DXGI_SWAP_CHAIN_DESC *pDesc)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->GetDesc(pDesc);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,ResizeBuffers)(THIS_ UINT BufferCount,UINT Width,UINT Height,DXGI_FORMAT NewFormat,UINT SwapChainFlags)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->ResizeBuffers(BufferCount,Width,Height,NewFormat,SwapChainFlags);
+        SWAP_CHAIN_OUT();
+        return hr;
 	}
+
 
 };
 
