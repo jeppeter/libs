@@ -1443,6 +1443,22 @@ public:
         return hr;
     }
 
+    COM_METHOD(void ,Unmap)(THIS_ ID3D11Resource *pResource,UINT Subresource)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->Unmap(pResource,Subresource);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,PSSetConstantBuffers)(THIS_ UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
 };
 
 
