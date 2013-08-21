@@ -1596,6 +1596,48 @@ public:
         return;
     }
 
+    COM_METHOD(void,OMSetRenderTargetsAndUnorderedAccessViews)(THIS_ UINT NumRTVs,ID3D11RenderTargetView *const *ppRenderTargetViews,ID3D11DepthStencilView *pDepthStencilView,
+            UINT UAVStartSlot,UINT NumUAVs,ID3D11UnorderedAccessView *const *ppUnorderedAccessViews,const UINT *pUAVInitialCounts)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMSetRenderTargetsAndUnorderedAccessViews(NumRTVs,ppRenderTargetViews,pDepthStencilView,UAVStartSlot,NumUAVs,ppUnorderedAccessViews,pUAVInitialCounts);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,OMSetBlendState)(THIS_ ID3D11BlendState *pBlendState,const FLOAT BlendFactor[ 4 ],UINT SampleMask)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMSetBlendState(pBlendState,BlendFactor,SampleMask);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,OMSetDepthStencilState)(THIS_ ID3D11DepthStencilState *pDepthStencilState,UINT StencilRef)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMSetDepthStencilState(pDepthStencilState,StencilRef);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,SOSetTargets)(THIS_ UINT NumBuffers,ID3D11Buffer *const *ppSOTargets,const UINT *pOffsets)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->SOSetTargets(NumBuffers,ppSOTargets,pOffsets);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,DrawAuto)(THIS)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawAuto();
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+
 };
 
 
