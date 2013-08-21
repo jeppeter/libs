@@ -1523,6 +1523,78 @@ public:
         return;
     }
 
+    COM_METHOD(void,VSSetShaderResources)(THIS_ UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,VSSetSamplers)(THIS_ UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,Begin)(THIS_ ID3D11Asynchronous *pAsync)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->Begin(pAsync);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,End)(THIS_ ID3D11Asynchronous *pAsync)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->End(pAsync);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(HRESULT,GetData)(THIS_ ID3D11Asynchronous *pAsync,void *pData,UINT DataSize,UINT GetDataFlags)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->GetData(pAsync,pData,DataSize,GetDataFlags);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void,SetPredication)(THIS_ ID3D11Predicate *pPredicate,BOOL PredicateValue)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->SetPredication(pPredicate,PredicateValue);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,GSSetShaderResources)(THIS_ UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,GSSetSamplers)(THIS_ UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,OMSetRenderTargets)(THIS_ UINT NumViews,ID3D11RenderTargetView *const *ppRenderTargetViews,ID3D11DepthStencilView *pDepthStencilView)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMSetRenderTargets(NumViews,ppRenderTargetViews,pDepthStencilView);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
 
 };
 
