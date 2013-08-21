@@ -1702,6 +1702,40 @@ public:
         return ;
     }
 
+    COM_METHOD(void,CopyResource)(THIS_ ID3D11Resource *pDstResource,ID3D11Resource *pSrcResource)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CopyResource(pDstResource,pSrcResource);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+
+    COM_METHOD(void,UpdateSubresource)(THIS_ ID3D11Resource *pDstResource,UINT DstSubresource,
+                                       const D3D11_BOX *pDstBox,const void *pSrcData,UINT SrcRowPitch,UINT SrcDepthPitch)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->UpdateSubresource(pDstResource,DstSubresource,pDstBox,pSrcData,SrcRowPitch,SrcDepthPitch);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,CopyStructureCount)(THIS_ ID3D11Buffer *pDstBuffer,UINT DstAlignedByteOffset,ID3D11UnorderedAccessView *pSrcView)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CopyStructureCount(pDstBuffer,DstAlignedByteOffset,pSrcView);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,ClearRenderTargetView)(THIS_ ID3D11RenderTargetView *pRenderTargetView,const FLOAT ColorRGBA[ 4 ])
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ClearRenderTargetView(pRenderTargetView,ColorRGBA);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
 };
 
 
