@@ -1637,6 +1637,55 @@ public:
         return ;
     }
 
+    COM_METHOD(void,DrawIndexedInstancedIndirect)(THIS_ ID3D11Buffer *pBufferForArgs,UINT AlignedByteOffsetForArgs)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawIndexedInstancedIndirect(pBufferForArgs,AlignedByteOffsetForArgs);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void ,DrawInstancedIndirect)(THIS_ ID3D11Buffer *pBufferForArgs,UINT AlignedByteOffsetForArgs)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawInstancedIndirect(pBufferForArgs,AlignedByteOffsetForArgs);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,Dispatch)(THIS_  UINT ThreadGroupCountX,UINT ThreadGroupCountY,UINT ThreadGroupCountZ)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->Dispatch(ThreadGroupCountX,ThreadGroupCountY,ThreadGroupCountZ);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,DispatchIndirect)(THIS_  ID3D11Buffer *pBufferForArgs,UINT AlignedByteOffsetForArgs)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DispatchIndirect(pBufferForArgs,AlignedByteOffsetForArgs);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,RSSetState)(THIS_  ID3D11RasterizerState *pRasterizerState)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSSetState(pRasterizerState);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,RSSetViewports)(THIS_  UINT NumViewports,const D3D11_VIEWPORT *pViewports)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSSetViewports(NumViewports,pViewports);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+
 
 };
 
