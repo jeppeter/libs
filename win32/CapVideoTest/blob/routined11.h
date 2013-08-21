@@ -2,6 +2,7 @@
 #ifndef __ROUTINE_D11_H__
 #define __ROUTINE_D11_H__
 
+#include <Windows.h>
 int RoutineDetourD11(void);
 void RotineClearD11(void);
 

@@ -1,7 +1,10 @@
 
 #include "routined11.h"
 #include "d3d11.h"
+#include "..\\detours\\detours.h"
+#include "..\\common\\output_debug.h"
 
+#pragma comment(lib,"d3d11.lib")
 
 static HRESULT (WINAPI* D3D11CreateDeviceAndSwapChainNext)(IDXGIAdapter *pAdapter,
      D3D_DRIVER_TYPE DriverType,
@@ -36,6 +39,7 @@ HRESULT D3D11CreateDeviceAndSwapChainCallBack(
 
 	hr = D3D11CreateDeviceAndSwapChainNext(pAdapter,DriverType,Software,Flags,pFeatureLevels,
 		FeatureLevels,SDKVersion,pSwapChainDesc,ppSwapChain,ppDevice,pFeatureLevel,ppImmediateContext);
+	DEBUG_INFO("call D3D11CreateDeviceAndSwapChainNext (0x%08x)\n",hr);
 	return hr;
 }
 
@@ -65,3 +69,8 @@ int RoutineDetourD11(void)
 	
 }
 
+
+void RotineClearD11(void)
+{
+	return;
+}

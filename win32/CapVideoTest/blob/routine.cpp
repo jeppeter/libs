@@ -11,6 +11,7 @@ x509\routin.cpp
 #include <assert.h>
 #include <TlHelp32.h>
 #include <winbase.h>
+#include "routined11.h"
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
@@ -2001,7 +2002,7 @@ int Routine()
 
     InitializeHook();
     InitializeEnviron();
-
+	RoutineDetourD11();
     return 0;
 }
 
@@ -2010,6 +2011,7 @@ int Cleanup()
     WriteLogger(L"Blob closed");
     CloseLogger();
 
+	RotineClearD11();
     FinializeEnviron();
     return 0;
 }
