@@ -1777,6 +1777,59 @@ public:
         return ;
     }
 
+    COM_METHOD(FLOAT,GetResourceMinLOD)(THIS_ ID3D11Resource *pResource)
+    {
+        float f;
+        DEVICE_CONTEXT_IN();
+        f = m_ptr->GetResourceMinLOD(pResource);
+        DEVICE_CONTEXT_OUT();
+        return f;
+    }
+
+    COM_METHOD(void,ResolveSubresource)(THIS_ ID3D11Resource *pDstResource,UINT DstSubresource,
+                                        ID3D11Resource *pSrcResource,UINT SrcSubresource,DXGI_FORMAT Format)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ResolveSubresource(pDstResource,DstSubresource,pSrcResource,SrcSubresource,Format);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,ExecuteCommandList)(THIS_  ID3D11CommandList *pCommandList,    BOOL RestoreContextState)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ExecuteCommandList(pCommandList, RestoreContextState);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSSetShaderResources)(THIS_  UINT StartSlot,UINT NumViews,
+                                          ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSSetShader)(THIS_  ID3D11HullShader *pHullShader,ID3D11ClassInstance *const *ppClassInstances,    UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSSetShader(pHullShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSSetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+
+
 };
 
 
