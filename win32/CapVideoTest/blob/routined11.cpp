@@ -1828,7 +1828,62 @@ public:
         return ;
     }
 
+    COM_METHOD(void,HSSetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
 
+    COM_METHOD(void,DSSetShaderResources)(THIS_  UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,DSSetShader)(THIS_  ID3D11DomainShader *pDomainShader,ID3D11ClassInstance *const *ppClassInstances,UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DSSetShader(pDomainShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,DSSetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,DSSetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,CSSetShaderResources)(THIS_  UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,CSSetUnorderedAccessViews)(THIS_  UINT StartSlot,UINT NumUAVs,
+            ID3D11UnorderedAccessView *const *ppUnorderedAccessViews,const UINT *pUAVInitialCounts)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CSSetUnorderedAccessViews(StartSlot,NumUAVs,ppUnorderedAccessViews,pUAVInitialCounts);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
 
 };
 
