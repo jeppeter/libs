@@ -1360,8 +1360,88 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,SetPrivateData)(THIS_ REFGUID guid,UINT DataSize,const void *pData)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->SetPrivateData(guid,DataSize,pData);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
 
+    COM_METHOD(HRESULT,SetPrivateDataInterface)(THIS_ REFGUID guid,const IUnknown *pData)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->SetPrivateDataInterface(guid,pData);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
 
+    COM_METHOD(void,VSSetConstantBuffers)(THIS_ UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,PSSetShaderResources)(THIS_ UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView *const *ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSSetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,PSSetShader)(THIS_ ID3D11PixelShader *pPixelShader,ID3D11ClassInstance *const *ppClassInstances,UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSSetShader(pPixelShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,PSSetSamplers)(THIS_ UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,VSSetShader)(THIS_ ID3D11VertexShader *pVertexShader,ID3D11ClassInstance *const *ppClassInstances,	UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSSetShader(pVertexShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,DrawIndexed)(THIS_ UINT IndexCount,UINT StartIndexLocation,INT BaseVertexLocation)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->DrawIndexed(IndexCount,StartIndexLocation,BaseVertexLocation);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(void,Draw)(THIS_ UINT VertexCount,UINT StartVertexLocation)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->Draw(VertexCount,StartVertexLocation);
+        DEVICE_CONTEXT_OUT();
+        return;
+    }
+
+    COM_METHOD(HRESULT,Map)(THIS_ ID3D11Resource *pResource,UINT Subresource,D3D11_MAP MapType,UINT MapFlags,D3D11_MAPPED_SUBRESOURCE *pMappedResource)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->Map(pResource,Subresource,MapType,MapFlags,pMappedResource);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
 
 };
 
