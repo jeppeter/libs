@@ -282,8 +282,44 @@ public:
         hr = m_ptr->ResizeBuffers(BufferCount,Width,Height,NewFormat,SwapChainFlags);
         SWAP_CHAIN_OUT();
         return hr;
-	}
+    }
 
+    COM_METHOD(HRESULT,ResizeTarget)(THIS_ const DXGI_MODE_DESC *pNewTargetParameters)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->ResizeTarget(pNewTargetParameters);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,GetContainingOutput)(THIS_ IDXGIOutput **ppOutput)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->GetContainingOutput(ppOutput);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetFrameStatistics)(THIS_ DXGI_FRAME_STATISTICS *pStats)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->GetFrameStatistics(pStats);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetLastPresentCount)(THIS_ UINT *pLastPresentCount)
+    {
+        HRESULT hr;
+        SWAP_CHAIN_IN();
+        hr = m_ptr->GetLastPresentCount(pLastPresentCount);
+        SWAP_CHAIN_OUT();
+        return hr;
+    }
 
 };
 
@@ -1249,6 +1285,85 @@ HRESULT(STDMETHODCALLTYPE *FinishCommandList)(
 
 #endif
 
+
+#define  DEVICE_CONTEXT_IN() do{} while(0)
+
+#define  DEVICE_CONTEXT_OUT() do{} while(0)
+
+int UnRegisterDeviceContext(ID3D11DeviceContext *pContext)
+{
+    return 0;
+}
+
+int RegisterDeviceContext(ID3D11DeviceContext *pContext)
+{
+    return 0;
+}
+
+class CD3D11DeviceContextHook : public ID3D11DeviceContext
+{
+private:
+    ID3D11DeviceContext *m_ptr;
+public:
+    CD3D11DeviceContextHook(ID3D11DeviceContext *pPtr):m_ptr(pPtr) {};
+
+public:
+    COM_METHOD(HRESULT, QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->QueryInterface(riid, ppvObj);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
+    COM_METHOD(ULONG, AddRef)(THIS)
+    {
+        ULONG ret;
+        DEVICE_CONTEXT_IN();
+        ret=  m_ptr->AddRef();
+        DEVICE_CONTEXT_OUT();
+        return ret;
+    }
+    COM_METHOD(ULONG, Release)(THIS)
+    {
+        ULONG uret,realret;
+        int ret;
+
+        DEVICE_CONTEXT_IN();
+        uret = m_ptr->Release();
+        realret = uret;
+        /*it means that is the just one ,we should return for the job*/
+        if(uret == 1)
+        {
+            ret = UnRegisterDeviceContext(m_ptr);
+            /*if 1 it means not release one*/
+            realret = ret;
+        }
+        DEVICE_CONTEXT_OUT();
+        return realret;
+    }
+
+    COM_METHOD(void,GetDevice)(THIS_ ID3D11Device **ppDevice)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GetDevice(ppDevice);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,GetPrivateData)(THIS_ REFGUID guid,UINT *pDataSize,void *pData)
+    {
+        HRESULT hr;
+        DEVICE_CONTEXT_IN();
+        hr =  m_ptr->GetPrivateData(guid,pDataSize,pData);
+        DEVICE_CONTEXT_OUT();
+        return hr;
+    }
+
+
+
+
+};
 
 
 
