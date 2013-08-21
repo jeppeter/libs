@@ -1736,6 +1736,47 @@ public:
         return ;
     }
 
+    COM_METHOD(void,ClearUnorderedAccessViewUint)(THIS_  ID3D11UnorderedAccessView *pUnorderedAccessView,const UINT Values[ 4 ])
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ClearUnorderedAccessViewUint(pUnorderedAccessView,Values);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,ClearUnorderedAccessViewFloat)(THIS_  ID3D11UnorderedAccessView *pUnorderedAccessView,const FLOAT Values[ 4 ])
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ClearUnorderedAccessViewFloat(pUnorderedAccessView,Values);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,ClearDepthStencilView)(THIS_  ID3D11DepthStencilView *pDepthStencilView,UINT ClearFlags,
+                                           FLOAT Depth,UINT8 Stencil)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->ClearDepthStencilView(pDepthStencilView,ClearFlags,Depth,Stencil);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,GenerateMips)(THIS_  ID3D11ShaderResourceView *pShaderResourceView)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GenerateMips(pShaderResourceView);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,SetResourceMinLOD)(THIS_  ID3D11Resource *pResource,    FLOAT MinLOD)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->SetResourceMinLOD(pResource,MinLOD);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
 };
 
 
