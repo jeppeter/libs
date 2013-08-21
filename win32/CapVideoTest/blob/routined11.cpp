@@ -1885,6 +1885,110 @@ public:
         return ;
     }
 
+    COM_METHOD(void,CSSetShader)(THIS_  ID3D11ComputeShader *pComputeShader,ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CSSetShader(pComputeShader,ppClassInstances,NumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,CSSetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState *const *ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CSSetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,CSSetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer *const *ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->CSSetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,VSGetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer **ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSGetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,PSGetShaderResources)(THIS_  UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView **ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSGetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,PSGetShader)(THIS_  ID3D11PixelShader **ppPixelShader,ID3D11ClassInstance **ppClassInstances,UINT *pNumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSGetShader(ppPixelShader,ppClassInstances,pNumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+    COM_METHOD(void,PSGetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState **ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSGetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,VSGetShader)(THIS_  ID3D11VertexShader **ppVertexShader,ID3D11ClassInstance **ppClassInstances,UINT *pNumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSGetShader(ppVertexShader,ppClassInstances,pNumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,PSGetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer **ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->PSGetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,IAGetInputLayout)(THIS_  ID3D11InputLayout **ppInputLayout)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IAGetInputLayout(ppInputLayout);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,IAGetVertexBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer **ppVertexBuffers,
+                                        UINT *pStrides,UINT *pOffsets)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IAGetVertexBuffers(StartSlot,NumBuffers,ppVertexBuffers,pStrides,pOffsets);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,IAGetIndexBuffer)(THIS_  ID3D11Buffer **pIndexBuffer,DXGI_FORMAT *Format,UINT *Offset)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IAGetIndexBuffer(pIndexBuffer,Format,Offset);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,GSGetConstantBuffers)(THIS_  UINT StartSlot,UINT NumBuffers,ID3D11Buffer **ppConstantBuffers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSGetConstantBuffers(StartSlot,NumBuffers,ppConstantBuffers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
 };
 
 
