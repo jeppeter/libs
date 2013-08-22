@@ -1644,6 +1644,36 @@ public:
     }
 };
 
+#define  DXGI_FACTORY1_IN()  do{} while(0)
+#define  DXGI_FACTORY1_OUT() do{}while(0)
+
+class CDXGIFactory1Hook : public IDXGIFactory1
+{
+private:
+    IDXGIFactory1 *m_ptr;
+public:
+    CDXGIFactory1Hook(IDXGIFactory1* pPtr) : m_ptr(pPtr) {};
+public:
+
+    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG ul;
+        DXGI_FACTORY1_IN();
+        ul = m_ptr->AddRef();
+        DXGI_FACTORY1_OUT();
+        return ul;
+
+    }
+};
 
 
 
