@@ -1665,7 +1665,7 @@ static HRESULT(WINAPI* D3D11CreateDeviceAndSwapChainNext)(IDXGIAdapter *pAdapter
         ID3D11DeviceContext **ppImmediateContext)
     = D3D11CreateDeviceAndSwapChain;
 
-HRESULT D3D11CreateDeviceAndSwapChainCallBack(
+HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     IDXGIAdapter *pAdapter,
     D3D_DRIVER_TYPE DriverType,
     HMODULE Software,
@@ -1681,10 +1681,57 @@ HRESULT D3D11CreateDeviceAndSwapChainCallBack(
 )
 {
     HRESULT hr;
+    IDXGISwapChain *pGetSwapChain=NULL;
+    ID3D11Device *pGetDevice=NULL;
+    ID3D11DeviceContext *pGetDevCon=NULL;
 
+
+    DEBUG_INFO("pAdapter 0x%p\n",pAdapter);
+    DEBUG_INFO("DriverType 0x%08x\n",DriverType);
+    DEBUG_INFO("Software 0x%08x\n",Software);
+    DEBUG_INFO("Flags 0x%08x\n",Flags);
+    DEBUG_INFO("pFeatureLevels 0x%p\n",pFeatureLevels);
+    DEBUG_INFO("FeatureLevels 0x%08x\n",FeatureLevels);
+    DEBUG_INFO("SDKVersion 0x%08x\n",SDKVersion);
+    DEBUG_INFO("pSwapChainDesc 0x%p\n",pSwapChainDesc);
+    DEBUG_INFO("ppSwapChain 0x%p\n",ppSwapChain);
+    //BUG_INFO("*ppSwapChain 0x%p\n",*ppSwapChain);
+    DEBUG_INFO("ppDevice 0x%p\n",ppDevice);
+    DEBUG_INFO("*ppDevice 0x%p\n",*ppDevice);
+    DEBUG_INFO("pFeatureLevel 0x%p\n",pFeatureLevel);
+    DEBUG_INFO("ppImmediateContext 0x%p\n",ppImmediateContext);
+    DEBUG_INFO("*ppImmediateContext 0x%p\n",*ppImmediateContext);
     hr = D3D11CreateDeviceAndSwapChainNext(pAdapter,DriverType,Software,Flags,pFeatureLevels,
-                                           FeatureLevels,SDKVersion,pSwapChainDesc,ppSwapChain,ppDevice,pFeatureLevel,ppImmediateContext);
-    DEBUG_INFO("call D3D11CreateDeviceAndSwapChainNext (0x%08x)\n",hr);
+                                           FeatureLevels,SDKVersion,pSwapChainDesc,&pGetSwapChain,&pGetDevice,pFeatureLevel,&pGetDevCon);
+    DEBUG_INFO("call D3D11CreateDeviceAndSwapChainNext(0x%p)  D3D11CreateDeviceAndSwapChainCallBack(0x%p) (0x%08x)\n",
+               &D3D11CreateDeviceAndSwapChainNext,&D3D11CreateDeviceAndSwapChainCallBack,hr);
+    DEBUG_INFO("pAdapter 0x%p\n",pAdapter);
+    DEBUG_INFO("DriverType 0x%08x\n",DriverType);
+    DEBUG_INFO("Software 0x%08x\n",Software);
+    DEBUG_INFO("Flags 0x%08x\n",Flags);
+    DEBUG_INFO("pFeatureLevels 0x%p\n",pFeatureLevels);
+    DEBUG_INFO("FeatureLevels 0x%08x\n",FeatureLevels);
+    DEBUG_INFO("SDKVersion 0x%08x\n",SDKVersion);
+    DEBUG_INFO("pSwapChainDesc 0x%p\n",pSwapChainDesc);
+
+    if(!FAILED(hr))
+    {
+        DEBUG_INFO("pDevice 0x%p SwapChain 0x%p DeviceContext 0x%p\n",
+                   pGetDevice,pGetSwapChain,pGetDevCon);
+        if(ppDevice)
+        {
+            *ppDevice = pGetDevice;
+        }
+        if(ppSwapChain)
+        {
+            *ppSwapChain = pGetSwapChain;
+        }
+        if(ppImmediateContext)
+        {
+            *ppImmediateContext = pGetDevCon;
+        }
+    }
+
     return hr;
 }
 
