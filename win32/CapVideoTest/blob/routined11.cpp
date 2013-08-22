@@ -1371,6 +1371,208 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT ,CreateGeometryShader)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,ID3D11ClassLinkage *pClassLinkage,
+            ID3D11GeometryShader **ppGeometryShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateGeometryShader(pShaderBytecode,BytecodeLength,pClassLinkage,ppGeometryShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,CreateGeometryShaderWithStreamOutput)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,const D3D11_SO_DECLARATION_ENTRY *pSODeclaration,
+            UINT NumEntries,const UINT *pBufferStrides,UINT NumStrides,UINT RasterizedStream,ID3D11ClassLinkage *pClassLinkage,ID3D11GeometryShader **ppGeometryShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateGeometryShaderWithStreamOutput(pShaderBytecode,BytecodeLength,pSODeclaration,NumEntries,pBufferStrides,NumStrides,RasterizedStream,pClassLinkage,ppGeometryShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT ,CreatePixelShader)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,ID3D11ClassLinkage *pClassLinkage,ID3D11PixelShader **ppPixelShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreatePixelShader(pShaderBytecode,BytecodeLength,pClassLinkage,ppPixelShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateHullShader)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,ID3D11ClassLinkage *pClassLinkage,ID3D11HullShader **ppHullShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateHullShader(pShaderBytecode,BytecodeLength,pClassLinkage,ppHullShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateDomainShader)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,ID3D11ClassLinkage *pClassLinkage,ID3D11DomainShader **ppDomainShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateDomainShader(pShaderBytecode,BytecodeLength,pClassLinkage,ppDomainShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateComputeShader)(THIS_  const void *pShaderBytecode,SIZE_T BytecodeLength,ID3D11ClassLinkage *pClassLinkage,ID3D11ComputeShader **ppComputeShader)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateComputeShader(pShaderBytecode,BytecodeLength,pClassLinkage,ppComputeShader);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateClassLinkage)(THIS_  ID3D11ClassLinkage **ppLinkage)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateClassLinkage(ppLinkage);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateBlendState)(THIS_  const D3D11_BLEND_DESC *pBlendStateDesc,ID3D11BlendState **ppBlendState)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateBlendState(pBlendStateDesc,ppBlendState);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateDepthStencilState)(THIS_ const D3D11_DEPTH_STENCIL_DESC *pDepthStencilDesc,ID3D11DepthStencilState **ppDepthStencilState)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateDepthStencilState(pDepthStencilDesc,ppDepthStencilState);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateRasterizerState)(THIS_  const D3D11_RASTERIZER_DESC *pRasterizerDesc,ID3D11RasterizerState **ppRasterizerState)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateRasterizerState(pRasterizerDesc,ppRasterizerState);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateSamplerState)(THIS_  const D3D11_SAMPLER_DESC *pSamplerDesc,ID3D11SamplerState **ppSamplerState)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateSamplerState(pSamplerDesc,ppSamplerState);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateQuery)(THIS_  const D3D11_QUERY_DESC *pQueryDesc,ID3D11Query **ppQuery)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateQuery(pQueryDesc,ppQuery);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreatePredicate)(THIS_  const D3D11_QUERY_DESC *pPredicateDesc,ID3D11Predicate **ppPredicate)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreatePredicate(pPredicateDesc,ppPredicate);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateCounter)(THIS_  const D3D11_COUNTER_DESC *pCounterDesc,ID3D11Counter **ppCounter)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateCounter(pCounterDesc,ppCounter);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateDeferredContext)(THIS_  	UINT ContextFlags,ID3D11DeviceContext **ppDeferredContext)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CreateDeferredContext(ContextFlags,ppDeferredContext);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,OpenSharedResource)(THIS_  HANDLE hResource,REFIID ReturnedInterface,void **ppResource)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->OpenSharedResource(hResource,ReturnedInterface,ppResource);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CheckFormatSupport)(THIS_ DXGI_FORMAT Format,UINT *pFormatSupport)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CheckFormatSupport(Format,pFormatSupport);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CheckMultisampleQualityLevels)(THIS_  DXGI_FORMAT Format,UINT SampleCount,UINT *pNumQualityLevels)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CheckMultisampleQualityLevels(Format,SampleCount,pNumQualityLevels);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void,CheckCounterInfo)(THIS_ D3D11_COUNTER_INFO *pCounterInfo)
+    {
+        D11_DEVICE_IN();
+        m_ptr->CheckCounterInfo(pCounterInfo);
+        D11_DEVICE_OUT();
+        return;
+    }
+
+    COM_METHOD(HRESULT,CheckCounter)(THIS_ const D3D11_COUNTER_DESC *pDesc,D3D11_COUNTER_TYPE *pType,UINT *pActiveCounters,LPSTR szName,
+                                     UINT *pNameLength,LPSTR szUnits,UINT *pUnitsLength,LPSTR szDescription,UINT *pDescriptionLength)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CheckCounter(pDesc,pType,pActiveCounters,szName,pNameLength,szUnits,pUnitsLength,szDescription,pDescriptionLength);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CheckFeatureSupport)(THIS_  D3D11_FEATURE Feature,void *pFeatureSupportData,UINT FeatureSupportDataSize)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->CheckFeatureSupport(Feature,pFeatureSupportData,FeatureSupportDataSize);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetPrivateData)(THIS_  REFGUID guid,UINT *pDataSize,void *pData)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->GetPrivateData(guid,pDataSize,pData);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+
 };
 
 
