@@ -1989,6 +1989,153 @@ public:
         return ;
     }
 
+    COM_METHOD(void,GSGetShader)(THIS_  ID3D11GeometryShader **ppGeometryShader,ID3D11ClassInstance **ppClassInstances,UINT *pNumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSGetShader(ppGeometryShader,ppClassInstances,pNumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,IAGetPrimitiveTopology)(THIS_  D3D11_PRIMITIVE_TOPOLOGY *pTopology)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->IAGetPrimitiveTopology(pTopology);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,VSGetShaderResources)(THIS_ UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView **ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSGetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,VSGetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState **ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->VSGetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,GetPredication)(THIS_  ID3D11Predicate **ppPredicate,BOOL *pPredicateValue)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GetPredication(ppPredicate,pPredicateValue);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,GSGetShaderResources)(THIS_  UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView **ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSGetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,GSGetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState **ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->GSGetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,OMGetRenderTargets)(THIS_  UINT NumViews,ID3D11RenderTargetView **ppRenderTargetViews,ID3D11DepthStencilView **ppDepthStencilView)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMGetRenderTargets(NumViews,ppRenderTargetViews,ppDepthStencilView);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,OMGetRenderTargetsAndUnorderedAccessViews)(THIS_  UINT NumRTVs,ID3D11RenderTargetView **ppRenderTargetViews,
+            ID3D11DepthStencilView **ppDepthStencilView,UINT UAVStartSlot,UINT NumUAVs,ID3D11UnorderedAccessView **ppUnorderedAccessViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMGetRenderTargetsAndUnorderedAccessViews(NumRTVs,ppRenderTargetViews,ppDepthStencilView,UAVStartSlot,NumUAVs,ppUnorderedAccessViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,OMGetBlendState)(THIS_  ID3D11BlendState **ppBlendState,FLOAT BlendFactor[ 4 ],UINT *pSampleMask)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMGetBlendState(ppBlendState,BlendFactor,pSampleMask);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,OMGetDepthStencilState)(THIS_  ID3D11DepthStencilState **ppDepthStencilState,UINT *pStencilRef)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->OMGetDepthStencilState(ppDepthStencilState,pStencilRef);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,SOGetTargets)(THIS_  UINT NumBuffers,ID3D11Buffer **ppSOTargets)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->SOGetTargets(NumBuffers,ppSOTargets);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,RSGetState)(THIS_  ID3D11RasterizerState **ppRasterizerState)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSGetState(ppRasterizerState);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,RSGetViewports)(THIS_  UINT *pNumViewports,D3D11_VIEWPORT *pViewports)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSGetViewports(pNumViewports,pViewports);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,RSGetScissorRects)(THIS_ UINT *pNumRects,D3D11_RECT *pRects)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->RSGetScissorRects(pNumRects,pRects);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSGetShaderResources)(THIS_ UINT StartSlot,UINT NumViews,ID3D11ShaderResourceView **ppShaderResourceViews)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSGetShaderResources(StartSlot,NumViews,ppShaderResourceViews);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSGetShader)(THIS_  ID3D11HullShader **ppHullShader,ID3D11ClassInstance **ppClassInstances,UINT *pNumClassInstances)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSGetShader(ppHullShader,ppClassInstances,pNumClassInstances);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+    COM_METHOD(void,HSGetSamplers)(THIS_  UINT StartSlot,UINT NumSamplers,ID3D11SamplerState **ppSamplers)
+    {
+        DEVICE_CONTEXT_IN();
+        m_ptr->HSGetSamplers(StartSlot,NumSamplers,ppSamplers);
+        DEVICE_CONTEXT_OUT();
+        return ;
+    }
+
+
+
 };
 
 
