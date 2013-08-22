@@ -1572,7 +1572,76 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,SetPrivateData)(THIS_  REFGUID guid,UINT DataSize,const void *pData)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->SetPrivateData(guid,DataSize,pData);
+        D11_DEVICE_OUT();
+        return hr;
+    }
 
+    COM_METHOD(HRESULT,SetPrivateDataInterface)(THIS_  REFGUID guid,const IUnknown *pData)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->SetPrivateDataInterface(guid,pData);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(D3D_FEATURE_LEVEL,GetFeatureLevel)(THIS)
+    {
+        D3D_FEATURE_LEVEL ulevel;
+        D11_DEVICE_IN();
+        ulevel = m_ptr->GetFeatureLevel();
+        D11_DEVICE_OUT();
+        return ulevel;
+    }
+
+    COM_METHOD(UINT,GetCreationFlags)(THIS)
+    {
+        UINT ui;
+        D11_DEVICE_IN();
+        ui = m_ptr->GetCreationFlags();
+        D11_DEVICE_OUT();
+        return ui;
+    }
+
+    COM_METHOD(HRESULT,GetDeviceRemovedReason)(THIS)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->GetDeviceRemovedReason();
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void,GetImmediateContext)(THIS_  ID3D11DeviceContext **ppImmediateContext)
+    {
+        D11_DEVICE_IN();
+        m_ptr->GetImmediateContext(ppImmediateContext);
+        D11_DEVICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,SetExceptionMode)(THIS_      UINT RaiseFlags)
+    {
+        HRESULT hr;
+        D11_DEVICE_IN();
+        hr = m_ptr->SetExceptionMode(RaiseFlags);
+        D11_DEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(UINT,GetExceptionMode)(THIS)
+    {
+        UINT ui;
+        D11_DEVICE_IN();
+        ui = m_ptr->GetExceptionMode();
+        D11_DEVICE_OUT();
+        return ui;
+    }
 };
 
 
