@@ -499,23 +499,314 @@ int GrabD11Context(int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **ppDevice,
                 /*sleep for a while*/
                 Sleep(10);
             }
-        }        
+        }
     }
     while(wait);
 
     return grabed;
 }
 
-static int ReleaseD11Context(IDXGISwapChain *ppSwapChain,ID3D11Device *ppDevice,ID3D11DeviceContext *ppDeviceContext)
+static int ReleaseD11Context(IDXGISwapChain *pSwapChain,ID3D11Device *pDevice,ID3D11DeviceContext *pDeviceContext)
 {
-    
+    int released=0;
+    int releaseidx = -1;
+    unsigned int i;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+
+    EnterCriticalSection(&st_PointerLock);
+    for(i=0; i<st_D11PointersVec.size(); i++)
+    {
+        pCurPointer = st_D11PointersVec[i];
+        if(pCurPointer->m_pSwapChain == pSwapChain && pCurPointer->m_pDevice == pDevice &&
+                pCurPointer->m_pDeviceContext == pDeviceContext)
+        {
+            if(pCurPointer->m_SwapChainState != POINTER_STATE_GRAB ||
+                    pCurPointer->m_DeviceContextState != POINTER_STATE_GRAB ||
+                    pCurPointer->m_DeviceState != POINTER_STATE_GRAB)
+            {
+                DEBUG_INFO("[device:0x%p(%d) context:0x%p(%d) swapchain:0x%p(%d)]\n",
+                           pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
+                           pCurPointer->m_pDeviceContext,pCurPointer->m_DeviceContextState,
+                           pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
+            }
+
+            pCurPointer->m_DeviceState = POINTER_STATE_FREE;
+            pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+            pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
+            releaseidx = i;
+            break;
+        }
+    }
+    LeaveCriticalSection(&st_PointerLock);
+
+    if(releaseidx >= 0)
+    {
+        released = 1;
+    }
+    return released ;
+}
+
+static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *pDevice)
+{
+    int hold=0;
+    int wait=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    do
+    {
+        wait = 0;
+        EnterCriticalSection(&st_PointerLock);
+        for(i=0; i<st_D11PointersVec.size(); i++)
+        {
+            pCurPointer = st_D11PointersVec[i];
+            if(pCurPointer->m_pDevice == pDevice)
+            {
+                if(pCurPointer->m_DeviceState != POINTER_STATE_FREE)
+                {
+                    wait = 1;
+                }
+                else
+                {
+                    hold = 1;
+                    pCurPointer->m_DeviceState = POINTER_STATE_HOLD;
+                }
+                break;
+            }
+        }
+        LeaveCriticalSection(&st_PointerLock);
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+    }
+    while(wait);
+
+    if(hold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not hold device 0x%p\n",
+                   file,func,lineno,pDevice);
+    }
+
+    return hold;
+}
+
+static int UnholdDevice(const char* file,const char*func,int lineno,ID3D11Device *pDevice)
+{
+    int unhold=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    EnterCriticalSection(&st_PointerLock);
+    for(i=0; i<st_D11PointersVec.size(); i++)
+    {
+        pCurPointer = st_D11PointersVec[i];
+        if(pCurPointer->m_pDevice == pDevice)
+        {
+            if(pCurPointer->m_DeviceState != POINTER_STATE_HOLD)
+            {
+                unhold = 1;
+                pCurPointer->m_DeviceState = POINTER_STATE_FREE;
+            }
+            break;
+        }
+    }
+    LeaveCriticalSection(&st_PointerLock);
+
+    if(unhold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not unhold device 0x%p\n",
+                   file,func,lineno,pDevice);
+    }
+
+    return unhold;
+}
+
+
+static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11DeviceContext *pDeviceContext)
+{
+    int hold=0;
+    int wait=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    do
+    {
+        wait = 0;
+        EnterCriticalSection(&st_PointerLock);
+        for(i=0; i<st_D11PointersVec.size(); i++)
+        {
+            pCurPointer = st_D11PointersVec[i];
+            if(pCurPointer->m_pDeviceContext == pDeviceContext)
+            {
+                if(pCurPointer->m_DeviceContextState != POINTER_STATE_FREE)
+                {
+                    wait = 1;
+                }
+                else
+                {
+                    hold = 1;
+                    pCurPointer->m_DeviceContextState = POINTER_STATE_HOLD;
+                }
+                break;
+            }
+        }
+        LeaveCriticalSection(&st_PointerLock);
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+    }
+    while(wait);
+
+    if(hold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not hold devicecontext 0x%p\n",
+                   file,func,lineno,pDeviceContext);
+    }
+
+    return hold;
+}
+
+static int UnholdDeviceContext(const char* file,const char*func,int lineno,ID3D11DeviceContext *pDeviceContext)
+{
+    int unhold=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    EnterCriticalSection(&st_PointerLock);
+    for(i=0; i<st_D11PointersVec.size(); i++)
+    {
+        pCurPointer = st_D11PointersVec[i];
+        if(pCurPointer->m_pDeviceContext == pDeviceContext)
+        {
+            if(pCurPointer->m_DeviceContextState != POINTER_STATE_HOLD)
+            {
+                unhold = 1;
+                pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+            }
+            break;
+        }
+    }
+    LeaveCriticalSection(&st_PointerLock);
+
+    if(unhold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not unhold devicecontext 0x%p\n",
+                   file,func,lineno,pDeviceContext);
+    }
+
+    return unhold;
+}
+
+
+static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapChain *pSwapChain)
+{
+    int hold=0;
+    int wait=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    do
+    {
+        wait = 0;
+        EnterCriticalSection(&st_PointerLock);
+        for(i=0; i<st_D11PointersVec.size(); i++)
+        {
+            pCurPointer = st_D11PointersVec[i];
+            if(pCurPointer->m_pSwapChain == pSwapChain)
+            {
+                if(pCurPointer->m_SwapChainState != POINTER_STATE_FREE)
+                {
+                    wait = 1;
+                }
+                else
+                {
+                    hold = 1;
+                    pCurPointer->m_SwapChainState = POINTER_STATE_HOLD;
+                }
+                break;
+            }
+        }
+        LeaveCriticalSection(&st_PointerLock);
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+    }
+    while(wait);
+
+    if(hold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not hold swapchain 0x%p\n",
+                   file,func,lineno,pSwapChain);
+    }
+
+    return hold;
+}
+
+static int UnholdSwapChain(const char* file,const char*func,int lineno,IDXGISwapChain *pSwapChain)
+{
+    int unhold=0;
+    RegisterD11Pointers_t *pCurPointer=NULL;
+    unsigned int i;
+    BOOL bret;
+
+
+    EnterCriticalSection(&st_PointerLock);
+    for(i=0; i<st_D11PointersVec.size(); i++)
+    {
+        pCurPointer = st_D11PointersVec[i];
+        if(pCurPointer->m_pSwapChain== pSwapChain)
+        {
+            if(pCurPointer->m_SwapChainState != POINTER_STATE_HOLD)
+            {
+                unhold = 1;
+                pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
+            }
+            break;
+        }
+    }
+    LeaveCriticalSection(&st_PointerLock);
+
+    if(unhold == 0)
+    {
+        DEBUG_INFO("[%s:%s:%d] not unhold swapchain 0x%p\n",
+                   file,func,lineno,pSwapChain);
+    }
+    return unhold;
 }
 
 
 
-#define  SWAP_CHAIN_IN()  do{} while(0)
+#define  SWAP_CHAIN_IN()  do{HoldSwapChain(__FILE__,__FUNCTION__,__LINE__,m_ptr);} while(0)
 
-#define  SWAP_CHAIN_OUT()  do{} while(0)
+#define  SWAP_CHAIN_OUT()  do{UnholdSwapChain(__FILE__,__FUNCTION__,__LINE__,m_ptr);} while(0)
 
 
 class CDXGISwapChainHook : public IDXGISwapChain
@@ -700,19 +991,11 @@ public:
 
 
 
-#define  DEVICE_CONTEXT_IN() do{} while(0)
+#define  DEVICE_CONTEXT_IN() do{HoldDeviceContext(__FILE__,__FUNCTION__,__LINE__,m_ptr);} while(0)
 
-#define  DEVICE_CONTEXT_OUT() do{} while(0)
+#define  DEVICE_CONTEXT_OUT() do{UnholdDeviceContext(__FILE__,__FUNCTION__,__LINE__,m_ptr);} while(0)
 
-int UnRegisterDeviceContext(ID3D11DeviceContext *pContext)
-{
-    return 0;
-}
 
-int RegisterDeviceContext(ID3D11DeviceContext *pContext)
-{
-    return 0;
-}
 
 class CD3D11DeviceContextHook : public ID3D11DeviceContext
 {
@@ -1674,64 +1957,14 @@ public:
 
 
 
-#if 0
 
-/********************************************
-* this is the interface of ID3D11Device
-*********************************************/
+#define  D11_DEVICE_IN()  do{HoldDevice(__FILE__,__FUNCTION__,__LINE__,m_ptr);}while(0)
+#define  D11_DEVICE_OUT()  do{UnholdDevice(__FILE__,__FUNCTION__,__LINE__,m_ptr);}while(0)
 
-HRESULT(STDMETHODCALLTYPE *QueryInterface)(
-    ID3D11DeviceChild * This,
-    /* [in] */ REFIID riid,
-    /* [annotation][iid_is][out] */
-    __RPC__deref_out  void **ppvObject);
 
-ULONG(STDMETHODCALLTYPE *AddRef)(
-    ID3D11DeviceChild * This);
-
-ULONG(STDMETHODCALLTYPE *Release)(
-    ID3D11DeviceChild * This);
-
-void (STDMETHODCALLTYPE *GetDevice)(
-    ID3D11DeviceChild * This,
-    /* [annotation] */
-    __out  ID3D11Device **ppDevice);
-
-HRESULT(STDMETHODCALLTYPE *GetPrivateData)(
-    ID3D11DeviceChild * This,
-    /* [annotation] */
-    __in  REFGUID guid,
-    /* [annotation] */
-    __inout  UINT *pDataSize,
-    /* [annotation] */
-    __out_bcount_opt(*pDataSize)	void *pData);
-
-HRESULT(STDMETHODCALLTYPE *SetPrivateData)(
-    ID3D11DeviceChild * This,
-    /* [annotation] */
-    __in  REFGUID guid,
-    /* [annotation] */
-    __in  UINT DataSize,
-    /* [annotation] */
-    __in_bcount_opt(DataSize)  const void *pData);
-
-HRESULT(STDMETHODCALLTYPE *SetPrivateDataInterface)(
-    ID3D11DeviceChild * This,
-    /* [annotation] */
-    __in  REFGUID guid,
-    /* [annotation] */
-    __in_opt  const IUnknown *pData);
-
-#endif
-
-#define  D11_DEVICE_IN()  do{}while(0)
-#define  D11_DEVICE_OUT()  do{}while(0)
-
-int UnRegisterDevice(ID3D11Device* pPtr)
-{
-    return 0;
-}
-
+// {340B065A-2EBA-44BA-AD8D-92A6BA0819D3}
+static const GUID IID_DeviceHookGuid=
+{ 0x340b065a, 0x2eba, 0x44ba, { 0xad, 0x8d, 0x92, 0xa6, 0xba, 0x8, 0x19, 0xd3 } };
 
 
 class CD3D11DeviceHook : public ID3D11Device
@@ -1745,7 +1978,16 @@ public:
     {
         HRESULT hr;
         D11_DEVICE_IN();
-        hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(riid == IID_DeviceHookGuid)
+        {
+            m_ptr->AddRef();
+            *ppvObject = static_cast<ID3D11Device*>(this);
+            hr = S_OK;
+        }
+        else
+        {
+            hr = m_ptr->QueryInterface(riid,ppvObject);
+        }
         D11_DEVICE_OUT();
         return hr;
     }
@@ -2134,6 +2376,14 @@ public:
         D11_DEVICE_OUT();
         return ui;
     }
+
+
+public:
+    /*these functions are for the good function*/
+    ID3D11Device* GetPointer()
+    {
+        return m_ptr;
+    };
 };
 
 #define  DXGI_FACTORY1_IN()  do{} while(0)
@@ -2247,7 +2497,42 @@ public:
         hr = m_ptr->CreateSwapChain(pDevice,pDesc,ppSwapChain);
         if(SUCCEEDED(hr) && ppSwapChain && *ppSwapChain)
         {
+            HRESULT rhr;
+            CD3D11DeviceHook *pDevHook=NULL;
+            CDXGISwapChainHook *pSwapChainHook=NULL;
+            IDXGISwapChain *pGetSwapChain=*ppSwapChain;
             DEBUG_INFO("From Device 0x%p create swapchain 0x%p\n",pDevice,*ppSwapChain);
+            rhr = pDevice->QueryInterface(IID_DeviceHookGuid,(void**)&pDevHook);
+            if(SUCCEEDED(rhr))
+            {
+                int registered =0;
+                /*yes this is the hook function ,so we release it as quickly as we can*/
+                pDevHook->Release();
+                registered = RegisterFactory1CreateSwapDevice(pDevHook->GetPointer(),*ppSwapChain);
+                if(registered)
+                {
+                    pSwapChainHook = CDXGISwapChainHook(pGetSwapChain);
+                    /*we replace it for our hook object*/
+                    *ppSwapChain = (typeof(*ppSwapChain))pSwapChainHook;
+                }
+                else
+                {
+                    /*now success ,so we should make it not right one*/
+                    ULONG ul;
+                    ul = pGetSwapChain->Release();
+                    if(ul != 0)
+                    {
+                        DEBUG_INFO("SwapChain Release not 0\n",pGetSwapChain);
+                    }
+                    *ppSwapChain = NULL;
+                    /*make things failed*/
+                    hr = E_FAIL;
+                }
+            }
+            else
+            {
+                DEBUG_INFO("Device(0x%p) not HookDevice object\n",pDevice);
+            }
         }
         DXGI_FACTORY1_OUT();
         return hr;
@@ -2324,49 +2609,112 @@ HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     ID3D11DeviceContext *pGetDevCon=NULL;
 
 
-    DEBUG_INFO("pAdapter 0x%p\n",pAdapter);
-    DEBUG_INFO("DriverType 0x%08x\n",DriverType);
-    DEBUG_INFO("Software 0x%08x\n",Software);
-    DEBUG_INFO("Flags 0x%08x\n",Flags);
-    DEBUG_INFO("pFeatureLevels 0x%p\n",pFeatureLevels);
-    DEBUG_INFO("FeatureLevels 0x%08x\n",FeatureLevels);
-    DEBUG_INFO("SDKVersion 0x%08x\n",SDKVersion);
-    DEBUG_INFO("pSwapChainDesc 0x%p\n",pSwapChainDesc);
-    DEBUG_INFO("ppSwapChain 0x%p\n",ppSwapChain);
-    //BUG_INFO("*ppSwapChain 0x%p\n",*ppSwapChain);
-    DEBUG_INFO("ppDevice 0x%p\n",ppDevice);
-    DEBUG_INFO("*ppDevice 0x%p\n",*ppDevice);
-    DEBUG_INFO("pFeatureLevel 0x%p\n",pFeatureLevel);
-    DEBUG_INFO("ppImmediateContext 0x%p\n",ppImmediateContext);
-    DEBUG_INFO("*ppImmediateContext 0x%p\n",*ppImmediateContext);
     hr = D3D11CreateDeviceAndSwapChainNext(pAdapter,DriverType,Software,Flags,pFeatureLevels,
-                                           FeatureLevels,SDKVersion,pSwapChainDesc,&pGetSwapChain,&pGetDevice,pFeatureLevel,&pGetDevCon);
-    DEBUG_INFO("call D3D11CreateDeviceAndSwapChainNext(0x%p)  D3D11CreateDeviceAndSwapChainCallBack(0x%p) (0x%08x)\n",
-               &D3D11CreateDeviceAndSwapChainNext,&D3D11CreateDeviceAndSwapChainCallBack,hr);
-    DEBUG_INFO("pAdapter 0x%p\n",pAdapter);
-    DEBUG_INFO("DriverType 0x%08x\n",DriverType);
-    DEBUG_INFO("Software 0x%08x\n",Software);
-    DEBUG_INFO("Flags 0x%08x\n",Flags);
-    DEBUG_INFO("pFeatureLevels 0x%p\n",pFeatureLevels);
-    DEBUG_INFO("FeatureLevels 0x%08x\n",FeatureLevels);
-    DEBUG_INFO("SDKVersion 0x%08x\n",SDKVersion);
-    DEBUG_INFO("pSwapChainDesc 0x%p\n",pSwapChainDesc);
-
-    if(!FAILED(hr))
+                                           FeatureLevels,SDKVersion,pSwapChainDesc,ppSwapChain,ppDevice,pFeatureLevel,ppImmediateContext);
+    if(SUCCEEDED(hr))
     {
-        DEBUG_INFO("pDevice 0x%p SwapChain 0x%p DeviceContext 0x%p\n",
-                   pGetDevice,pGetSwapChain,pGetDevCon);
         if(ppDevice)
         {
-            *ppDevice = pGetDevice;
+            pGetDevice= *ppDevice;
         }
         if(ppSwapChain)
         {
-            *ppSwapChain = pGetSwapChain;
+            pGetSwapChain = *ppSwapChain ;
         }
         if(ppImmediateContext)
         {
-            *ppImmediateContext = pGetDevCon;
+            pGetDevCon = *ppImmediateContext;
+        }
+        DEBUG_INFO("pDevice 0x%p SwapChain 0x%p DeviceContext 0x%p\n",
+                   pGetDevice,pGetSwapChain,pGetDevCon);
+
+        if(pGetDevice  || pGetDevCon || pGetSwapChain)
+        {
+            int registered;
+            ULONG ul;
+            CD3D11DeviceHook *pDevHook=NULL;
+            CD3D11DeviceContextHook *pDevConHook=NULL;
+            CDXGISwapChainHook *pSwapChainHook=NULL;
+            /*now at least one in the success ,so we should register for the job*/
+            registered  = RegisterSwapChainWithDevice(pGetSwapChain,pGetDevice,pGetDevCon);
+            if(registered)
+            {
+                /*register success ,so we shoud allocate for the job*/
+                if(pGetDevice)
+                {
+                    pDevHook = CD3D11DeviceHook(pGetDevice);
+                }
+                if(pGetDevCon)
+                {
+                    pDevConHook = CD3D11DeviceContextHook(pGetDevCon);
+                }
+                if(pGetSwapChain)
+                {
+                    pSwapChainHook = CDXGISwapChainHook(pGetSwapChain);
+                }
+
+                /*to replace the pointer and this will call the things we control*/
+                if(ppDevice)
+                {
+                    *ppDevice=(typeof(*ppDevice))pDevHook;
+                }
+                if(ppSwapChain)
+                {
+                    *ppSwapChain = (typeof(*ppSwapChain))pSwapChainHook;
+                }
+                if(ppImmediateContext)
+                {
+                    *ppImmediateContext= (typeof(*ppImmediateContext))pDevConHook;
+                }
+
+            }
+            else
+            {
+                /*it is failed ,so we should not return ok*/
+                if(pGetSwapChain)
+                {
+                    ul = pGetSwapChain->Release();
+                    if(ul!= 0)
+                    {
+                        ERROR_INFO("SwapChain(0x%p) release not 0\n",pGetSwapChain);
+                    }
+                }
+                pGetSwapChain = NULL;
+                if(pGetDevCon)
+                {
+                    ul = pGetDevCon->Release();
+                    if(ul != 0)
+                    {
+                        ERROR_INFO("DeviceContext(0x%p) release not 0\n",pGetDevCon);
+                    }
+                }
+                pGetDevCon = NULL;
+                if(pGetDevice)
+                {
+                    ul = pGetDevice->Release();
+                    if(ul != 0)
+                    {
+                        ERROR_INFO("Device(0x%p) release not 0\n",pGetDevice);
+                    }
+                }
+                pGetDevice = NULL;
+                if(ppDevice)
+                {
+                    *ppDevice=pGetDevice;
+                }
+                if(ppSwapChain)
+                {
+                    *ppSwapChain = pGetSwapChain;
+                }
+                if(ppImmediateContext)
+                {
+                    *ppImmediateContext=pGetDevCon;
+                }
+                /*set failed*/
+                hr = E_FAIL;
+
+            }
+
         }
     }
 
