@@ -314,17 +314,148 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
         ul = pDevice->Release();
     }
     return ul;
-
 }
 
-int RegisterAllD11Pointers(ID3D11Device* pDevice,ID3D11DeviceContext* pDeviceContext)
+
+static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
 {
+    int wait;
+    int releaseidx=-1;
+    unsigned int i;
+    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    BOOL bret;
+    ULONG ul;
+
+    do
+    {
+        wait = 0;
+        releaseidx = -1;
+        EnterCriticalSection(&st_PointerLock);
+        for(i=0; i<st_D11PointersVec.size() ; i++)
+        {
+            pCurPointer = st_D11PointersVec[i];
+            if(pCurPointer->m_pSwapChain == pSwapChain&&
+                    pCurPointer->m_SwapChainState != POINTER_STATE_FREE)
+            {
+                wait = 1;
+                break;
+            }
+            else if(pCurPointer->m_pSwapChain == pSwapChain &&
+                    pCurPointer->m_SwapChainState == POINTER_STATE_FREE)
+            {
+                releaseidx = i;
+                if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pDeviceContext == NULL)
+                {
+                    /*we release this register context*/
+                    pPointer = pCurPointer;
+                }
+                break;
+            }
+        }
+
+        if(pPointer)
+        {
+            assert(releaseidx > 0);
+            st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
+        }
+        LeaveCriticalSection(&st_PointerLock);
+
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+    }
+    while(wait);
+
+    if(pPointer)
+    {
+        delete pPointer;
+    }
+    pPointer = NULL;
+
+    ul = 1;
+    if(releaseidx > 0)
+    {
+        ul = pSwapChain->Release();
+    }
+    return ul;
 }
 
-int UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
+static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
 {
-    return 0;
+    int wait;
+    int releaseidx=-1;
+    unsigned int i;
+    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    BOOL bret;
+    ULONG ul;
+
+    do
+    {
+        wait = 0;
+        releaseidx = -1;
+        EnterCriticalSection(&st_PointerLock);
+        for(i=0; i<st_D11PointersVec.size() ; i++)
+        {
+            pCurPointer = st_D11PointersVec[i];
+            if(pCurPointer->m_pDeviceContext == pDeviceContext &&
+                    pCurPointer->m_DeviceContextState != POINTER_STATE_FREE)
+            {
+                wait = 1;
+                break;
+            }
+            else if(pCurPointer->m_pDeviceContext == pDeviceContext &&
+                    pCurPointer->m_DeviceContextState == POINTER_STATE_FREE)
+            {
+                releaseidx = i;
+                if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pSwapChain == NULL)
+                {
+                    /*we release this register context*/
+                    pPointer = pCurPointer;
+                }
+                break;
+            }
+        }
+
+        if(pPointer)
+        {
+            assert(releaseidx > 0);
+            st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
+        }
+        LeaveCriticalSection(&st_PointerLock);
+
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }
+    }
+    while(wait);
+
+    if(pPointer)
+    {
+        delete pPointer;
+    }
+    pPointer = NULL;
+
+    ul = 1;
+    if(releaseidx > 0)
+    {
+        ul = pDeviceContext->Release();
+    }
+    return ul;
 }
+
+
 
 #define  SWAP_CHAIN_IN()  do{} while(0)
 
