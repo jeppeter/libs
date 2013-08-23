@@ -1757,7 +1757,32 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,CreateSoftwareAdapter)(THIS_  HMODULE Module,IDXGIAdapter **ppAdapter)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->CreateSoftwareAdapter(Module,ppAdapter);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
 
+    COM_METHOD(HRESULT,EnumAdapters1)(THIS_  UINT Adapter,IDXGIAdapter1 **ppAdapter)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->EnumAdapters1(Adapter,ppAdapter);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(BOOL,IsCurrent)(THIS)
+    {
+        BOOL bret;
+        DXGI_FACTORY1_IN();
+        bret  = m_ptr->IsCurrent();
+        DXGI_FACTORY1_OUT();
+        return bret;
+    }
 };
 
 
@@ -1778,7 +1803,9 @@ static HRESULT(WINAPI* D3D11CreateDeviceAndSwapChainNext)(IDXGIAdapter *pAdapter
         ID3D11Device **ppDevice,
         D3D_FEATURE_LEVEL *pFeatureLevel,
         ID3D11DeviceContext **ppImmediateContext)
-    = D3D11CreateDeviceAndSwapChain;
+    = NULL;
+
+static HRESULT(WINAPI *CreateDXGIFactory1Next)(REFIID riid, void **ppFactory)=NULL;
 
 HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     IDXGIAdapter *pAdapter,
@@ -1850,9 +1877,45 @@ HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     return hr;
 }
 
+static HRESULT WINAPI CreateDXGIFactory1Callback(REFIID riid, void **ppFactory)
+{
+    HRESULT hr;
+
+    hr = CreateDXGIFactory1Next(riid,ppFactory);
+    return hr;
+}
+
+static HMODULE st_hModuleD3D11=NULL;
+static HMODULE st_hModuleDXGI=NULL;
+static int LoadMultiLibrary()
+{
+    int ret;
+
+    if(st_hModuleD3D11 && st_hModuleDXGI && CreateDXGIFactory1Next && D3D11CreateDeviceAndSwapChainNext)
+    {
+        return 0;
+    }
+
+fail:
+    if(st_hModuleD3D11)
+    {
+        FreeLibrary(st_hModuleD3D11);
+    }
+    st_hModuleD3D11 = NULL;
+    if(st_hModuleDXGI)
+    {
+        FreeLibrary(st_hModuleDXGI);
+    }
+    st_hModuleDXGI = NULL;
+    CreateDXGIFactory1Next = NULL;
+    D3D11CreateDeviceAndSwapChainNext = NULL;
+    return ret;
+}
 
 static int InitializeD11Hook(void)
 {
+    assert(D3D11CreateDeviceAndSwapChainNext);
+    assert(CreateDXGIFactory1Next);
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&D3D11CreateDeviceAndSwapChainNext, D3D11CreateDeviceAndSwapChainCallBack);
