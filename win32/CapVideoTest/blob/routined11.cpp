@@ -3,28 +3,70 @@
 #include "d3d11.h"
 #include "..\\detours\\detours.h"
 #include "..\\common\\output_debug.h"
+#include <assert.h>
 
 #pragma comment(lib,"d3d11.lib")
+#pragma comment(lib,"dxgi.lib")
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
 
 
 
-#define  SWAP_CHAIN_IN()  do{} while(0)
 
-#define  SWAP_CHAIN_OUT()  do{} while(0)
-
-
-int RegisterSwapChain(IDXGISwapChain *pSwapChain)
+typedef struct _RegisterD11Pointers
 {
+    ID3D11Device *m_pDevice;
+    int m_DeviceState;
+    ID3D11DeviceContext *m_pDeviceContext;
+    int m_DeviceContextState;
+    IDXGISwapChain *m_pSwapChain;
+    int m_SwapChainState;
+} RegisterD11Pointers_t;
+
+
+static CriticalSection st_PointerLock;
+static std::vector<RegisterD11Pointers_t*> st_D11PointersVec;
+
+
+int InitializeD11Environment(void)
+{
+    InitializeCriticalSection(&st_PoineterLock);
+    assert(st_D11PointersVec.size() == 0);
     return 0;
+}
+
+void CleanupD11Environment(void)
+{
+}
+
+
+int RegisterSwapChainWithDevice(IDXGISwapChain *pSwapChain,ID3D11Device* pDevice,IDXGISwapChain* pSwapChain)
+{
+    RegisterD11Pointers_t *pPointers=NULL;
+
+fail:
+    if(pPointers)
+    {
+        free(pPointers);
+    }
+    pPointers = NULL;
+    return 0;
+}
+
+int RegisterAllD11Pointers(ID3D11Device* pDevice,ID3D11DeviceContext* pDeviceContext)
+{
 }
 
 int UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
 {
     return 0;
 }
+
+#define  SWAP_CHAIN_IN()  do{} while(0)
+
+#define  SWAP_CHAIN_OUT()  do{} while(0)
+
 
 class CDXGISwapChainHook : public IDXGISwapChain
 {
@@ -1753,6 +1795,10 @@ public:
         HRESULT hr;
         DXGI_FACTORY1_IN();
         hr = m_ptr->CreateSwapChain(pDevice,pDesc,ppSwapChain);
+        if(SUCCEEDED(hr) && ppSwapChain && *ppSwapChain)
+        {
+            DEBUG_INFO("From Device 0x%p create swapchain 0x%p\n",pDevice,*ppSwapChain);
+        }
         DXGI_FACTORY1_OUT();
         return hr;
     }
@@ -1803,9 +1849,9 @@ static HRESULT(WINAPI* D3D11CreateDeviceAndSwapChainNext)(IDXGIAdapter *pAdapter
         ID3D11Device **ppDevice,
         D3D_FEATURE_LEVEL *pFeatureLevel,
         ID3D11DeviceContext **ppImmediateContext)
-    = NULL;
+    = D3D11CreateDeviceAndSwapChain;
 
-static HRESULT(WINAPI *CreateDXGIFactory1Next)(REFIID riid, void **ppFactory)=NULL;
+static HRESULT(WINAPI *CreateDXGIFactory1Next)(REFIID riid, void **ppFactory)=CreateDXGIFactory1;
 
 HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     IDXGIAdapter *pAdapter,
@@ -1882,35 +1928,18 @@ static HRESULT WINAPI CreateDXGIFactory1Callback(REFIID riid, void **ppFactory)
     HRESULT hr;
 
     hr = CreateDXGIFactory1Next(riid,ppFactory);
+    if(SUCCEEDED(hr) && riid ==  __uuidof(IDXGIFactory1) && ppFactory && *ppFactory)
+    {
+        IDXGIFactory1* pFactory1=NULL;
+        CDXGIFactory1Hook *pFactoryHook1=NULL;
+        pFactory1 = (IDXGIFactory1*) *ppFactory;
+        pFactoryHook1 = new CDXGIFactory1Hook(pFactory1);
+        *ppFactory = (void*)pFactoryHook1;
+        DEBUG_INFO("Get IDXGIFactory1 pFactory1 0x%p\n",pFactory1);
+    }
     return hr;
 }
 
-static HMODULE st_hModuleD3D11=NULL;
-static HMODULE st_hModuleDXGI=NULL;
-static int LoadMultiLibrary()
-{
-    int ret;
-
-    if(st_hModuleD3D11 && st_hModuleDXGI && CreateDXGIFactory1Next && D3D11CreateDeviceAndSwapChainNext)
-    {
-        return 0;
-    }
-
-fail:
-    if(st_hModuleD3D11)
-    {
-        FreeLibrary(st_hModuleD3D11);
-    }
-    st_hModuleD3D11 = NULL;
-    if(st_hModuleDXGI)
-    {
-        FreeLibrary(st_hModuleDXGI);
-    }
-    st_hModuleDXGI = NULL;
-    CreateDXGIFactory1Next = NULL;
-    D3D11CreateDeviceAndSwapChainNext = NULL;
-    return ret;
-}
 
 static int InitializeD11Hook(void)
 {
@@ -1919,6 +1948,7 @@ static int InitializeD11Hook(void)
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&D3D11CreateDeviceAndSwapChainNext, D3D11CreateDeviceAndSwapChainCallBack);
+    DetourAttach((PVOID*)&CreateDXGIFactory1Next,CreateDXGIFactory1Callback);
     DetourTransactionCommit();
 
 
