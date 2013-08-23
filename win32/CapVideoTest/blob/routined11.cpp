@@ -455,6 +455,62 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
     return ul;
 }
 
+int GrabD11Context(int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **ppDevice,ID3D11DeviceContext **ppDeviceContext)
+{
+    int grabed = 0;
+    int wait;
+    RegisterD11Pointers_t* pCurPointer=NULL;
+    BOOL bret;
+
+    do
+    {
+        wait = 0;
+        EnterCriticalSection(&st_PointerLock);
+        if(st_D11PointersVec.size() > idx)
+        {
+            pCurPointer = st_D11PointersVec[idx];
+            if((pCurPointer->m_pDevice &&  pCurPointer->m_pDeviceContext &&
+                    pCurPointer->m_pSwapChain))
+            {
+                if(pCurPointer->m_DeviceContextState != POINTER_STATE_FREE ||
+                        pCurPointer->m_DeviceState != POINTER_STATE_FREE ||
+                        pCurPointer->m_SwapChainState != POINTER_STATE_FREE)
+                {
+                    wait = 1;
+                }
+                else
+                {
+                    *ppDevice = pCurPointer->m_pDevice;
+                    *ppDeviceContext = pCurPointer->m_pDeviceContext;
+                    *ppSwapChain = pCurPointer->m_pSwapChain;
+                    pCurPointer->m_DeviceContextState = POINTER_STATE_GRAB;
+                    pCurPointer->m_DeviceState = POINTER_STATE_GRAB;
+                    pCurPointer->m_SwapChainState = POINTER_STATE_GRAB;
+                    grabed = 1;
+                }
+            }
+        }
+        LeaveCriticalSection(&st_PointerLock);
+        if(wait)
+        {
+            bret = SwitchToThread();
+            if(!bret)
+            {
+                /*sleep for a while*/
+                Sleep(10);
+            }
+        }        
+    }
+    while(wait);
+
+    return grabed;
+}
+
+static int ReleaseD11Context(IDXGISwapChain *ppSwapChain,ID3D11Device *ppDevice,ID3D11DeviceContext *ppDeviceContext)
+{
+    
+}
+
 
 
 #define  SWAP_CHAIN_IN()  do{} while(0)
