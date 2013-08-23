@@ -1647,6 +1647,8 @@ public:
 #define  DXGI_FACTORY1_IN()  do{} while(0)
 #define  DXGI_FACTORY1_OUT() do{}while(0)
 
+
+
 class CDXGIFactory1Hook : public IDXGIFactory1
 {
 private:
@@ -1671,8 +1673,91 @@ public:
         ul = m_ptr->AddRef();
         DXGI_FACTORY1_OUT();
         return ul;
-
     }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG ul;
+        DXGI_FACTORY1_IN();
+        ul = m_ptr->Release();
+        DXGI_FACTORY1_OUT();
+        return ul;
+    }
+
+    COM_METHOD(HRESULT,SetPrivateData)(THIS_  REFGUID Name,UINT DataSize,const void *pData)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->SetPrivateData(Name,DataSize,pData);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,SetPrivateDataInterface)(THIS_  REFGUID Name,const IUnknown *pUnknown)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->SetPrivateDataInterface(Name,pUnknown);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetPrivateData)(THIS_  REFGUID Name,UINT *pDataSize,void *pData)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->GetPrivateData(Name,pDataSize,pData);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetParent)(THIS_  REFIID riid,void **ppParent)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->GetParent(riid,ppParent);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,EnumAdapters)(THIS_  UINT Adapter,IDXGIAdapter **ppAdapter)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->EnumAdapters(Adapter,ppAdapter);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,MakeWindowAssociation)(THIS_    HWND WindowHandle,    UINT Flags)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->MakeWindowAssociation(WindowHandle,Flags);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,GetWindowAssociation)(THIS_  HWND *pWindowHandle)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->GetWindowAssociation(pWindowHandle);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,CreateSwapChain)(THIS_  IUnknown *pDevice,DXGI_SWAP_CHAIN_DESC *pDesc,IDXGISwapChain **ppSwapChain)
+    {
+        HRESULT hr;
+        DXGI_FACTORY1_IN();
+        hr = m_ptr->CreateSwapChain(pDevice,pDesc,ppSwapChain);
+        DXGI_FACTORY1_OUT();
+        return hr;
+    }
+
+
 };
 
 
