@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 #define  DEBUG_INFO(fmt,...) DebugOutString(__FILE__,__LINE__,fmt,__VA_ARGS__)
+#define  ERROR_INFO(fmt,...) DebugOutString(__FILE__,__LINE__,fmt,__VA_ARGS__)
 #define  DEBUG_BUFFER(ptr,blen) DebugBuffer(__FILE__,__LINE__,(unsigned char*)ptr,blen)
 
 extern "C" void DebugOutString(const char* file,int lineno,const char* fmt,...);
