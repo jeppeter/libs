@@ -27,10 +27,13 @@ typedef struct _RegisterD11Pointers
 {
     ID3D11Device *m_pDevice;
     int m_DeviceState;
+    int m_DeviceHoldCount;
     ID3D11DeviceContext *m_pDeviceContext;
     int m_DeviceContextState;
+    int m_DeviceContextHoldCount;
     IDXGISwapChain *m_pSwapChain;
     int m_SwapChainState;
+    int m_SwapChainHoldCount;
 } RegisterD11Pointers_t;
 
 
@@ -48,10 +51,10 @@ void __SnapShotDeivces(const char* file,const char* func,int lineno)
     for(i=0; i<st_D11PointersVec.size(); i++)
     {
         pPointer = st_D11PointersVec[i];
-        DEBUG_INFO("[%d] device (0x%p:%d) devicecontext (0x%p:%d) swapchain (0x%p:%d)\n",
-                   i,pPointer->m_pDevice,pPointer->m_DeviceState,
-                   pPointer->m_pDeviceContext,pPointer->m_DeviceContextState,
-                   pPointer->m_pSwapChain,pPointer->m_SwapChainState);
+        DEBUG_INFO("[%d] device (0x%p:%d:%d) devicecontext (0x%p:%d:%d) swapchain (0x%p:%d:%d)\n",
+                   i,pPointer->m_pDevice,pPointer->m_DeviceState,pPointer->m_DeviceHoldCount,
+                   pPointer->m_pDeviceContext,pPointer->m_DeviceContextState,pPointer->m_DeviceContextHoldCount,
+                   pPointer->m_pSwapChain,pPointer->m_SwapChainState,pPointer->m_SwapChainHoldCount);
         pPointer = NULL;
     }
     LeaveCriticalSection(&st_PointerLock);
@@ -201,11 +204,14 @@ int RegisterSwapChainWithDevice(IDXGISwapChain *pSwapChain,ID3D11Device* pDevice
 
     pPointer = new RegisterD11Pointers_t;
     pPointer->m_pDevice = NULL;
-    pPointer->m_pDeviceContext = NULL;
-    pPointer->m_pSwapChain = NULL;
     pPointer->m_DeviceState = POINTER_STATE_FREE;
+    pPointer->m_DeviceHoldCount = 0;
+    pPointer->m_pDeviceContext = NULL;
     pPointer->m_DeviceContextState = POINTER_STATE_FREE;
+    pPointer->m_DeviceContextHoldCount = 0;
+    pPointer->m_pSwapChain = NULL;
     pPointer->m_SwapChainState = POINTER_STATE_FREE;
+    pPointer->m_SwapChainHoldCount = 0;
 
     if(pSwapChain)
     {
@@ -308,6 +314,7 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
                 pCurPointer->m_pSwapChain == NULL)
         {
             assert(pCurPointer->m_SwapChainState == POINTER_STATE_FREE);
+            assert(pCurPointer->m_SwapChainHoldCount == 0);
             pCurPointer->m_pSwapChain = pSwapChain;
             failed = 0;
             break;
@@ -364,25 +371,32 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
 #endif
-            if(pCurPointer->m_pDevice == pDevice &&
-                    pCurPointer->m_DeviceState == POINTER_STATE_GRAB)
+            if(pCurPointer->m_pDevice == pDevice)
             {
-                /*because only we have gain the pointer owner ,so we should give this for the to avoid the grab state*/
-                wait = 1;
-                break;
-            }
-            else if(pCurPointer->m_pDevice == pDevice)
-            {
-                releaseidx = i;
-                /*now we should set the state free ,and give it null pointer*/
-                pCurPointer->m_pDevice = NULL;
-                pCurPointer->m_DeviceState = POINTER_STATE_FREE;
-                if(pCurPointer->m_pSwapChain == NULL && pCurPointer->m_pDeviceContext == NULL)
+                assert(pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
+                if(pCurPointer->m_DeviceHoldCount > 1)
                 {
-                    /*we release this register context*/
-                    pPointer = pCurPointer;
+                    /*because only we have gain the pointer owner ,so we should give this for the to avoid the grab state*/
+
+                    wait = 1;
+                    break;
                 }
-                break;
+                else
+                {
+                    /*this is because when we enter this function ,we have hold the device count*/
+                    assert(pCurPointer->m_DeviceHoldCount == 1);
+                    releaseidx = i;
+                    /*now we should set the state free ,and give it null pointer this 1 is from the DeviceHold function*/
+                    pCurPointer->m_pDevice = NULL;
+                    pCurPointer->m_DeviceState = POINTER_STATE_FREE;
+                    pCurPointer->m_DeviceHoldCount = 0;
+                    if(pCurPointer->m_pSwapChain == NULL && pCurPointer->m_pDeviceContext == NULL)
+                    {
+                        /*we release this register context*/
+                        pPointer = pCurPointer;
+                    }
+                    break;
+                }
             }
         }
 
@@ -449,30 +463,37 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
 #endif
-            if(pCurPointer->m_pSwapChain == pSwapChain&&
-                    pCurPointer->m_SwapChainState == POINTER_STATE_GRAB)
+            if(pCurPointer->m_pSwapChain == pSwapChain)
             {
-                wait = 1;
-                break;
-            }
-            else if(pCurPointer->m_pSwapChain == pSwapChain)
-            {
-                releaseidx = i;
-                /*set it for free*/
-                pCurPointer->m_pSwapChain = NULL;
-                pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
-                if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pDeviceContext == NULL)
+                assert(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD);
+                if(pCurPointer->m_SwapChainHoldCount > 1)
                 {
-                    /*we release this register context*/
-                    pPointer = pCurPointer;
+                    wait = 1;
+                    break;
                 }
-                break;
+                else
+                {
+                    /*we have hold count for swap chain*/
+                    assert(pCurPointer->m_SwapChainHoldCount == 1);
+                    releaseidx = i;
+                    /*set it for free*/
+                    pCurPointer->m_pSwapChain = NULL;
+                    pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
+                    pCurPointer->m_SwapChainHoldCount = 0;
+                    if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pDeviceContext == NULL)
+                    {
+                        /*we release this register context*/
+                        pPointer = pCurPointer;
+                    }
+                    break;
+                }
             }
         }
 
         if(pPointer)
         {
             assert(releaseidx > 0);
+            assert(wait == 0);
             st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
         }
         LeaveCriticalSection(&st_PointerLock);
@@ -533,24 +554,28 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
 #endif
-            if(pCurPointer->m_pDeviceContext == pDeviceContext &&
-                    pCurPointer->m_DeviceContextState == POINTER_STATE_GRAB)
+            if(pCurPointer->m_pDeviceContext == pDeviceContext)
             {
-                wait = 1;
-                break;
-            }
-            else if(pCurPointer->m_pDeviceContext == pDeviceContext)
-            {
-                releaseidx = i;
-                pCurPointer->m_pDeviceContext = NULL;
-                pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
-                if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pSwapChain == NULL)
+                assert(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD);
+                if(pCurPointer->m_DeviceContextHoldCount > 1)
                 {
-                    /*we release this register context*/
-                    pPointer = pCurPointer;
+                    wait = 1;
+                    break;
                 }
-                DEBUG_INFO("\n");
-                break;
+                else
+                {
+                    /*we have hold the count for enter this function*/
+                    assert(pCurPointer->m_DeviceContextHoldCount == 1);
+                    releaseidx = i;
+                    pCurPointer->m_pDeviceContext = NULL;
+                    pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+                    if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pSwapChain == NULL)
+                    {
+                        /*we release this register context*/
+                        pPointer = pCurPointer;
+                    }
+                    break;
+                }
             }
         }
 
@@ -593,7 +618,7 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
     return ul;
 }
 
-int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **ppDevice,ID3D11DeviceContext **ppDeviceContext)
+int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **ppDevice,ID3D11DeviceContext **ppDeviceContext,int timeoutms)
 {
     int grabed = -1;
     int wait;
@@ -624,6 +649,9 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
                 }
                 else
                 {
+                    assert(pCurPointer->m_DeviceHoldCount == 0);
+                    assert(pCurPointer->m_DeviceContextHoldCount == 0);
+                    assert(pCurPointer->m_SwapChainHoldCount == 0);
                     *ppDevice = pCurPointer->m_pDevice;
                     *ppDeviceContext = pCurPointer->m_pDeviceContext;
                     *ppSwapChain = pCurPointer->m_pSwapChain;
@@ -637,10 +665,17 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
-            curticks = GetTickCount();
 
-            if((curticks - startticks) > 1000 &&
-                    printout == 0)
+            curticks = GetTickCount();
+            if((curticks-startticks) >(unsigned int) timeoutms || (curticks < startticks && (int)curticks >= timeoutms))
+            {
+                wait = 0;
+                assert(grabed == 0);
+                DEBUG_INFO("Grap for [%d] timeout (%ld - %ld)\n",timeoutms);
+                break;
+            }
+
+            if((curticks - startticks) > 1000 &&  printout == 0)
             {
                 DEBUG_INFO("Grab More Time %ld %ld\n",curticks,startticks);
                 __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
@@ -690,6 +725,9 @@ static int ReleaseD11Context(IDXGISwapChain *pSwapChain,ID3D11Device *pDevice,ID
                            pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
             }
 
+            assert(pCurPointer->m_DeviceHoldCount == 0);
+            assert(pCurPointer->m_DeviceContextHoldCount == 0);
+            assert(pCurPointer->m_SwapChainHoldCount == 0);
             pCurPointer->m_DeviceState = POINTER_STATE_FREE;
             pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
             pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
@@ -719,6 +757,7 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
     BOOL bret;
     ULONG startticks,curticks;
     int printout = 0;
+    int multihold = 0;
 
     startticks = GetTickCount();
 
@@ -732,14 +771,16 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
             pCurPointer = st_D11PointersVec[i];
             if(pCurPointer->m_pDevice == pDevice)
             {
-                if(pCurPointer->m_DeviceState != POINTER_STATE_FREE)
+                if(pCurPointer->m_DeviceState == POINTER_STATE_GRAB)
                 {
                     wait = 1;
                 }
                 else
                 {
                     hold = 1;
+                    pCurPointer->m_DeviceHoldCount ++;
                     pCurPointer->m_DeviceState = POINTER_STATE_HOLD;
+                    multihold = pCurPointer->m_DeviceHoldCount;
                 }
                 break;
             }
@@ -775,6 +816,10 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
         curticks = GetTickCount();
         DEBUG_INFO("%sDevice[0x%p] (%ld - %ld)\n",hold ? "Hold": "Not Hold",pDevice,curticks,startticks);
     }
+    if(multihold > 1)
+    {
+        DEBUG_INFO("Device[0x%p] holdcount(%d)\n",pDevice,multihold);
+    }
 
     return hold;
 }
@@ -791,10 +836,14 @@ static int UnholdDevice(const char* file,const char*func,int lineno,ID3D11Device
         pCurPointer = st_D11PointersVec[i];
         if(pCurPointer->m_pDevice == pDevice)
         {
-            if(pCurPointer->m_DeviceState == POINTER_STATE_HOLD)
+            assert(pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
             {
                 unhold = 1;
-                pCurPointer->m_DeviceState = POINTER_STATE_FREE;
+                pCurPointer->m_DeviceHoldCount --;
+                if(pCurPointer->m_DeviceHoldCount == 0)
+                {
+                    pCurPointer->m_DeviceState = POINTER_STATE_FREE;
+                }
             }
             break;
         }
@@ -820,6 +869,7 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
     BOOL bret;
     ULONG curticks,startticks;
     int printout = 0;
+    int multihold=0;
 
     startticks = GetTickCount();
 
@@ -832,14 +882,16 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
             pCurPointer = st_D11PointersVec[i];
             if(pCurPointer->m_pDeviceContext == pDeviceContext)
             {
-                if(pCurPointer->m_DeviceContextState != POINTER_STATE_FREE)
+                if(pCurPointer->m_DeviceContextState == POINTER_STATE_GRAB)
                 {
                     wait = 1;
                 }
                 else
                 {
                     hold = 1;
+                    pCurPointer->m_DeviceContextHoldCount ++;
                     pCurPointer->m_DeviceContextState = POINTER_STATE_HOLD;
+                    multihold = pCurPointer->m_DeviceContextHoldCount;
                 }
                 break;
             }
@@ -878,6 +930,11 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
                    pDeviceContext,curticks,startticks);
     }
 
+    if(multihold > 1)
+    {
+        DEBUG_INFO("DeviceContext[0x%p] holdcount(%d)\n",pDeviceContext,multihold);
+    }
+
     return hold;
 }
 
@@ -893,10 +950,14 @@ static int UnholdDeviceContext(const char* file,const char*func,int lineno,ID3D1
         pCurPointer = st_D11PointersVec[i];
         if(pCurPointer->m_pDeviceContext == pDeviceContext)
         {
-            if(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD)
+            assert(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD);
             {
                 unhold = 1;
-                pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+                pCurPointer->m_DeviceContextHoldCount --;
+                if(pCurPointer->m_DeviceContextHoldCount == 0)
+                {
+                    pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+                }
             }
             break;
         }
@@ -922,6 +983,7 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
     BOOL bret;
     ULONG startticks,curticks;
     int printout=0;
+    int multihold=0;
 
     startticks = GetTickCount();
 
@@ -935,14 +997,16 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
             pCurPointer = st_D11PointersVec[i];
             if(pCurPointer->m_pSwapChain == pSwapChain)
             {
-                if(pCurPointer->m_SwapChainState != POINTER_STATE_FREE)
+                if(pCurPointer->m_SwapChainState == POINTER_STATE_GRAB)
                 {
                     wait = 1;
                 }
                 else
                 {
                     hold = 1;
+                    pCurPointer->m_SwapChainHoldCount ++;
                     pCurPointer->m_SwapChainState = POINTER_STATE_HOLD;
+                    multihold = pCurPointer->m_SwapChainHoldCount;
                 }
                 break;
             }
@@ -981,6 +1045,11 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
                    hold ? "Hold" : "Not Hold",pSwapChain,curticks,startticks);
     }
 
+    if(multihold > 1)
+    {
+        DEBUG_INFO("SwapChain[0x%p] holdcount(%d)\n",pSwapChain,multihold);
+    }
+
     return hold;
 }
 
@@ -996,10 +1065,14 @@ static int UnholdSwapChain(const char* file,const char*func,int lineno,IDXGISwap
         pCurPointer = st_D11PointersVec[i];
         if(pCurPointer->m_pSwapChain== pSwapChain)
         {
-            if(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD)
+            assert(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD);
             {
                 unhold = 1;
-                pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
+                pCurPointer->m_SwapChainHoldCount --;
+                if(pCurPointer->m_SwapChainHoldCount == 0)
+                {
+                    pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
+                }
             }
             break;
         }
@@ -3092,7 +3165,7 @@ int CaptureFullScreenFileD11(const char* filetosave)
         assert(pSwapChain==NULL);
         assert(pDevice == NULL);
         assert(pDeviceContext == NULL);
-        ret = GrabD11Context(idx,&pSwapChain,&pDevice,&pDeviceContext);
+        ret = GrabD11Context(idx,&pSwapChain,&pDevice,&pDeviceContext,1000);
         if(ret < 0)
         {
             ERROR_INFO("can not get context %d\n",idx);
