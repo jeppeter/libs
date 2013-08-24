@@ -599,6 +599,10 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
     int wait;
     RegisterD11Pointers_t* pCurPointer=NULL;
     BOOL bret;
+    ULONG startticks,curticks;
+    int printout=0;
+
+    startticks = GetTickCount();
 
     do
     {
@@ -633,6 +637,15 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
+            curticks = GetTickCount();
+
+            if((curticks - startticks) > 1000 &&
+                    printout == 0)
+            {
+                DEBUG_INFO("Grab More Time %ld %ld\n",curticks,startticks);
+                __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
+                printout = 1;
+            }
             bret = SwitchToThread();
             if(!bret)
             {
@@ -642,6 +655,13 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
         }
     }
     while(wait);
+
+    if(printout && grabed > 0)
+    {
+        curticks = GetTickCount();
+        DEBUG_INFO("Grab pointers (%ld - %ld) Device(0x%p) DeviceContext(0x%p) SwapChain(0x%p)\n",curticks,startticks,
+                   *ppDevice ,*ppDeviceContext,*ppSwapChain);
+    }
 
     return grabed;
 }
@@ -697,6 +717,10 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
     BOOL bret;
+    ULONG startticks,curticks;
+    int printout = 0;
+
+    startticks = GetTickCount();
 
 
     do
@@ -723,6 +747,13 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
+            curticks = GetTickCount();
+            if((curticks - startticks) > 1000 && printout == 0)
+            {
+                printout = 1;
+                __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
+                DEBUG_INFO("Try Get Device[0x%p] (%ld - %ld)\n",pDevice,curticks,startticks);
+            }
             bret = SwitchToThread();
             if(!bret)
             {
@@ -737,6 +768,12 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
     {
         DEBUG_INFO("[%s:%s:%d] not hold device 0x%p\n",
                    file,func,lineno,pDevice);
+    }
+
+    if(printout)
+    {
+        curticks = GetTickCount();
+        DEBUG_INFO("%sDevice[0x%p] (%ld - %ld)\n",hold ? "Hold": "Not Hold",pDevice,curticks,startticks);
     }
 
     return hold;
@@ -781,7 +818,10 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
     BOOL bret;
+    ULONG curticks,startticks;
+    int printout = 0;
 
+    startticks = GetTickCount();
 
     do
     {
@@ -807,6 +847,14 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
+            curticks = GetTickCount();
+            if((curticks - startticks) > 1000 && printout == 0)
+            {
+                printout = 1;
+                __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
+                DEBUG_INFO("Try Hold DeviceContext [0x%p] (%ld - %ld)\n",
+                           pDeviceContext,curticks,startticks);
+            }
             bret = SwitchToThread();
             if(!bret)
             {
@@ -821,6 +869,13 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
     {
         DEBUG_INFO("[%s:%s:%d] not hold devicecontext 0x%p\n",
                    file,func,lineno,pDeviceContext);
+    }
+
+    if(printout)
+    {
+        curticks = GetTickCount();
+        DEBUG_INFO("%s[0x%p] (%ld - %ld)\n",hold ? "Hold" : "Not Hold",
+                   pDeviceContext,curticks,startticks);
     }
 
     return hold;
@@ -865,6 +920,10 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
     BOOL bret;
+    ULONG startticks,curticks;
+    int printout=0;
+
+    startticks = GetTickCount();
 
 
     do
@@ -891,6 +950,14 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
+            curticks = GetTickCount();
+            if((curticks - startticks) > 1000 && printout == 0)
+            {
+                printout = 1;
+                __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
+                DEBUG_INFO("Try Hold SwapChain[0x%p] (%ld - %ld)\n",
+                           pSwapChain,curticks,startticks);
+            }
             bret = SwitchToThread();
             if(!bret)
             {
@@ -905,6 +972,13 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
     {
         DEBUG_INFO("[%s:%s:%d] not hold swapchain 0x%p\n",
                    file,func,lineno,pSwapChain);
+    }
+
+    if(printout)
+    {
+        curticks = GetTickCount();
+        DEBUG_INFO("%s[0x%p] (%ld-%ld)\n",
+                   hold ? "Hold" : "Not Hold",pSwapChain,curticks,startticks);
     }
 
     return hold;
