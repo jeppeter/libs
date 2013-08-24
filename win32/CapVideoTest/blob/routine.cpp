@@ -11,9 +11,11 @@ x509\routin.cpp
 #include <assert.h>
 #include <TlHelp32.h>
 #include <winbase.h>
-#include "routined11.h"
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
+
+extern "C" int RoutineDetourD11(void);
+extern "C" void RotineClearD11(void);
 
 
 #define  POINTER_STATE_GRAB        1
@@ -769,7 +771,7 @@ void ResumeAllOtherThreads(std::vector<THREAD_STATE_t>& threadstate)
 
 //#define THREAD_PAUSE_HANDLE 1
 
-int Capture3DBackBuffer(const char* filetosave)
+int Capture3DBackBufferInner(const char* filetosave)
 {
     int ret;
     IDirect3DDevice9* pPtr=NULL;
@@ -852,6 +854,16 @@ fail:
     pPtr = NULL;
     return ret;
 }
+
+int Capture3DBackBuffer(const char* filetosave)
+{
+    int ret;
+
+    ret = Capture3DBackBufferInner(filetosave);
+
+    return ret;
+}
+
 
 //#define DX_DEBUG_FUNC_IN() do{HoldPointer(m_ptr);DEBUG_INFO("%s in\n",__FUNCTION__);}while(0)
 #define DX_DEBUG_FUNC_IN() do{HoldPointer(m_ptr);}while(0)
@@ -2002,7 +2014,7 @@ int Routine()
 
     InitializeHook();
     InitializeEnviron();
-	RoutineDetourD11();
+    RoutineDetourD11();
     return 0;
 }
 
@@ -2011,7 +2023,7 @@ int Cleanup()
     WriteLogger(L"Blob closed");
     CloseLogger();
 
-	RotineClearD11();
+    RotineClearD11();
     FinializeEnviron();
     return 0;
 }

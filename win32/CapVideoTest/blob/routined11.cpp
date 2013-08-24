@@ -1,17 +1,23 @@
 
-#include "routined11.h"
+#include "iris-int.h"
 #include "d3d11.h"
 #include "..\\detours\\detours.h"
 #include "..\\common\\output_debug.h"
 #include <assert.h>
 #include <vector>
+#include "..\\common\\uniansi.h"
+#include <D3DX11tex.h >
 
 #pragma comment(lib,"d3d11.lib")
 #pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"d3dx11.lib")
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
 
+extern "C" int RoutineDetourD11(void);
+extern "C" void RotineClearD11(void);
+extern "C" __declspec(dllexport) int CaptureFullScreenFileD11(const char* filetosave);
 
 #define   POINTER_STATE_FREE  0
 #define   POINTER_STATE_HOLD 1
@@ -585,7 +591,7 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
 
 int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **ppDevice,ID3D11DeviceContext **ppDeviceContext)
 {
-    int grabed = 0;
+    int grabed = -1;
     int wait;
     RegisterD11Pointers_t* pCurPointer=NULL;
     BOOL bret;
@@ -593,9 +599,11 @@ int GrabD11Context(unsigned int idx,IDXGISwapChain **ppSwapChain,ID3D11Device **
     do
     {
         wait = 0;
+        grabed = -1;
         EnterCriticalSection(&st_PointerLock);
         if(st_D11PointersVec.size() > idx)
         {
+            grabed = 0;
             pCurPointer = st_D11PointersVec[idx];
             if((pCurPointer->m_pDevice &&  pCurPointer->m_pDeviceContext &&
                     pCurPointer->m_pSwapChain))
@@ -2909,3 +2917,145 @@ void RotineClearD11(void)
     CleanupD11Environment();
     return;
 }
+
+
+
+
+int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXGISwapChain* pSwapChain,const char* filetosave)
+{
+    D3D11_TEXTURE2D_DESC StagingDesc;
+    ID3D11Texture2D *pBackBuffer = NULL;
+    ID3D11Texture2D *pBackBufferStaging = NULL;
+    HRESULT hr;
+#ifdef _UNICODE
+    wchar_t *pFileToSaveW=NULL;
+    int filetosavesize=0;
+#endif
+    int ret=1;
+    hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    if(FAILED(hr))
+    {
+        ret = GetLastError() > 0 ? GetLastError() : 1;
+        DEBUG_INFO("can not get buffer 0x%08x (%d)\n",hr,ret);
+        goto out;
+    }
+
+    /**/
+    pBackBuffer->GetDesc(&StagingDesc);
+
+    StagingDesc.Usage = D3D11_USAGE_STAGING;
+    StagingDesc.BindFlags = 0;
+    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+    hr = pDevice->CreateTexture2D(&StagingDesc, NULL, &pBackBufferStaging);
+    if(FAILED(hr))
+    {
+        ret = GetLastError() > 0 ? GetLastError() : 1;
+        DEBUG_INFO("can not create texture2d 0x%08x (%d)\n",hr,ret);
+        goto out;
+    }
+
+    pContext->CopyResource(pBackBufferStaging,pBackBuffer);
+
+    SetLastError(0);
+#ifdef _UNICODE
+    ret = AnsiToUnicode((char*)filetosave,&pFileToSaveW,&filetosavesize);
+    if(ret < 0)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto out;
+    }
+    hr = D3DX11SaveTextureToFile(pContext,pBackBufferStaging,D3DX11_IFF_BMP,pFileToSaveW);
+#else
+    hr = D3DX11SaveTextureToFile(pContext,pBackBufferStaging,D3DX11_IFF_BMP,filetosave);
+#endif
+    if(FAILED(hr))
+    {
+        ret = GetLastError() > 0 ? GetLastError() : 1;
+        DEBUG_INFO("can not save texture file 0x%08x (%d)\n",hr,ret);
+        goto out;
+    }
+
+    ret = 0;
+
+out:
+#ifdef _UNICODE
+    AnsiToUnicode(NULL,&pFileToSaveW,&filetosavesize);
+#endif
+    assert(ret >= 0);
+    if(pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    if(pBackBufferStaging)
+    {
+        pBackBufferStaging->Release();
+    }
+    pBackBufferStaging = NULL;
+    SetLastError(ret);
+    return -ret;
+}
+
+
+int CaptureFullScreenFileD11(const char* filetosave)
+{
+    int idx=0;
+    int cont=0;
+    int ret;
+    IDXGISwapChain *pSwapChain=NULL;
+    ID3D11Device *pDevice=NULL;
+    ID3D11DeviceContext *pDeviceContext=NULL;
+
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
+    do
+    {
+        cont = 0;
+        assert(pSwapChain==NULL);
+        assert(pDevice == NULL);
+        assert(pDeviceContext == NULL);
+        ret = GrabD11Context(idx,&pSwapChain,&pDevice,&pDeviceContext);
+        if(ret < 0)
+        {
+            ERROR_INFO("can not get context %d\n",idx);
+            goto fail;
+        }
+        else if(ret == 0)
+        {
+            idx ++;
+            cont =1;
+            continue;
+        }
+
+        /*now we get it*/
+        ret = __CaptureFullScreenFileD11(pDevice,pDeviceContext,pSwapChain,filetosave);
+        if(ret >=  0)
+        {
+            break;
+        }
+
+        ReleaseD11Context(pSwapChain,pDevice,pDeviceContext);
+        pSwapChain = NULL;
+        pDevice = NULL;
+        pDeviceContext = NULL;
+        idx ++;
+
+    }
+    while(cont);
+    if(pDevice)
+    {
+        ReleaseD11Context(pSwapChain,pDevice,pDeviceContext);
+    }
+    pSwapChain = NULL;
+    pDevice = NULL;
+    pDeviceContext = NULL;
+
+    return 0;
+fail:
+    if(pDevice)
+    {
+        ReleaseD11Context(pSwapChain,pDevice,pDeviceContext);
+    }
+    return ret;
+}
+
