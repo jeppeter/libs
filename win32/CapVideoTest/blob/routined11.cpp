@@ -33,7 +33,24 @@ static CRITICAL_SECTION st_PointerLock;
 static std::vector<RegisterD11Pointers_t*> st_D11PointersVec;
 
 
-
+void __SnapShotDeivces(const char* file,const char* func,int lineno)
+{
+    unsigned int i;
+    RegisterD11Pointers_t *pPointer=NULL;
+    EnterCriticalSection(&st_PointerLock);
+    DEBUG_INFO("[%s:%s:%d]\tPointers [%d]\n",file,func,lineno,st_D11PointersVec.size());
+    for(i=0; i<st_D11PointersVec.size(); i++)
+    {
+        pPointer = st_D11PointersVec[i];
+        DEBUG_INFO("[%d] device (0x%p:%d) devicecontext (0x%p:%d) swapchain (0x%p:%d)\n",
+                   i,pPointer->m_pDevice,pPointer->m_DeviceState,
+                   pPointer->m_pDeviceContext,pPointer->m_DeviceContextState,
+                   pPointer->m_pSwapChain,pPointer->m_SwapChainState);
+        pPointer = NULL;
+    }
+    LeaveCriticalSection(&st_PointerLock);
+    return;
+}
 
 
 static int UnRegisterAllD11Pointers(void)
@@ -42,6 +59,8 @@ static int UnRegisterAllD11Pointers(void)
     int cont,wait;
     int count =0;
     BOOL bret;
+
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
 
     do
     {
@@ -76,25 +95,47 @@ static int UnRegisterAllD11Pointers(void)
         DEBUG_INFO("pPointer 0x%p\n",pPointer);
         if(pPointer)
         {
-            DEBUG_INFO("\n");
+            ULONG ul;
             if(pPointer->m_pDevice)
             {
-                DEBUG_INFO("pDevice 0x%p\n",pPointer->m_pDevice);
-                pPointer->m_pDevice->Release();
-                DEBUG_INFO("\n");
+                __try
+                {
+                    ul = pPointer->m_pDevice->Release();
+                    DEBUG_INFO("Device[0x%p] realease count %ld\n",pPointer->m_pDevice,ul);
+                }
+                __except(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    DEBUG_INFO("Device[0x%p] release error %d (0x%08x)\n",pPointer->m_pDevice,GetExceptionCode(),GetExceptionCode());
+                }
             }
             pPointer->m_pDevice = NULL;
 
-            DEBUG_INFO("\n");
             if(pPointer->m_pDeviceContext)
             {
-                pPointer->m_pDeviceContext->Release();
+                __try
+                {
+                    ul = pPointer->m_pDeviceContext->Release();
+                    DEBUG_INFO("DeviceContext[0x%p] release count(%ld)\n",pPointer->m_pDeviceContext,ul);
+                }
+                __except(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    DEBUG_INFO("DeviceContext[0x%p] release error\n",pPointer->m_pDeviceContext);
+                }
             }
             pPointer->m_pDeviceContext = NULL;
 
             if(pPointer->m_pSwapChain)
             {
-                pPointer->m_pSwapChain->Release();
+                __try
+                {
+                    ul = pPointer->m_pSwapChain->Release();
+                    DEBUG_INFO("SwapChain[0x%p] release count (%ld)\n",pPointer->m_pSwapChain,ul);
+                }
+
+                __except(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    DEBUG_INFO("SwapChain[0x%p] release error\n",pPointer->m_pSwapChain);
+                }
             }
             pPointer->m_pSwapChain = NULL;
 
@@ -175,6 +216,7 @@ int RegisterSwapChainWithDevice(IDXGISwapChain *pSwapChain,ID3D11Device* pDevice
 
     failed = 0;
 
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     EnterCriticalSection(&st_PointerLock);
     for(i=0; i<st_D11PointersVec.size() ; i++)
     {
@@ -246,6 +288,8 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
 
     pSwapChain->AddRef();
     failed = 1;
+    DEBUG_INFO("RegisterCreate device 0x%p swapchain 0x%p\n",pDevice,pSwapChain);
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     EnterCriticalSection(&st_PointerLock);
     for(i=0; i<st_D11PointersVec.size(); i++)
     {
@@ -295,6 +339,7 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
     ULONG ul;
 
     DEBUG_INFO("Unregister Device 0x%p\n",pDevice);
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     do
     {
         wait = 0;
@@ -303,10 +348,12 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
+#if 0
             DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
                        pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
+#endif
             if(pCurPointer->m_pDevice == pDevice &&
                     pCurPointer->m_DeviceState == POINTER_STATE_GRAB)
             {
@@ -377,6 +424,7 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
     BOOL bret;
     ULONG ul;
     DEBUG_INFO("Unregister swapchain 0x%p\n",pSwapChain);
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     do
     {
         wait = 0;
@@ -385,10 +433,12 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
+#if 0
             DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
                        pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
+#endif
             if(pCurPointer->m_pSwapChain == pSwapChain&&
                     pCurPointer->m_SwapChainState == POINTER_STATE_GRAB)
             {
@@ -458,6 +508,7 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
     ULONG ul;
 
     DEBUG_INFO("Unregister DeviceContext 0x%p\n",pDeviceContext);
+    __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     do
     {
         wait = 0;
@@ -466,10 +517,12 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
+#if  0
             DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
                        pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
                        pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
                        pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
+#endif
             if(pCurPointer->m_pDeviceContext == pDeviceContext &&
                     pCurPointer->m_DeviceContextState == POINTER_STATE_GRAB)
             {
@@ -1102,7 +1155,7 @@ public:
         DEVICE_CONTEXT_IN();
         uret = m_ptr->Release();
         realret = uret;
-        DEBUG_INFO("Device 0x%p release %ld\n",m_ptr,realret);
+        DEBUG_INFO("DeviceContext 0x%p release %ld\n",m_ptr,realret);
         /*it means that is the just one ,we should return for the job*/
         if(uret == 1)
         {
@@ -1110,7 +1163,7 @@ public:
             /*if 1 it means not release one*/
             realret = ret;
         }
-        
+
         DEVICE_CONTEXT_OUT();
         return realret;
     }
