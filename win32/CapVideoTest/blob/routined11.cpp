@@ -65,6 +65,7 @@ static int UnRegisterAllD11Pointers(void)
     int cont,wait;
     int count =0;
     BOOL bret;
+    unsigned int idx;
 
     __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
 
@@ -78,14 +79,16 @@ static int UnRegisterAllD11Pointers(void)
         DEBUG_INFO("st_D11PointersVec.size %ld\n",st_D11PointersVec.size());
         if(st_D11PointersVec.size() > 0)
         {
-            pPointer = st_D11PointersVec[0];
+            idx = st_D11PointersVec.size();
+            idx --;
+            pPointer = st_D11PointersVec[idx];
             if(pPointer->m_DeviceState == POINTER_STATE_FREE &&
                     pPointer->m_DeviceContextState == POINTER_STATE_FREE &&
                     pPointer->m_SwapChainState == POINTER_STATE_FREE)
             {
                 /*free this one*/
                 count += 1;
-                st_D11PointersVec.erase(st_D11PointersVec.begin());
+                st_D11PointersVec.erase(st_D11PointersVec.begin()+idx);
                 if(st_D11PointersVec.size() > 0)
                 {
                     cont = 1;
@@ -104,6 +107,7 @@ static int UnRegisterAllD11Pointers(void)
             ULONG ul;
             if(pPointer->m_pDevice)
             {
+                DEBUG_INFO("Device[0x%p]\n",pPointer->m_pDevice);
                 __try
                 {
                     ul = pPointer->m_pDevice->Release();

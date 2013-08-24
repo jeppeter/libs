@@ -4,6 +4,7 @@
 
 #pragma once
 
+#define  SNAPSHOT_TIME_ID   131
 
 // CDIDialogDlg dialog
 class CDIDialogDlg : public CDialogEx
@@ -24,8 +25,11 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 private:
+	int SnapShort();
+private:
 	DWORD m_CallProcessId;
 	int m_BmpId;
+	int m_SnapSecond;
 // Implementation
 protected:
 	HICON m_hIcon;
@@ -38,5 +42,6 @@ protected:
 	afx_msg void OnSelExe();
 	afx_msg void OnSelDll();
 	afx_msg void OnSelBmp();
+	afx_msg void OnTimer(UINT nEvent);
 	DECLARE_MESSAGE_MAP()
 };

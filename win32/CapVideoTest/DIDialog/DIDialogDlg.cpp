@@ -50,6 +50,7 @@ BEGIN_MESSAGE_MAP(CDIDialogDlg, CDialogEx)
     ON_COMMAND(ID_BTN_SEL_DLL,OnSelDll)
     ON_COMMAND(ID_BTN_SEL_BMP,OnSelBmp)
     ON_MESSAGE(WM_HOTKEY,OnHotKey)
+    ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -87,6 +88,8 @@ BOOL CDIDialogDlg::OnInitDialog()
     pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_WIN);
     pCheck->SetCheck(BST_UNCHECKED);
     pCheck = (CButton*) this->GetDlgItem(IDC_CHECK_SHIFT);
+    pCheck->SetCheck(BST_UNCHECKED);
+    pCheck = (CButton*)this->GetDlgItem(IDC_CHECK_TIMER);
     pCheck->SetCheck(BST_UNCHECKED);
 
 
@@ -135,8 +138,8 @@ void CDIDialogDlg::OnLoad()
 {
     DEBUG_INFO("\n");
     /*now we should test for the job*/
-    char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL,*pParam = NULL;
-    int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
+    char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL,*pParam = NULL,*pNum=NULL;
+    int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0,numsize=0;
     int ret;
     CEdit* pEdt=NULL;
     CButton *pCheck=NULL;
@@ -144,7 +147,9 @@ void CDIDialogDlg::OnLoad()
     int ctrlcheck=BST_UNCHECKED,altcheck=BST_UNCHECKED,wincheck=BST_UNCHECKED,shiftcheck=BST_UNCHECKED,charsel=-1;
     char* pCommandLine=NULL;
     int commandlinesize=0;
-    CString errstr;
+    int timercheck=0;
+    int edttimer=0;
+    CString errstr,numstr;
     UINT hkmask,hkvk;
     BOOL bret;
 
@@ -171,6 +176,15 @@ void CDIDialogDlg::OnLoad()
     pCombo = (CComboBox*) this->GetDlgItem(IDC_COMBO_CHAR);
     charsel = pCombo->GetCurSel();
 
+    pCheck = (CButton*)this->GetDlgItem(IDC_CHECK_TIMER);
+    timercheck = pCheck->GetCheck();
+    if(timercheck)
+    {
+        pEdt = (CEdit*) this->GetDlgItem(IDC_EDIT_TIMER);
+        pEdt->GetWindowText(numstr);
+
+    }
+
 
 #ifdef _UNICODE
     ret = UnicodeToAnsi((wchar_t*)((LPCWSTR)m_strExe),&pExecName,&execnamesize);
@@ -196,6 +210,16 @@ void CDIDialogDlg::OnLoad()
         goto out;
     }
 
+    if(timercheck)
+    {
+        ret = UnicodeToAnsi(((wchar_t*)((const WCHAR*)numstr)),&pNum,&numsize);
+        if(ret < 0)
+        {
+            goto out;
+        }
+        m_SnapSecond = atoi(pNum);
+    }
+
 #else
     pExecName = (const char*)m_strExe;
     pFullDllName = (const char*) m_strDll;
@@ -212,7 +236,7 @@ void CDIDialogDlg::OnLoad()
         pDllName = pFullDllName;
     }
 
-
+    DEBUG_INFO("\n");
 
     /*now we should start the command */
     if(pExecName == NULL|| strlen(pExecName) == 0)
@@ -220,6 +244,7 @@ void CDIDialogDlg::OnLoad()
         AfxMessageBox(TEXT("Must Specify Exec"));
         goto out;
     }
+    DEBUG_INFO("\n");
 
     if(pBmpFile == NULL|| strlen(pBmpFile)==0)
     {
@@ -233,19 +258,8 @@ void CDIDialogDlg::OnLoad()
         AfxMessageBox(errstr);
         goto out;
     }
+    DEBUG_INFO("\n");
 
-    if(ctrlcheck != BST_CHECKED && altcheck != BST_CHECKED &&
-            wincheck != BST_CHECKED)
-    {
-        AfxMessageBox(TEXT("Ctrl Alt Win Must specify one"));
-        goto out;
-    }
-
-    if(charsel == CB_ERR || charsel < 0 || charsel >= 26)
-    {
-        AfxMessageBox(TEXT("Must Select one char"));
-        goto out;
-    }
 
 
     DEBUG_INFO("exename (%s)\n",pExecName);
@@ -286,35 +300,60 @@ void CDIDialogDlg::OnLoad()
 
     /*now to register hotkey ,first to unregister hotkey*/
     UnregisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID);
-    hkmask = 0;
-    if(altcheck)
+    this->KillTimer(SNAPSHOT_TIME_ID);
+    if(timercheck)
     {
-        hkmask |= MOD_ALT;
+        if(m_SnapSecond == 0 || m_SnapSecond > 60)
+        {
+            AfxMessageBox(TEXT("Time should be > 0 && <= 60"));
+            goto out;
+        }
+        this->SetTimer(SNAPSHOT_TIME_ID,m_SnapSecond * 1000,NULL);
     }
-    if(ctrlcheck)
+    else
     {
-        hkmask |= MOD_CONTROL;
-    }
-    if(wincheck)
-    {
-        hkmask |= MOD_WIN;
-    }
-    if(shiftcheck)
-    {
-        hkmask |= MOD_SHIFT;
-    }
+        if(ctrlcheck != BST_CHECKED && altcheck != BST_CHECKED &&
+                wincheck != BST_CHECKED)
+        {
+            AfxMessageBox(TEXT("Ctrl Alt Win Must specify one"));
+            goto out;
+        }
+        
+        if(charsel == CB_ERR || charsel < 0 || charsel >= 26)
+        {
+            AfxMessageBox(TEXT("Must Select one char"));
+            goto out;
+        }
+        hkmask = 0;
+        if(altcheck)
+        {
+            hkmask |= MOD_ALT;
+        }
+        if(ctrlcheck)
+        {
+            hkmask |= MOD_CONTROL;
+        }
+        if(wincheck)
+        {
+            hkmask |= MOD_WIN;
+        }
+        if(shiftcheck)
+        {
+            hkmask |= MOD_SHIFT;
+        }
 
-    /*this is for VK_A*/
-    hkvk = 0x41;
-    hkvk += charsel;
+        /*this is for VK_A*/
+        hkvk = 0x41;
+        hkvk += charsel;
 
-    bret = RegisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID,hkmask,hkvk);
-    if(!bret)
-    {
-        errstr.Format(TEXT("Register Hotkey Error %d"),GetLastError());
-        AfxMessageBox(errstr);
-        UnregisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID);
-        goto out;
+        bret = RegisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID,hkmask,hkvk);
+        if(!bret)
+        {
+            errstr.Format(TEXT("Register Hotkey Error %d"),GetLastError());
+            AfxMessageBox(errstr);
+            UnregisterHotKey(this->m_hWnd,CAPTURE_HOTKEY_ID);
+            goto out;
+        }
     }
     /*all is ok*/
 
@@ -331,6 +370,7 @@ out:
     UnicodeToAnsi(NULL,&pExecName,&execnamesize);
     UnicodeToAnsi(NULL,&pBmpFile,&bmpfilesize);
     UnicodeToAnsi(NULL,&pParam,&paramsize);
+    UnicodeToAnsi(NULL,&pNum,&numsize);
 #endif
     return;
 }
@@ -382,97 +422,114 @@ void CDIDialogDlg::OnSelBmp()
 
 }
 
+int CDIDialogDlg::SnapShort()
+{
+    /*now to get top window*/
+    HWND hWnd=NULL;
+    char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL,*pParam = NULL;
+    int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
+    unsigned int processid;
+    int ret=-1;
+    CString errstr;
+    CString strFormatBmp;
+    hWnd = ::GetDesktopWindow();
+    GetWindowThreadProcessId(hWnd,(LPDWORD)&processid);
+    processid = m_CallProcessId;
+    DEBUG_INFO("\n");
+
+    strFormatBmp.Format(TEXT("%s.%d.bmp"),(const WCHAR*)m_strBmp,m_BmpId);
+    m_BmpId ++;
+
+#ifdef _UNICODE
+    ret = UnicodeToAnsi((wchar_t*)((LPCWSTR)m_strExe),&pExecName,&execnamesize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+    DEBUG_INFO("\n");
+    ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strDll),&pFullDllName,&fulldllnamesize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+
+    ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)strFormatBmp),&pBmpFile,&bmpfilesize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+    DEBUG_INFO("pBmpFile %s (%S)\n",pBmpFile,(const WCHAR*)m_strBmp);
+
+    ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strParam),&pParam,&paramsize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+
+#else
+    pExecName = (const char*)m_strExe;
+    pFullDllName = (const char*) m_strDll;
+    pBmpFile = (const char*) m_strBmp;
+    pParam = (const char*)m_strParam;
+
+#endif
+    DEBUG_INFO("\n");
+    pDllName = strrchr(pFullDllName,'\\');
+    if(pDllName)
+    {
+        pDllName += 1;
+    }
+    else
+    {
+        pDllName = pFullDllName;
+    }
+    DEBUG_INFO("\n");
+
+    ret = CaptureFile(processid,pDllName,"CaptureFullScreenFileD11",pBmpFile);
+    DEBUG_INFO("d11 ret %d\n",ret);
+
+    if(ret != 0)
+    {
+        ret = CaptureFile(processid,pDllName,"Capture3DBackBuffer",pBmpFile);
+        if(ret != 0)
+        {
+            DEBUG_INFO("pBmpFile %s (%S)\n",pBmpFile,(const WCHAR*)m_strBmp);
+            errstr.Format(TEXT("Could not capture on process[%d] in %s error (%d)"),processid,(const WCHAR*)m_strBmp,ret);
+            AfxMessageBox(errstr);
+            goto out;
+        }
+    }
+
+    /*all is success*/
+    ret = 0;
+out:
+#ifdef _UNICODE
+    UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);
+    UnicodeToAnsi(NULL,&pExecName,&execnamesize);
+    UnicodeToAnsi(NULL,&pBmpFile,&bmpfilesize);
+    UnicodeToAnsi(NULL,&pParam,&paramsize);
+#endif
+    return -ret;
+}
 
 LRESULT CDIDialogDlg::OnHotKey(WPARAM wParam, LPARAM lParam)
 {
     if(wParam == CAPTURE_HOTKEY_ID)
     {
-
-        /*now to get top window*/
-        HWND hWnd=NULL;
-        char *pDllName=NULL,*pFullDllName=NULL,*pExecName=NULL,*pBmpFile=NULL,*pParam = NULL;
-        int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
-        unsigned int processid;
-        int ret;
-        CString errstr;
-        CString strFormatBmp;
-        hWnd = ::GetDesktopWindow();
-        GetWindowThreadProcessId(hWnd,(LPDWORD)&processid);
-        processid = m_CallProcessId;
-        DEBUG_INFO("\n");
-
-        strFormatBmp.Format(TEXT("%s.%d.bmp"),(const WCHAR*)m_strBmp,m_BmpId);
-        m_BmpId ++;
-
-#ifdef _UNICODE
-        ret = UnicodeToAnsi((wchar_t*)((LPCWSTR)m_strExe),&pExecName,&execnamesize);
-        if(ret < 0)
-        {
-            goto out;
-        }
-        DEBUG_INFO("\n");
-        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strDll),&pFullDllName,&fulldllnamesize);
-        if(ret < 0)
-        {
-            goto out;
-        }
-
-        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)strFormatBmp),&pBmpFile,&bmpfilesize);
-        if(ret < 0)
-        {
-            goto out;
-        }
-        DEBUG_INFO("pBmpFile %s (%S)\n",pBmpFile,(const WCHAR*)m_strBmp);
-
-        ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strParam),&pParam,&paramsize);
-        if(ret < 0)
-        {
-            goto out;
-        }
-
-#else
-        pExecName = (const char*)m_strExe;
-        pFullDllName = (const char*) m_strDll;
-        pBmpFile = (const char*) m_strBmp;
-        pParam = (const char*)m_strParam;
-
-#endif
-        DEBUG_INFO("\n");
-        pDllName = strrchr(pFullDllName,'\\');
-        if(pDllName)
-        {
-            pDllName += 1;
-        }
-        else
-        {
-            pDllName = pFullDllName;
-        }
-        DEBUG_INFO("\n");
-
-        ret = CaptureFile(processid,pDllName,"CaptureFullScreenFileD11",pBmpFile);
-        DEBUG_INFO("d11 ret %d\n",ret);
-        
-        if(ret != 0)
-        {
-        ret = CaptureFile(processid,pDllName,"Capture3DBackBuffer",pBmpFile);
-        if(ret != 0)
-            {
-                DEBUG_INFO("pBmpFile %s (%S)\n",pBmpFile,(const WCHAR*)m_strBmp);
-                errstr.Format(TEXT("Could not capture on process[%d] in %s error (%d)"),processid,(const WCHAR*)m_strBmp,ret);
-                AfxMessageBox(errstr);
-                goto out;
-            }
-        }
-out:
-#ifdef _UNICODE
-        UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);
-        UnicodeToAnsi(NULL,&pExecName,&execnamesize);
-        UnicodeToAnsi(NULL,&pBmpFile,&bmpfilesize);
-        UnicodeToAnsi(NULL,&pParam,&paramsize);
-#endif
+        SnapShort();
     }
     return 0;
 }
 
+void CDIDialogDlg::OnTimer(UINT nEvent)
+{
+    DEBUG_INFO("Timer++++++++++\n");
+    if(nEvent == SNAPSHOT_TIME_ID)
+    {
+        SnapShort();
+    }
+
+    CDialogEx::OnTimer(nEvent);
+}
 
 
