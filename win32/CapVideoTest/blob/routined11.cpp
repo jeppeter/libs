@@ -400,7 +400,7 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
         {
             assert(pCurPointer->m_pSwapChain != pSwapChain);
             DEBUG_INFO("Conflict SwapChain Pointer[0x%p] pSwapChain [0x%p]\n",
-                pCurPointer->m_pSwapChain,pSwapChain);
+                       pCurPointer->m_pSwapChain,pSwapChain);
             conflict = 1;
             pConfPointer = pCurPointer;
         }
@@ -536,6 +536,7 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
         if(Pointers.size() > 0)
         {
             assert(wait == 0);
+            assert(willdelete);
             for(j=0; j<Pointers.size() ; j++)
             {
                 pRemovePointer = Pointers[j];
@@ -641,6 +642,7 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
         if(Pointers.size() > 0)
         {
             assert(wait == 0);
+            assert(willdelete);
             for(j=0; j<Pointers.size() ; j++)
             {
                 pRemovePointer = Pointers[j];
@@ -727,10 +729,12 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
                 }
                 else
                 {
+                    willdelete = 1;
                     /*we have hold the count for enter this function*/
                     assert(pCurPointer->m_DeviceContextHoldCount == 1);
                     pCurPointer->m_pDeviceContext = NULL;
                     pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
+                    pCurPointer->m_DeviceContextHoldCount = 0;
                     if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pSwapChain == NULL)
                     {
                         /*we release this register context*/
@@ -743,6 +747,7 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
         if(Pointers.size() > 0)
         {
             assert(wait == 0);
+            assert(willdelete);
             for(j=0; j<Pointers.size(); j++)
             {
                 pRemovePointer = Pointers[j];
@@ -770,7 +775,6 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
         }
     }
     while(wait);
-    DEBUG_INFO("releaseidx %d\n",releaseidx);
 
     if(Pointers.size() > 0)
     {
@@ -981,7 +985,7 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
                 assert(idx < st_D11PointersVec.size());
                 pCurPointer = st_D11PointersVec[idx];
                 assert(pCurPointer->m_pDevice == pDevice);
-                assert(pCurPointer->m_DeviceHoldCount == 0 || pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
+                assert(pCurPointer->m_DeviceState != POINTER_STATE_GRAB);
                 pCurPointer->m_DeviceHoldCount ++;
                 pCurPointer->m_DeviceState = POINTER_STATE_HOLD;
                 assert(multihold == 0 || multihold == pCurPointer->m_DeviceHoldCount);
@@ -1109,6 +1113,7 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
         }
         if(holdidx.size() > 0)
         {
+            hold = holdidx.size();
             assert(wait == 0);
             for(i=0; i<holdidx.size(); i++)
             {
@@ -1123,6 +1128,7 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
                 holdcount = pCurPointer->m_DeviceContextHoldCount;
                 pCurPointer = NULL;
             }
+            holdidx.clear();
         }
 
         LeaveCriticalSection(&st_PointerLock);
@@ -1161,7 +1167,7 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
 
     if(holdcount > 1)
     {
-        DEBUG_INFO("DeviceContext[0x%p] holdcount(%d)\n",pDeviceContext,multihold);
+        DEBUG_INFO("DeviceContext[0x%p] holdcount(%d)\n",pDeviceContext,holdcount);
     }
 
     return hold;
@@ -1245,6 +1251,7 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
 
         if(holdidx.size() > 0)
         {
+            hold = holdidx.size();
             assert(wait == 0);
             for(i=0; i<holdidx.size(); i++)
             {
