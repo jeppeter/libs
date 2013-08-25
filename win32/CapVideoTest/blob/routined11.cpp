@@ -368,6 +368,16 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
     }
 
     pSwapChain->AddRef();
+    pInsertPointer = new RegisterD11Pointers_t;
+    pInsertPointer->m_pDevice = pDevice;
+    pInsertPointer->m_DeviceState = POINTER_STATE_FREE;
+    pInsertPointer->m_DeviceHoldCount = 0;
+    pInsertPointer->m_pDeviceContext = NULL;
+    pInsertPointer->m_DeviceContextState  = POINTER_STATE_FREE;
+    pInsertPointer->m_DeviceContextHoldCount = 0;
+    pInsertPointer->m_pSwapChain = pSwapChain;
+    pInsertPointer->m_SwapChainState = POINTER_STATE_FREE;
+    pInsertPointer->m_SwapChainHoldCount = 0;
     conflict = 0;
     inserted = 0;
     DEBUG_INFO("RegisterCreate device 0x%p swapchain 0x%p\n",pDevice,pSwapChain);
@@ -388,6 +398,9 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
         else if(pCurPointer->m_pDevice && pCurPointer->m_pDevice == pDevice &&
                 pCurPointer->m_pSwapChain != NULL)
         {
+            assert(pCurPointer->m_pSwapChain != pSwapChain);
+            DEBUG_INFO("Conflict SwapChain Pointer[0x%p] pSwapChain [0x%p]\n",
+                pCurPointer->m_pSwapChain,pSwapChain);
             conflict = 1;
             pConfPointer = pCurPointer;
         }
@@ -397,7 +410,6 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
     {
         /*this means that we need to insert a new and copy the device and device context ,this will be change state
         in the pointer*/
-        pInsertPointer = new RegisterD11Pointers_t;
         pInsertPointer->m_pDevice = pConfPointer->m_pDevice;
         pInsertPointer->m_DeviceState = pConfPointer->m_DeviceState;
         pInsertPointer->m_DeviceHoldCount = pConfPointer->m_DeviceHoldCount;
@@ -415,8 +427,42 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
     {
         goto fail;
     }
+
+    if(inserted)
+    {
+        /*we do not used pInsertPointer ,so free this function ok*/
+        if(pInsertPointer)
+        {
+            pInsertPointer->m_pDevice = NULL;
+            pInsertPointer->m_DeviceState = POINTER_STATE_FREE;
+            pInsertPointer->m_DeviceHoldCount = 0;
+            pInsertPointer->m_pDeviceContext = NULL;
+            pInsertPointer->m_DeviceContextState = POINTER_STATE_FREE;
+            pInsertPointer->m_DeviceContextHoldCount = 0;
+            pInsertPointer->m_pSwapChain = NULL;
+            pInsertPointer->m_SwapChainState = POINTER_STATE_FREE;
+            pInsertPointer->m_SwapChainHoldCount = 0;
+            delete pInsertPointer;
+        }
+        pInsertPointer = NULL;
+    }
+
     return 1;
 fail:
+    if(pInsertPointer)
+    {
+        pInsertPointer->m_pDevice = NULL;
+        pInsertPointer->m_DeviceState = POINTER_STATE_FREE;
+        pInsertPointer->m_DeviceHoldCount = 0;
+        pInsertPointer->m_pDeviceContext = NULL;
+        pInsertPointer->m_DeviceContextState = POINTER_STATE_FREE;
+        pInsertPointer->m_DeviceContextHoldCount = 0;
+        pInsertPointer->m_pSwapChain = NULL;
+        pInsertPointer->m_SwapChainState = POINTER_STATE_FREE;
+        pInsertPointer->m_SwapChainHoldCount = 0;
+        delete pInsertPointer;
+    }
+    pInsertPointer = NULL;
     if(pSwapChain)
     {
         pSwapChain->Release();
@@ -525,7 +571,7 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
         while(Pointers.size() > 0)
         {
             pRemovePointer = Pointers[0];
-            DEBUG_INFO("Delete Pointer [0x%p]\n",pRemovePointer);
+            REGISTER_POINTERS_RELEASE_ASSERT(pRemovePointer);
             delete pRemovePointer ;
             pRemovePointer = NULL;
             Pointers.erase(Pointers.begin());
@@ -570,6 +616,7 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
                 assert(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD);
                 if(pCurPointer->m_SwapChainHoldCount > 1)
                 {
+                    assert(Pointers.size() == 0);
                     wait = 1;
                     break;
                 }
@@ -674,6 +721,7 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
                 assert(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD);
                 if(pCurPointer->m_DeviceContextHoldCount > 1)
                 {
+                    assert(Pointers.size() == 0);
                     wait = 1;
                     break;
                 }
