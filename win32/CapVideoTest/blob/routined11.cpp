@@ -7,6 +7,7 @@
 #include <vector>
 #include "..\\common\\uniansi.h"
 #include <D3DX11tex.h >
+#include "..\\common\\StackWalker.h"
 
 #pragma comment(lib,"d3d11.lib")
 #pragma comment(lib,"dxgi.lib")
@@ -111,44 +112,22 @@ static int UnRegisterAllD11Pointers(void)
             if(pPointer->m_pDevice)
             {
                 DEBUG_INFO("Device[0x%p]\n",pPointer->m_pDevice);
-                __try
-                {
-                    ul = pPointer->m_pDevice->Release();
-                    DEBUG_INFO("Device[0x%p] realease count %ld\n",pPointer->m_pDevice,ul);
-                }
-                __except(EXCEPTION_EXECUTE_HANDLER)
-                {
-                    DEBUG_INFO("Device[0x%p] release error %d (0x%08x)\n",pPointer->m_pDevice,GetExceptionCode(),GetExceptionCode());
-                }
+                ul = pPointer->m_pDevice->Release();
+                DEBUG_INFO("Device[0x%p] realease count %ld\n",pPointer->m_pDevice,ul);
             }
             pPointer->m_pDevice = NULL;
 
             if(pPointer->m_pDeviceContext)
             {
-                __try
-                {
-                    ul = pPointer->m_pDeviceContext->Release();
-                    DEBUG_INFO("DeviceContext[0x%p] release count(%ld)\n",pPointer->m_pDeviceContext,ul);
-                }
-                __except(EXCEPTION_EXECUTE_HANDLER)
-                {
-                    DEBUG_INFO("DeviceContext[0x%p] release error\n",pPointer->m_pDeviceContext);
-                }
+                ul = pPointer->m_pDeviceContext->Release();
+                DEBUG_INFO("DeviceContext[0x%p] release count(%ld)\n",pPointer->m_pDeviceContext,ul);
             }
             pPointer->m_pDeviceContext = NULL;
 
             if(pPointer->m_pSwapChain)
             {
-                __try
-                {
-                    ul = pPointer->m_pSwapChain->Release();
-                    DEBUG_INFO("SwapChain[0x%p] release count (%ld)\n",pPointer->m_pSwapChain,ul);
-                }
-
-                __except(EXCEPTION_EXECUTE_HANDLER)
-                {
-                    DEBUG_INFO("SwapChain[0x%p] release error\n",pPointer->m_pSwapChain);
-                }
+                ul = pPointer->m_pSwapChain->Release();
+                DEBUG_INFO("SwapChain[0x%p] release count (%ld)\n",pPointer->m_pSwapChain,ul);
             }
             pPointer->m_pSwapChain = NULL;
 
@@ -3010,9 +2989,20 @@ HRESULT  WINAPI D3D11CreateDeviceAndSwapChainCallBack(
     return hr;
 }
 
+LONG WINAPI DetourApplicationCrashHandler(EXCEPTION_POINTERS *pException)
+{
+    StackWalker sw;
+    sw.ShowCallstack(GetCurrentThread(), pException->ContextRecord,NULL,NULL);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
+
 static HRESULT WINAPI CreateDXGIFactory1Callback(REFIID riid, void **ppFactory)
 {
     HRESULT hr;
+    LPTOP_LEVEL_EXCEPTION_FILTER pOrigExpFilter=NULL;
+    pOrigExpFilter = SetUnhandledExceptionFilter(DetourApplicationCrashHandler);
+    DEBUG_INFO("origin exception filter 0x%p\n",pOrigExpFilter);
 
     hr = CreateDXGIFactory1Next(riid,ppFactory);
     if(SUCCEEDED(hr) && riid ==  __uuidof(IDXGIFactory1) && ppFactory && *ppFactory)
@@ -3041,6 +3031,8 @@ static int InitializeD11Hook(void)
 
     return 0;
 }
+
+
 
 int RoutineDetourD11(void)
 {

@@ -98,6 +98,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\StackWalker.cpp" />
     <ClCompile Include="DirectDraw.cpp" />
     <ClCompile Include="DirectDrawCollection.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -106,6 +107,7 @@
     <ClCompile Include="routined11.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\StackWalker.h" />
     <ClInclude Include="DirectDraw.h" />
     <ClInclude Include="DirectDrawCollection.h" />
     <ClInclude Include="iris-int.h" />
