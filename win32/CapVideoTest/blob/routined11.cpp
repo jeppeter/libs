@@ -85,6 +85,7 @@ static int UnRegisterAllD11Pointers(void)
         {
             idx = st_D11PointersVec.size();
             idx --;
+            idx = 0;
             pPointer = st_D11PointersVec[idx];
             if(pPointer->m_DeviceState == POINTER_STATE_FREE &&
                     pPointer->m_DeviceContextState == POINTER_STATE_FREE &&
@@ -1250,6 +1251,189 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,UnknowFunc1)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc2)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc3)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc4)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc5)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc6)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc7)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc8)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc9)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc10)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc11)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc12)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc13)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc14)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc15)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc16)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc17)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc18)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc19)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc20)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
 };
 
 
@@ -2219,6 +2403,189 @@ public:
         DEVICE_CONTEXT_OUT();
         return hr;
     }
+
+    COM_METHOD(HRESULT,UnknowFunc1)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc2)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc3)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc4)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc5)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc6)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc7)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc8)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc9)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc10)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc11)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc12)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc13)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc14)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc15)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc16)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc17)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc18)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc19)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc20)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
 };
 
 
@@ -2643,6 +3010,188 @@ public:
         return ui;
     }
 
+    COM_METHOD(HRESULT,UnknowFunc1)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc2)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc3)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc4)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc5)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc6)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc7)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc8)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc9)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc10)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc11)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc12)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc13)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc14)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc15)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc16)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc17)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc18)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc19)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc20)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
 
 public:
     /*these functions are for the good function*/
@@ -2787,6 +3336,7 @@ public:
                 {
                     /*now success ,so we should make it not right one*/
                     DEBUG_INFO("Not register Device [0x%p] SwapChain 0x%p\n",pDevHook->GetPointer(),pGetSwapChain);
+#if 0                    
                     ul = pGetSwapChain->Release();
                     if(ul != 0)
                     {
@@ -2795,6 +3345,7 @@ public:
                     *ppSwapChain = NULL;
                     /*make things failed*/
                     hr = E_FAIL;
+#endif                    
                 }
             }
             else
@@ -2832,6 +3383,189 @@ public:
         DXGI_FACTORY1_OUT();
         return bret;
     }
+
+    COM_METHOD(HRESULT,UnknowFunc1)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc2)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc3)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc4)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc5)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc6)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc7)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc8)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc9)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc10)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc11)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc12)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc13)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc14)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc15)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc16)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+
+    COM_METHOD(HRESULT,UnknowFunc17)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc18)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc19)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,UnknowFunc20)(THIS_ void* pParam1,void* pParam2,void*pParam3,void*pParam4,void*pParam5,void* pParam6,void*pParam7,void*pParam8)
+    {
+        HRESULT hr=S_OK;
+        int *pPtr=NULL;
+        DEBUG_INFO("vtable \n");
+        *pPtr = 0;
+        return hr;
+    }
+
 };
 
 
