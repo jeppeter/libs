@@ -65,11 +65,17 @@ void __SnapShotDeivces(const char* file,const char* func,int lineno)
 
 static int UnRegisterAllD11Pointers(void)
 {
-    RegisterD11Pointers_t *pPointer=NULL;
+    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    ID3D11Device *pFreeDevice=NULL;
+    ID3D11DeviceContext *pFreeDeviceContext=NULL;
+    IDXGISwapChain  *pFreeSwapChain=NULL;
     int cont,wait;
     int count =0;
     BOOL bret;
     unsigned int idx;
+    unsigned int i,j;
+    std::vector<RegisterD11Pointers_t*> Pointers;
+
 
     __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
 
@@ -77,7 +83,11 @@ static int UnRegisterAllD11Pointers(void)
     {
         cont = 0;
         wait = 0;
+        assert(Pointers.size() == 0);
         assert(pPointer == NULL);
+        assert(pFreeDevice == NULL);
+        assert(pFreeDeviceContext == NULL);
+        assert(pFreeSwapChain == NULL);
         DEBUG_INFO("\n");
         EnterCriticalSection(&st_PointerLock);
         DEBUG_INFO("st_D11PointersVec.size %ld\n",st_D11PointersVec.size());
@@ -85,19 +95,78 @@ static int UnRegisterAllD11Pointers(void)
         {
             idx = st_D11PointersVec.size();
             idx --;
-            idx = 0;
             pPointer = st_D11PointersVec[idx];
             if(pPointer->m_DeviceState == POINTER_STATE_FREE &&
                     pPointer->m_DeviceContextState == POINTER_STATE_FREE &&
                     pPointer->m_SwapChainState == POINTER_STATE_FREE)
             {
                 /*free this one*/
-                count += 1;
-                st_D11PointersVec.erase(st_D11PointersVec.begin()+idx);
+                /*now to get the free pointer*/
+                pFreeDevice = pPointer->m_pDevice;
+                pFreeDeviceContext = pPointer->m_pDeviceContext;
+                pFreeSwapChain = pPointer->m_pSwapChain;
+                pPointer->m_pDevice = NULL;
+                pPointer->m_pDeviceContext = NULL;
+                pPointer->m_pSwapChain = NULL;
+                Pointers.push_back(pPointer);
+                for(i=0; i<st_D11PointersVec.size() ; i++)
+                {
+                    if(i==idx)
+                    {
+                        continue;
+                    }
+                    pCurPointer= st_D11PointersVec[i];
+                    if(pFreeDevice && pCurPointer->m_pDevice == pFreeDevice)
+                    {
+                        assert(pCurPointer->m_DeviceHoldCount == 0);
+                        assert(pCurPointer->m_DeviceState == POINTER_STATE_FREE);
+                        /*because we just clear this device for once ,not for all*/
+                        pCurPointer->m_pDevice = NULL;
+                    }
+
+                    if(pFreeDeviceContext && pCurPointer->m_pDeviceContext == pFreeDeviceContext)
+                    {
+                        assert(pCurPointer->m_DeviceContextHoldCount == 0);
+                        assert(pCurPointer->m_DeviceContextState == POINTER_STATE_FREE);
+                        pCurPointer->m_pDeviceContext = NULL;
+                    }
+
+                    if(pFreeSwapChain && pCurPointer->m_pSwapChain == pFreeSwapChain)
+                    {
+                        assert(pCurPointer->m_SwapChainHoldCount == 0);
+                        assert(pCurPointer->m_SwapChainState == POINTER_STATE_FREE);
+                        pCurPointer->m_pSwapChain = NULL;
+                    }
+
+                    if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pDeviceContext == NULL && pCurPointer->m_pSwapChain == NULL)
+                    {
+                        Pointers.push_back(pCurPointer);
+                    }
+                    pCurPointer = NULL;
+                }
+
+                for(j=0; j<Pointers.size() ; j++)
+                {
+                    RegisterD11Pointers_t * pPointer2 = Pointers[j];
+                    for(i=0; i<st_D11PointersVec.size(); i++)
+                    {
+                        pCurPointer = st_D11PointersVec[i];
+                        if(pPointer2 == pCurPointer)
+                        {
+                            /*erase this pointer ,and we should erase this*/
+                            st_D11PointersVec.erase(st_D11PointersVec.begin() + i);
+                            break;
+                        }
+                    }
+                }
+
+
                 if(st_D11PointersVec.size() > 0)
                 {
                     cont = 1;
                 }
+                pCurPointer = NULL;
+                pPointer = NULL;
             }
             else
             {
@@ -106,35 +175,51 @@ static int UnRegisterAllD11Pointers(void)
             }
         }
         LeaveCriticalSection(&st_PointerLock);
-        DEBUG_INFO("pPointer 0x%p\n",pPointer);
-        if(pPointer)
+        DEBUG_INFO("Pointers %d\n",Pointers.size());
+        if(Pointers.size() > 0)
         {
             ULONG ul;
-            if(pPointer->m_pDevice)
+            if(pFreeDevice)
             {
-                DEBUG_INFO("Device[0x%p]\n",pPointer->m_pDevice);
-                ul = pPointer->m_pDevice->Release();
-                DEBUG_INFO("Device[0x%p] realease count %ld\n",pPointer->m_pDevice,ul);
+                DEBUG_INFO("Device[0x%p]\n",pFreeDevice);
+                ul = pFreeDevice->Release();
+                DEBUG_INFO("Device[0x%p] realease count %ld\n",pFreeDevice,ul);
             }
-            pPointer->m_pDevice = NULL;
+            pFreeDevice = NULL;
 
-            if(pPointer->m_pDeviceContext)
+            if(pFreeDeviceContext)
             {
-                ul = pPointer->m_pDeviceContext->Release();
-                DEBUG_INFO("DeviceContext[0x%p] release count(%ld)\n",pPointer->m_pDeviceContext,ul);
+                DEBUG_INFO("DeviceContext[0x%p]\n",pFreeDeviceContext);
+                ul = pFreeDeviceContext->Release();
+                DEBUG_INFO("DeviceContext[0x%p] release count(%ld)\n",pFreeDeviceContext,ul);
             }
-            pPointer->m_pDeviceContext = NULL;
+            pFreeDeviceContext = NULL;
 
-            if(pPointer->m_pSwapChain)
+            if(pFreeSwapChain)
             {
-                ul = pPointer->m_pSwapChain->Release();
-                DEBUG_INFO("SwapChain[0x%p] release count (%ld)\n",pPointer->m_pSwapChain,ul);
+                DEBUG_INFO("SwapChain[0x%p]\n",pFreeSwapChain);
+                ul = pFreeSwapChain->Release();
+                DEBUG_INFO("SwapChain[0x%p] release count (%ld)\n",pFreeSwapChain,ul);
             }
-            pPointer->m_pSwapChain = NULL;
+            pFreeSwapChain = NULL;
 
-            delete pPointer;
+            while(Pointers.size() > 0)
+            {
+                count ++;
+                pPointer = Pointers[0];
+                Pointers.erase(Pointers.begin());
+                delete pPointer;
+                pPointer = NULL;
+            }
         }
-        pPointer = NULL;
+        else
+        {
+            assert(pFreeSwapChain == NULL);
+            assert(pFreeDevice == NULL);
+            assert(pFreeDeviceContext == NULL);
+            assert(pPointer = NULL);
+            assert(pCurPointer == NULL);
+        }
 
         if(wait)
         {
@@ -273,9 +358,9 @@ fail:
 
 static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain *pSwapChain)
 {
-    int failed=1;
+    int conflict=0,inserted=0;
     unsigned int i;
-    RegisterD11Pointers_t *pCurPointer=NULL;
+    RegisterD11Pointers_t *pCurPointer=NULL,*pInsertPointer=NULL,*pConfPointer=NULL;
 
     if(pSwapChain == NULL || pDevice  == NULL)
     {
@@ -283,7 +368,8 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
     }
 
     pSwapChain->AddRef();
-    failed = 1;
+    conflict = 0;
+    inserted = 0;
     DEBUG_INFO("RegisterCreate device 0x%p swapchain 0x%p\n",pDevice,pSwapChain);
     __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
     EnterCriticalSection(&st_PointerLock);
@@ -296,13 +382,36 @@ static int RegisterFactory1CreateSwapDevice(ID3D11Device* pDevice,IDXGISwapChain
             assert(pCurPointer->m_SwapChainState == POINTER_STATE_FREE);
             assert(pCurPointer->m_SwapChainHoldCount == 0);
             pCurPointer->m_pSwapChain = pSwapChain;
-            failed = 0;
+            inserted = 1;
             break;
         }
+        else if(pCurPointer->m_pDevice && pCurPointer->m_pDevice == pDevice &&
+                pCurPointer->m_pSwapChain != NULL)
+        {
+            conflict = 1;
+            pConfPointer = pCurPointer;
+        }
+    }
+
+    if(inserted== 0 && conflict == 1)
+    {
+        /*this means that we need to insert a new and copy the device and device context ,this will be change state
+        in the pointer*/
+        pInsertPointer = new RegisterD11Pointers_t;
+        pInsertPointer->m_pDevice = pConfPointer->m_pDevice;
+        pInsertPointer->m_DeviceState = pConfPointer->m_DeviceState;
+        pInsertPointer->m_DeviceHoldCount = pConfPointer->m_DeviceHoldCount;
+        pInsertPointer->m_pDeviceContext = pConfPointer->m_pDeviceContext;
+        pInsertPointer->m_DeviceContextHoldCount = pConfPointer->m_DeviceContextHoldCount;
+        pInsertPointer->m_DeviceContextState = pConfPointer->m_DeviceContextState;
+        pInsertPointer->m_pSwapChain = pSwapChain;
+        pInsertPointer->m_SwapChainHoldCount = 0;
+        pInsertPointer->m_SwapChainState = POINTER_STATE_FREE;
+        st_D11PointersVec.push_back(pInsertPointer);
     }
     LeaveCriticalSection(&st_PointerLock);
 
-    if(failed)
+    if(inserted == 0 && conflict == 0)
     {
         goto fail;
     }
@@ -329,9 +438,10 @@ do\
 static ULONG UnRegisterDevice(ID3D11Device* pDevice)
 {
     int wait;
-    int releaseidx=-1;
-    unsigned int i;
-    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    int willdelete=0;
+    unsigned int i,j;
+    RegisterD11Pointers_t *pRemovePointer=NULL,*pCurPointer=NULL;
+    std::vector<RegisterD11Pointers_t*> Pointers;
     BOOL bret;
     ULONG ul;
 
@@ -340,32 +450,30 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
     do
     {
         wait = 0;
-        releaseidx = -1;
+        willdelete = 0;
+        assert(Pointers.size() == 0);
+        assert(pRemovePointer==NULL);
+        assert(pCurPointer == NULL);
         EnterCriticalSection(&st_PointerLock);
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
-#if 0
-            DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
-                       pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
-                       pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
-                       pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
-#endif
             if(pCurPointer->m_pDevice == pDevice)
             {
+
                 assert(pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
                 if(pCurPointer->m_DeviceHoldCount > 1)
                 {
                     /*because only we have gain the pointer owner ,so we should give this for the to avoid the grab state*/
-
+                    assert(Pointers.size() == 0);
                     wait = 1;
                     break;
                 }
                 else
                 {
+                    willdelete = 1;
                     /*this is because when we enter this function ,we have hold the device count*/
                     assert(pCurPointer->m_DeviceHoldCount == 1);
-                    releaseidx = i;
                     /*now we should set the state free ,and give it null pointer this 1 is from the DeviceHold function*/
                     pCurPointer->m_pDevice = NULL;
                     pCurPointer->m_DeviceState = POINTER_STATE_FREE;
@@ -373,18 +481,31 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
                     if(pCurPointer->m_pSwapChain == NULL && pCurPointer->m_pDeviceContext == NULL)
                     {
                         /*we release this register context*/
-                        pPointer = pCurPointer;
+                        Pointers.push_back(pCurPointer);
                     }
-                    break;
                 }
             }
         }
 
-        if(pPointer)
+        if(Pointers.size() > 0)
         {
-            assert(releaseidx > 0);
-            st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
+            assert(wait == 0);
+            for(j=0; j<Pointers.size() ; j++)
+            {
+                pRemovePointer = Pointers[j];
+                for(i=0; i<st_D11PointersVec.size() ; i++)
+                {
+                    pCurPointer = st_D11PointersVec[i];
+                    if(pRemovePointer == pCurPointer)
+                    {
+                        st_D11PointersVec.erase(st_D11PointersVec.begin() + i);
+                        break;
+                    }
+                }
+            }
         }
+        pCurPointer = NULL;
+        pRemovePointer = NULL;
         LeaveCriticalSection(&st_PointerLock);
 
         if(wait)
@@ -399,21 +520,24 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
     }
     while(wait);
 
-    if(pPointer)
+    if(Pointers.size() > 0)
     {
-        DEBUG_INFO("Delete pointer [0x%p] [%d]\n",pPointer,releaseidx);
-        REGISTER_POINTERS_RELEASE_ASSERT(pPointer);
-        delete pPointer;
+        while(Pointers.size() > 0)
+        {
+            pRemovePointer = Pointers[0];
+            DEBUG_INFO("Delete Pointer [0x%p]\n",pRemovePointer);
+            delete pRemovePointer ;
+            pRemovePointer = NULL;
+            Pointers.erase(Pointers.begin());
+        }
     }
-    pPointer = NULL;
 
     ul = 1;
-    if(releaseidx >= 0)
+    if(willdelete)
     {
         DEBUG_INFO("release\n");
         ul = pDevice->Release();
     }
-
     DEBUG_INFO("unregister 0x%p ul(%ld)\n",pDevice,ul);
     return ul;
 }
@@ -422,9 +546,10 @@ static ULONG UnRegisterDevice(ID3D11Device* pDevice)
 static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
 {
     int wait;
-    int releaseidx=-1;
-    unsigned int i;
-    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    int willdelete = 0;
+    unsigned int i,j;
+    RegisterD11Pointers_t *pRemovePointer=NULL,*pCurPointer=NULL;
+    std::vector<RegisterD11Pointers_t*> Pointers;
     BOOL bret;
     ULONG ul;
     DEBUG_INFO("Unregister swapchain 0x%p\n",pSwapChain);
@@ -432,17 +557,14 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
     do
     {
         wait = 0;
-        releaseidx = -1;
+        willdelete = 0;
+        assert(pRemovePointer == NULL);
+        assert(pCurPointer == NULL);
+        assert(Pointers.size() == 0);
         EnterCriticalSection(&st_PointerLock);
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
-#if 0
-            DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
-                       pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
-                       pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
-                       pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
-#endif
             if(pCurPointer->m_pSwapChain == pSwapChain)
             {
                 assert(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD);
@@ -454,8 +576,8 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
                 else
                 {
                     /*we have hold count for swap chain*/
+                    willdelete = 1;
                     assert(pCurPointer->m_SwapChainHoldCount == 1);
-                    releaseidx = i;
                     /*set it for free*/
                     pCurPointer->m_pSwapChain = NULL;
                     pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
@@ -463,19 +585,32 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
                     if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pDeviceContext == NULL)
                     {
                         /*we release this register context*/
-                        pPointer = pCurPointer;
+                        Pointers.push_back(pCurPointer);
                     }
-                    break;
                 }
             }
         }
 
-        if(pPointer)
+        if(Pointers.size() > 0)
         {
-            assert(releaseidx > 0);
             assert(wait == 0);
-            st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
+            for(j=0; j<Pointers.size() ; j++)
+            {
+                pRemovePointer = Pointers[j];
+                for(i=0; i<st_D11PointersVec.size() ; i++)
+                {
+                    pCurPointer = st_D11PointersVec[i];
+                    if(pCurPointer == pRemovePointer)
+                    {
+                        st_D11PointersVec.erase(st_D11PointersVec.begin() + i);
+                        break;
+                    }
+                }
+
+            }
         }
+        pRemovePointer = NULL;
+        pCurPointer = NULL;
         LeaveCriticalSection(&st_PointerLock);
 
         if(wait)
@@ -490,16 +625,21 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
     }
     while(wait);
 
-    if(pPointer)
+    if(Pointers.size() > 0)
     {
-        DEBUG_INFO("Delete pointer [0x%p] [%d]\n",pPointer,releaseidx);
-        REGISTER_POINTERS_RELEASE_ASSERT(pPointer);
-        delete pPointer;
+        while(Pointers.size() > 0)
+        {
+            pRemovePointer = Pointers[0];
+            REGISTER_POINTERS_RELEASE_ASSERT(pRemovePointer);
+            delete pRemovePointer;
+            pRemovePointer = NULL;
+            Pointers.erase(Pointers.begin());
+        }
     }
-    pPointer = NULL;
+    assert(Pointers.size() ==0);
 
     ul = 1;
-    if(releaseidx >=0)
+    if(willdelete)
     {
         DEBUG_INFO("release\n");
         ul = pSwapChain->Release();
@@ -511,10 +651,11 @@ static ULONG UnRegisterSwapChain(IDXGISwapChain *pSwapChain)
 
 static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
 {
-    int wait;
-    int releaseidx=-1;
-    unsigned int i;
-    RegisterD11Pointers_t *pPointer=NULL,*pCurPointer=NULL;
+    int wait=0;
+    int willdelete = 0;
+    unsigned int i,j;
+    RegisterD11Pointers_t *pRemovePointer=NULL,*pCurPointer=NULL;
+    std::vector<RegisterD11Pointers_t*> Pointers;
     BOOL bret;
     ULONG ul;
 
@@ -523,17 +664,11 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
     do
     {
         wait = 0;
-        releaseidx = -1;
+        willdelete = 0;
         EnterCriticalSection(&st_PointerLock);
         for(i=0; i<st_D11PointersVec.size() ; i++)
         {
             pCurPointer = st_D11PointersVec[i];
-#if  0
-            DEBUG_INFO("[%d]device 0x%p(%d) devicecontext 0x%p(%d) swapchain 0x%p(%d)\n",i,
-                       pCurPointer->m_pDevice,pCurPointer->m_DeviceState,
-                       pCurPointer->m_pDeviceContext ,pCurPointer->m_DeviceContextState,
-                       pCurPointer->m_pSwapChain,pCurPointer->m_SwapChainState);
-#endif
             if(pCurPointer->m_pDeviceContext == pDeviceContext)
             {
                 assert(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD);
@@ -546,23 +681,33 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
                 {
                     /*we have hold the count for enter this function*/
                     assert(pCurPointer->m_DeviceContextHoldCount == 1);
-                    releaseidx = i;
                     pCurPointer->m_pDeviceContext = NULL;
                     pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
                     if(pCurPointer->m_pDevice == NULL && pCurPointer->m_pSwapChain == NULL)
                     {
                         /*we release this register context*/
-                        pPointer = pCurPointer;
+                        Pointers.push_back(pCurPointer);
                     }
-                    break;
                 }
             }
         }
 
-        if(pPointer)
+        if(Pointers.size() > 0)
         {
-            assert(releaseidx > 0);
-            st_D11PointersVec.erase(st_D11PointersVec.begin() + releaseidx);
+            assert(wait == 0);
+            for(j=0; j<Pointers.size(); j++)
+            {
+                pRemovePointer = Pointers[j];
+                for(i=0; i<st_D11PointersVec.size() ; i++)
+                {
+                    pCurPointer = st_D11PointersVec[i];
+                    if(pRemovePointer == pCurPointer)
+                    {
+                        st_D11PointersVec.erase(st_D11PointersVec.begin()+i);
+                        break;
+                    }
+                }
+            }
         }
         LeaveCriticalSection(&st_PointerLock);
 
@@ -579,16 +724,21 @@ static ULONG UnRegisterDeviceContext(ID3D11DeviceContext* pDeviceContext)
     while(wait);
     DEBUG_INFO("releaseidx %d\n",releaseidx);
 
-    if(pPointer)
+    if(Pointers.size() > 0)
     {
-        DEBUG_INFO("Delete pointer [0x%p] [%d]\n",pPointer,releaseidx);
-        REGISTER_POINTERS_RELEASE_ASSERT(pPointer);
-        delete pPointer;
+        while(Pointers.size() > 0)
+        {
+            pRemovePointer = Pointers[0];
+            REGISTER_POINTERS_RELEASE_ASSERT(pRemovePointer);
+            DEBUG_INFO("Delete[0x%p]\n",pRemovePointer);
+            delete pRemovePointer;
+            pRemovePointer = NULL;
+            Pointers.erase(Pointers.begin());
+        }
     }
-    pPointer = NULL;
 
     ul = 1;
-    if(releaseidx >= 0)
+    if(willdelete)
     {
         DEBUG_INFO("release\n");
         ul = pDeviceContext->Release();
@@ -734,8 +884,10 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
     int wait=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
+    int idx;
     BOOL bret;
     ULONG startticks,curticks;
+    std::vector<unsigned int> holdidx;
     int printout = 0;
     int multihold = 0;
 
@@ -745,6 +897,9 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
     do
     {
         wait = 0;
+        multihold = 0;
+        hold = 0;
+        assert(pCurPointer == NULL);
         EnterCriticalSection(&st_PointerLock);
         for(i=0; i<st_D11PointersVec.size(); i++)
         {
@@ -753,17 +908,39 @@ static int HoldDevice(const char* file,const char*func,int lineno,ID3D11Device *
             {
                 if(pCurPointer->m_DeviceState == POINTER_STATE_GRAB)
                 {
+                    /*to clear all*/
+                    holdidx.clear();
                     wait = 1;
+                    pCurPointer = NULL;
+                    break;
                 }
                 else
                 {
-                    hold = 1;
-                    pCurPointer->m_DeviceHoldCount ++;
-                    pCurPointer->m_DeviceState = POINTER_STATE_HOLD;
-                    multihold = pCurPointer->m_DeviceHoldCount;
+                    /*we see it ok*/
+                    holdidx.push_back(i);
                 }
-                break;
             }
+            pCurPointer = NULL;
+        }
+
+        if(holdidx.size() > 0)
+        {
+            hold = holdidx.size();
+            assert(wait == 0);
+            for(i=0; i<holdidx.size(); i++)
+            {
+                idx = holdidx[i];
+                assert(idx < st_D11PointersVec.size());
+                pCurPointer = st_D11PointersVec[idx];
+                assert(pCurPointer->m_pDevice == pDevice);
+                assert(pCurPointer->m_DeviceHoldCount == 0 || pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
+                pCurPointer->m_DeviceHoldCount ++;
+                pCurPointer->m_DeviceState = POINTER_STATE_HOLD;
+                assert(multihold == 0 || multihold == pCurPointer->m_DeviceHoldCount);
+                multihold = pCurPointer->m_DeviceHoldCount;
+                pCurPointer = NULL;
+            }
+            holdidx.clear();
         }
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
@@ -809,6 +986,7 @@ static int UnholdDevice(const char* file,const char*func,int lineno,ID3D11Device
     int unhold=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
+    int holdcount=0;
 
     EnterCriticalSection(&st_PointerLock);
     for(i=0; i<st_D11PointersVec.size(); i++)
@@ -818,15 +996,17 @@ static int UnholdDevice(const char* file,const char*func,int lineno,ID3D11Device
         {
             assert(pCurPointer->m_DeviceState == POINTER_STATE_HOLD);
             {
-                unhold = 1;
+                unhold ++;
                 pCurPointer->m_DeviceHoldCount --;
                 if(pCurPointer->m_DeviceHoldCount == 0)
                 {
                     pCurPointer->m_DeviceState = POINTER_STATE_FREE;
                 }
+                assert(holdcount == 0 || holdcount == pCurPointer->m_DeviceHoldCount);
+                holdcount = pCurPointer->m_DeviceHoldCount;
             }
-            break;
         }
+        pCurPointer = NULL;
     }
     LeaveCriticalSection(&st_PointerLock);
 
@@ -845,17 +1025,20 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
     int hold=0;
     int wait=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
-    unsigned int i;
+    unsigned int i,idx;
     BOOL bret;
     ULONG curticks,startticks;
     int printout = 0;
-    int multihold=0;
+    std::vector<unsigned int> holdidx;
+    int holdcount=0;
 
     startticks = GetTickCount();
 
     do
     {
         wait = 0;
+        assert(holdidx.size() == 0);
+        assert(pCurPointer == NULL);
         EnterCriticalSection(&st_PointerLock);
         for(i=0; i<st_D11PointersVec.size(); i++)
         {
@@ -864,18 +1047,36 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
             {
                 if(pCurPointer->m_DeviceContextState == POINTER_STATE_GRAB)
                 {
+                    holdidx.clear();
                     wait = 1;
+                    pCurPointer =NULL;
+                    break;
                 }
                 else
                 {
-                    hold = 1;
-                    pCurPointer->m_DeviceContextHoldCount ++;
-                    pCurPointer->m_DeviceContextState = POINTER_STATE_HOLD;
-                    multihold = pCurPointer->m_DeviceContextHoldCount;
+                    holdidx.push_back(i);
                 }
-                break;
+            }
+            pCurPointer = NULL;
+        }
+        if(holdidx.size() > 0)
+        {
+            assert(wait == 0);
+            for(i=0; i<holdidx.size(); i++)
+            {
+                idx = holdidx[i];
+                assert(idx < st_D11PointersVec.size());
+                pCurPointer = st_D11PointersVec[idx];
+                assert(pCurPointer->m_pDeviceContext == pDeviceContext);
+                assert(pCurPointer->m_DeviceContextState != POINTER_STATE_GRAB);
+                pCurPointer->m_DeviceContextHoldCount ++;
+                pCurPointer->m_DeviceContextState = POINTER_STATE_HOLD;
+                assert(holdcount == 0 || holdcount == pCurPointer->m_DeviceContextHoldCount);
+                holdcount = pCurPointer->m_DeviceContextHoldCount;
+                pCurPointer = NULL;
             }
         }
+
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
@@ -910,7 +1111,7 @@ static int HoldDeviceContext(const char* file,const char*func,int lineno,ID3D11D
                    pDeviceContext,curticks,startticks);
     }
 
-    if(multihold > 1)
+    if(holdcount > 1)
     {
         DEBUG_INFO("DeviceContext[0x%p] holdcount(%d)\n",pDeviceContext,multihold);
     }
@@ -923,6 +1124,7 @@ static int UnholdDeviceContext(const char* file,const char*func,int lineno,ID3D1
     int unhold=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
+    int holdcount=0;
 
     EnterCriticalSection(&st_PointerLock);
     for(i=0; i<st_D11PointersVec.size(); i++)
@@ -932,15 +1134,17 @@ static int UnholdDeviceContext(const char* file,const char*func,int lineno,ID3D1
         {
             assert(pCurPointer->m_DeviceContextState == POINTER_STATE_HOLD);
             {
-                unhold = 1;
+                unhold ++;
                 pCurPointer->m_DeviceContextHoldCount --;
                 if(pCurPointer->m_DeviceContextHoldCount == 0)
                 {
                     pCurPointer->m_DeviceContextState = POINTER_STATE_FREE;
                 }
+                assert(holdcount == 0 || holdcount == pCurPointer->m_DeviceContextHoldCount);
+                holdcount = pCurPointer->m_DeviceContextHoldCount;
             }
-            break;
         }
+        pCurPointer= NULL;
     }
     LeaveCriticalSection(&st_PointerLock);
 
@@ -959,11 +1163,12 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
     int hold=0;
     int wait=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
-    unsigned int i;
+    unsigned int i,idx;
     BOOL bret;
     ULONG startticks,curticks;
     int printout=0;
-    int multihold=0;
+    int holdcount=0;
+    std::vector<unsigned int> holdidx;
 
     startticks = GetTickCount();
 
@@ -979,18 +1184,36 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
             {
                 if(pCurPointer->m_SwapChainState == POINTER_STATE_GRAB)
                 {
+                    holdidx.clear();
                     wait = 1;
+                    break;
                 }
                 else
                 {
-                    hold = 1;
-                    pCurPointer->m_SwapChainHoldCount ++;
-                    pCurPointer->m_SwapChainState = POINTER_STATE_HOLD;
-                    multihold = pCurPointer->m_SwapChainHoldCount;
+                    holdidx.push_back(i);
                 }
-                break;
             }
         }
+
+        if(holdidx.size() > 0)
+        {
+            assert(wait == 0);
+            for(i=0; i<holdidx.size(); i++)
+            {
+                idx = holdidx[i];
+                assert(idx < st_D11PointersVec.size());
+                pCurPointer = st_D11PointersVec[idx];
+                assert(pCurPointer->m_pSwapChain == pSwapChain);
+                assert(pCurPointer->m_SwapChainState != POINTER_STATE_GRAB);
+                pCurPointer->m_SwapChainHoldCount ++;
+                pCurPointer->m_SwapChainState = POINTER_STATE_HOLD;
+                assert(holdcount ==0 || holdcount == pCurPointer->m_SwapChainHoldCount);
+                holdcount = pCurPointer->m_SwapChainHoldCount;
+                pCurPointer = NULL;
+            }
+            holdidx.clear();
+        }
+
         LeaveCriticalSection(&st_PointerLock);
         if(wait)
         {
@@ -1025,9 +1248,9 @@ static int HoldSwapChain(const char* file,const char*func,int lineno,IDXGISwapCh
                    hold ? "Hold" : "Not Hold",pSwapChain,curticks,startticks);
     }
 
-    if(multihold > 1)
+    if(holdcount > 1)
     {
-        DEBUG_INFO("SwapChain[0x%p] holdcount(%d)\n",pSwapChain,multihold);
+        DEBUG_INFO("SwapChain[0x%p] holdcount(%d)\n",pSwapChain,holdcount);
     }
 
     return hold;
@@ -1038,6 +1261,7 @@ static int UnholdSwapChain(const char* file,const char*func,int lineno,IDXGISwap
     int unhold=0;
     RegisterD11Pointers_t *pCurPointer=NULL;
     unsigned int i;
+    int holdcount = 0;
 
     EnterCriticalSection(&st_PointerLock);
     for(i=0; i<st_D11PointersVec.size(); i++)
@@ -1047,15 +1271,17 @@ static int UnholdSwapChain(const char* file,const char*func,int lineno,IDXGISwap
         {
             assert(pCurPointer->m_SwapChainState == POINTER_STATE_HOLD);
             {
-                unhold = 1;
+                unhold ++;
                 pCurPointer->m_SwapChainHoldCount --;
                 if(pCurPointer->m_SwapChainHoldCount == 0)
                 {
                     pCurPointer->m_SwapChainState = POINTER_STATE_FREE;
                 }
+                assert(holdcount == 0 || holdcount == pCurPointer->m_SwapChainHoldCount);
+                holdcount = pCurPointer->m_SwapChainHoldCount;
             }
-            break;
         }
+        pCurPointer = NULL;
     }
     LeaveCriticalSection(&st_PointerLock);
 
@@ -3336,7 +3562,7 @@ public:
                 {
                     /*now success ,so we should make it not right one*/
                     DEBUG_INFO("Not register Device [0x%p] SwapChain 0x%p\n",pDevHook->GetPointer(),pGetSwapChain);
-#if 0                    
+#if 0
                     ul = pGetSwapChain->Release();
                     if(ul != 0)
                     {
@@ -3345,7 +3571,7 @@ public:
                     *ppSwapChain = NULL;
                     /*make things failed*/
                     hr = E_FAIL;
-#endif                    
+#endif
                 }
             }
             else
