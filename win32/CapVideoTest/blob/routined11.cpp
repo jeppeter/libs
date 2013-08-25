@@ -4130,7 +4130,8 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     if(FAILED(hr))
     {
         ret = GetLastError() > 0 ? GetLastError() : 1;
-        DEBUG_INFO("can not save texture file 0x%08x (%d)\n",hr,ret);
+        DEBUG_INFO("can not save texture file (device:0x%p devicecontext 0x%p swapchain 0x%p) 0x%08x (%d)\n",
+             pDevice,pContext,pSwapChain,hr,ret);
         goto out;
     }
 
@@ -4166,7 +4167,7 @@ int CaptureFullScreenFileD11(const char* filetosave)
     ID3D11DeviceContext *pDeviceContext=NULL;
 
     __SnapShotDeivces(__FILE__,__FUNCTION__,__LINE__);
-    do
+    while(1)
     {
         cont = 0;
         assert(pSwapChain==NULL);
@@ -4181,7 +4182,6 @@ int CaptureFullScreenFileD11(const char* filetosave)
         else if(ret == 0)
         {
             idx ++;
-            cont =1;
             continue;
         }
 
@@ -4197,9 +4197,7 @@ int CaptureFullScreenFileD11(const char* filetosave)
         pDevice = NULL;
         pDeviceContext = NULL;
         idx ++;
-
     }
-    while(cont);
     if(pDevice)
     {
         ReleaseD11Context(pSwapChain,pDevice,pDeviceContext);
