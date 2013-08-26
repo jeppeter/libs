@@ -4091,13 +4091,17 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     int filetosavesize=0;
 #endif
 #ifdef MAP_MEMORY
-	int mapped=0;
-	D3D11_MAPPED_SUBRESOURCE resource;	
-	unsigned int subresource = D3D11CalcSubresource( 0, 0, 0 );
-	HANDLE hFile=INVALID_HANDLE_VALUE;
-	unsigned char* pRGBABuffer=NULL;
-	int rgbabuflen=0;
-	int rowpitch,depthpitch;
+    int mapped=0;
+    D3D11_MAPPED_SUBRESOURCE resource;
+    unsigned int subresource = D3D11CalcSubresource(0, 0, 0);
+    HANDLE hFile=INVALID_HANDLE_VALUE;
+    unsigned char* pRGBABuffer=NULL;
+    int rgbabuflen=0;
+    int rowpitch,depthpitch;
+    int writelen=0;
+    DWORD writeret,curwrite;
+    unsigned char* pCurRGBABuffer=NULL;
+    BOOL bret;
 #endif
     int ret=1;
     hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
@@ -4110,18 +4114,18 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 
     /**/
     pBackBuffer->GetDesc(&StagingDesc);
-	DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
-	DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
-		StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
-	DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
+    DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
+    DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
+               StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
+    DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
 
     StagingDesc.Usage = D3D11_USAGE_STAGING;
     StagingDesc.BindFlags = 0;
     StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-	DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
-	DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
-		StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
-	DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
+    DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
+    DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
+               StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
+    DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
 
     hr = pDevice->CreateTexture2D(&StagingDesc, NULL, &pBackBufferStaging);
     if(FAILED(hr))
@@ -4134,47 +4138,86 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     pContext->CopyResource(pBackBufferStaging,pBackBuffer);
 
 #ifdef MAP_MEMORY
-	hr = pContext->Map(pBackBufferStaging,subresource,D3D11_MAP_READ,0,&resource);
-	DEBUG_INFO("Map return 0x%08lx\n",hr);
-	if (FAILED(hr))
-	{
-		ret = GetLastError() ? GetLastError() : 1;
-		DEBUG_INFO("can not map staging buffer 0x%08lx (%d)\n",hr,ret);
-		goto out;
-	}
-	DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
-	mapped = 1;
-	rowpitch = resource.RowPitch;
-	depthpitch = resource.DepthPitch;
+    hr = pContext->Map(pBackBufferStaging,subresource,D3D11_MAP_READ_WRITE,0,&resource);
+    DEBUG_INFO("Map return 0x%08lx\n",hr);
+    if(FAILED(hr))
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("can not map staging buffer 0x%08lx (%d)\n",hr,ret);
+        goto out;
+    }
+    DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
+    mapped = 1;
+    rowpitch = resource.RowPitch;
+    depthpitch = resource.DepthPitch;
 
-	rgbabuflen = (rowpitch << 2) * depthpitch;
-	pRGBABuffer = malloc(rgbabuflen);
-	if (pRGBABuffer == NULL)
-	{
-		ret = GetLastError() ? GetLastError() : 1;
-		ERROR_INFO("can not malloc %d size\n",rgbabuflen);
-		goto out;
-	}
+    rgbabuflen = (StagingDesc.Width << 2) * StagingDesc.Height;
+    pRGBABuffer =(unsigned char*) malloc(rgbabuflen);
+    if(pRGBABuffer == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        ERROR_INFO("can not malloc %d size\n",rgbabuflen);
+        goto out;
+    }
+    DEBUG_INFO("RGBABuffer 0x%p\n",pRGBABuffer);
 
-	/*now copy the buffer*/
-	memcpy(pRGBABuffer,resource.pData,rgbabuflen);
-	/*unmap as quickly as we can*/
-	pContext->Unmap(pBackBufferStaging,subresource);
-	mapped = 0;
+    /*now copy the buffer*/
+    memcpy(pRGBABuffer,resource.pData,rgbabuflen);
+    /*unmap as quickly as we can*/
+    pContext->Unmap(pBackBufferStaging,subresource);
+    mapped = 0;
 
-	/*now to calculate the buffer ,and copy it */
+    if(StagingDesc.Format !=DXGI_FORMAT_B8G8R8A8_UNORM &&
+        StagingDesc.Format !=  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB )
+    {
+        ret = ERROR_BAD_FORMAT;
+        ERROR_INFO("format %d not supported\n",StagingDesc.Format);
+        goto out;
+    }
+
+    /*now to calculate the buffer ,and copy it */
 #ifdef _UNICODE
-		ret = AnsiToUnicode((char*)filetosave,&pFileToSaveW,&filetosavesize);
-		if(ret < 0)
-		{
-			ret = GetLastError() ? GetLastError() : 1;
-			goto out;
-		}
-		hFile = CreateFile(pFileToSaveW,GENERIC_WRITE,);
+    ret = AnsiToUnicode((char*)filetosave,&pFileToSaveW,&filetosavesize);
+    if(ret < 0)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto out;
+    }
+    hFile = CreateFile(pFileToSaveW,GENERIC_WRITE | GENERIC_READ , FILE_SHARE_READ ,NULL,
+                       OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 #else
-		hFile = CreateFile(filetosave);
+    hFile = CreateFile(filetosave,GENERIC_WRITE | GENERIC_READ , FILE_SHARE_READ ,NULL,
+                       OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 #endif
-	
+
+    if(hFile ==  INVALID_HANDLE_VALUE)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("can not create file %s error(%d)\n",filetosave,ret);
+        goto out;
+    }
+
+    pCurRGBABuffer = pRGBABuffer ;
+    writelen = 0;
+    while(writelen < rgbabuflen)
+    {
+        curwrite = rgbabuflen - writelen;
+        bret = WriteFile(hFile,pCurRGBABuffer,curwrite,&writeret,NULL);
+        if(!bret)
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            ERROR_INFO("write file %s at offset(%d) error %d\n",filetosave,writelen,ret);
+            goto out;
+        }
+
+        writelen += writeret;
+        pCurRGBABuffer += writeret;
+    }
+
+    /*all is ok ,so close this*/
+    DEBUG_INFO("Dump Bmp %s with size %d succ\n",filetosave,writelen);
+    ret  = 0;
+
 #else
     SetLastError(0);
 #ifdef _UNICODE
@@ -4192,10 +4235,11 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     {
         ret = GetLastError() > 0 ? GetLastError() : 1;
         DEBUG_INFO("can not save texture file (device:0x%p devicecontext 0x%p swapchain 0x%p) 0x%08x (%d)\n",
-             pDevice,pContext,pSwapChain,hr,ret);
+                   pDevice,pContext,pSwapChain,hr,ret);
         goto out;
     }
 #endif
+
     ret = 0;
 
 out:
@@ -4204,26 +4248,26 @@ out:
 #endif
 
 #ifdef MAP_MEMORY
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(hFile);
-	}
-	hFile = INVALID_HANDLE_VALUE;
+    if(hFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hFile);
+    }
+    hFile = INVALID_HANDLE_VALUE;
 
-	if (pRGBABuffer)
-	{
-		free(pRGBABuffer);
-	}
-	pRGBABuffer = NULL;
-	rgbabuflen = 0;
+    if(pRGBABuffer)
+    {
+        free(pRGBABuffer);
+    }
+    pRGBABuffer = NULL;
+    rgbabuflen = 0;
 
-	if (mapped)
-	{
-		assert(pBackBufferStaging);
-		pContext->Unmap(pBackBufferStaging,subresource);
-		DEBUG_INFO("unmap backbuffer staging\n");
-	}
-	mapped = 0;
+    if(mapped)
+    {
+        assert(pBackBufferStaging);
+        pContext->Unmap(pBackBufferStaging,subresource);
+        DEBUG_INFO("unmap backbuffer staging\n");
+    }
+    mapped = 0;
 #endif
     assert(ret >= 0);
     if(pBackBuffer)
