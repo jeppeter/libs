@@ -4102,6 +4102,8 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     DWORD writeret,curwrite;
     unsigned char* pCurRGBABuffer=NULL;
     BOOL bret;
+    BITMAPFILEHEADER bmphdr;
+    BITMAPINFOHEADER bmpinfo;
 #endif
     int ret=1;
     hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
@@ -4168,7 +4170,7 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     mapped = 0;
 
     if(StagingDesc.Format !=DXGI_FORMAT_B8G8R8A8_UNORM &&
-        StagingDesc.Format !=  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB )
+            StagingDesc.Format !=  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
     {
         ret = ERROR_BAD_FORMAT;
         ERROR_INFO("format %d not supported\n",StagingDesc.Format);
@@ -4197,8 +4199,47 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
         goto out;
     }
 
+
+    /*header of bmp*/
+    bmphdr.bfType = 'MB';
+    bmphdr.bfSize = sizeof(bmphdr) + sizeof(bmpinfo) + rgbabuflen;
+    bmphdr.bfReserved1 = 0;
+    bmphdr.bfReserved2 = 0;
+    bmphdr.bfOffBits = sizeof(bmphdr) + sizeof(bmpinfo);
+    bmpinfo.biSize = sizeof(bmpinfo);
+    bmpinfo.biWidth = StagingDesc.Width;
+    bmpinfo.biHeight = StagingDesc.Height;
+    bmpinfo.biPlanes = 1;
+    bmpinfo.biBitCount = 0x20;
+    bmpinfo.biCompression = 0;
+    bmpinfo.biSizeImage = 0;
+    bmpinfo.biXPelsPerMeter = 0xb13;
+    bmpinfo.biYPelsPerMeter = 0xb13;
+    bmpinfo.biClrUsed = 0;
+    bmpinfo.biClrImportant = 0;
+
+    curwrite = sizeof(bmphdr);
+    bret = WriteFile(hFile,&bmphdr,curwrite,&writeret,NULL);
+    if(!bret || writeret != curwrite)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        ERROR_INFO("can not write bmphdr %d\n",ret);
+        goto out;
+    }
+
+    curwrite = sizeof(bmpinfo);
+    bret = WriteFile(hFile,&bmpinfo,curwrite,&writeret,NULL);
+    if(!bret || writeret != curwrite)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        ERROR_INFO("can not write bmpinfo %d\n",ret);
+        goto out;
+    }
+
     pCurRGBABuffer = pRGBABuffer ;
     writelen = 0;
+
+
     while(writelen < rgbabuflen)
     {
         curwrite = rgbabuflen - writelen;
