@@ -4078,6 +4078,7 @@ void RotineClearD11(void)
 
 
 
+#define MAP_MEMORY  1
 
 int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXGISwapChain* pSwapChain,const char* filetosave)
 {
@@ -4088,6 +4089,11 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 #ifdef _UNICODE
     wchar_t *pFileToSaveW=NULL;
     int filetosavesize=0;
+#endif
+#ifdef MAP_MEMORY
+	int mapped=0;
+	D3D11_MAPPED_SUBRESOURCE resource;	
+	unsigned int subresource = D3D11CalcSubresource( 0, 0, 0 );
 #endif
     int ret=1;
     hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
@@ -4100,10 +4106,18 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 
     /**/
     pBackBuffer->GetDesc(&StagingDesc);
+	DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
+	DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
+		StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
+	DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
 
     StagingDesc.Usage = D3D11_USAGE_STAGING;
     StagingDesc.BindFlags = 0;
-    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+	DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
+	DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
+		StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
+	DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
 
     hr = pDevice->CreateTexture2D(&StagingDesc, NULL, &pBackBufferStaging);
     if(FAILED(hr))
@@ -4115,6 +4129,18 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 
     pContext->CopyResource(pBackBufferStaging,pBackBuffer);
 
+#ifdef MAP_MEMORY
+	hr = pContext->Map(pBackBufferStaging,subresource,D3D11_MAP_READ,0,&resource);
+	DEBUG_INFO("Map return 0x%08lx\n",hr);
+	if (FAILED(hr))
+	{
+		ret = GetLastError() ? GetLastError() : 1;
+		DEBUG_INFO("can not map staging buffer 0x%08lx (%d)\n",hr,ret);
+		goto out;
+	}
+	DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
+	mapped = 1;
+#else
     SetLastError(0);
 #ifdef _UNICODE
     ret = AnsiToUnicode((char*)filetosave,&pFileToSaveW,&filetosavesize);
@@ -4134,12 +4160,22 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
              pDevice,pContext,pSwapChain,hr,ret);
         goto out;
     }
-
+#endif
     ret = 0;
 
 out:
 #ifdef _UNICODE
     AnsiToUnicode(NULL,&pFileToSaveW,&filetosavesize);
+#endif
+
+#ifdef MAP_MEMORY
+	if (mapped)
+	{
+		assert(pBackBufferStaging);
+		pContext->Unmap(pBackBufferStaging,subresource);
+		DEBUG_INFO("unmap backbuffer staging\n");
+	}
+	mapped = 0;
 #endif
     assert(ret >= 0);
     if(pBackBuffer)
