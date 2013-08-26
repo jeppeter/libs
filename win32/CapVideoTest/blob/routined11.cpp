@@ -4094,6 +4094,10 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 	int mapped=0;
 	D3D11_MAPPED_SUBRESOURCE resource;	
 	unsigned int subresource = D3D11CalcSubresource( 0, 0, 0 );
+	HANDLE hFile=INVALID_HANDLE_VALUE;
+	unsigned char* pRGBABuffer=NULL;
+	int rgbabuflen=0;
+	int rowpitch,depthpitch;
 #endif
     int ret=1;
     hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
@@ -4140,6 +4144,37 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
 	}
 	DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
 	mapped = 1;
+	rowpitch = resource.RowPitch;
+	depthpitch = resource.DepthPitch;
+
+	rgbabuflen = (rowpitch << 2) * depthpitch;
+	pRGBABuffer = malloc(rgbabuflen);
+	if (pRGBABuffer == NULL)
+	{
+		ret = GetLastError() ? GetLastError() : 1;
+		ERROR_INFO("can not malloc %d size\n",rgbabuflen);
+		goto out;
+	}
+
+	/*now copy the buffer*/
+	memcpy(pRGBABuffer,resource.pData,rgbabuflen);
+	/*unmap as quickly as we can*/
+	pContext->Unmap(pBackBufferStaging,subresource);
+	mapped = 0;
+
+	/*now to calculate the buffer ,and copy it */
+#ifdef _UNICODE
+		ret = AnsiToUnicode((char*)filetosave,&pFileToSaveW,&filetosavesize);
+		if(ret < 0)
+		{
+			ret = GetLastError() ? GetLastError() : 1;
+			goto out;
+		}
+		hFile = CreateFile(pFileToSaveW,GENERIC_WRITE,);
+#else
+		hFile = CreateFile(filetosave);
+#endif
+	
 #else
     SetLastError(0);
 #ifdef _UNICODE
@@ -4169,6 +4204,19 @@ out:
 #endif
 
 #ifdef MAP_MEMORY
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hFile);
+	}
+	hFile = INVALID_HANDLE_VALUE;
+
+	if (pRGBABuffer)
+	{
+		free(pRGBABuffer);
+	}
+	pRGBABuffer = NULL;
+	rgbabuflen = 0;
+
 	if (mapped)
 	{
 		assert(pBackBufferStaging);
