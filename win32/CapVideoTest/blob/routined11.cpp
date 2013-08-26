@@ -4104,6 +4104,8 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     BOOL bret;
     BITMAPFILEHEADER bmphdr;
     BITMAPINFOHEADER bmpinfo;
+    unsigned char ch;
+    unsigned int i;
 #endif
     int ret=1;
     hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
@@ -4235,6 +4237,18 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
         ERROR_INFO("can not write bmpinfo %d\n",ret);
         goto out;
     }
+
+    if(StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+    {
+        /*to change the buffer */
+        for(i = 0,pCurRGBABuffer=pRGBABuffer; i < rgbabuflen; i+=4,pCurRGBABuffer += 4)
+        {
+            ch = *pCurRGBABuffer;
+            pCurRGBABuffer[0] = pCurRGBABuffer[2];
+            pCurRGBABuffer[2] = ch;
+        }
+    }
+
 
     pCurRGBABuffer = pRGBABuffer ;
     writelen = 0;
