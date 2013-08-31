@@ -997,3 +997,45 @@ out:
     return -ret;
 }
 
+
+
+/******************************************
+D3DHook_CaptureImageBuffer:
+            capture image buffer ,we will copy the format
+
+parameter:
+		hProc  process handle that the D3DHook_HookProcess
+		strDllName  name of dll to insert last time
+		data   data to copy
+             len   length of the data
+             format      format of the data please see capture.h
+             width        the width of the picture
+             height       height of the picture
+
+return value:
+             filled length of the buffer is success
+             otherwise the negative error code
+
+remark :
+             this will give the timeout to copy buffer
+             and the format will give
+
+******************************************/
+int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int len, int * format, int * width, int * height)
+{
+    int ret;
+    char* pDllStripName=NULL;
+    pDllStripName = strrchr(strDllName);
+    if(pDllStripName == NULL)
+    {
+        pDllStripName = strDllName;
+    }
+    else
+    {
+        pDllStripName ++;
+    }
+
+	
+}
+
+
