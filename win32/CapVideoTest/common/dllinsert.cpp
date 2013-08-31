@@ -95,11 +95,11 @@ PVOID __GetModuleBaseAddr(unsigned int processid,const char* pDllName)
     pDebugString = new char[sizeof(pMEntry->szModule)];
     assert(pDebugString);
 #endif
-	if (pDllName == NULL)
-	{
-		ret = ERROR_INVALID_PARAMETER;
-		goto fail;
-	}
+    if(pDllName == NULL)
+    {
+        ret = ERROR_INVALID_PARAMETER;
+        goto fail;
+    }
 
     hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,processid);
     if(hsnap == INVALID_HANDLE_VALUE)
@@ -896,6 +896,7 @@ extern "C" int CaptureFile(DWORD processid,const char* pDllName,const char* pFun
 }
 
 
+
 /******************************************
 D3DHook_HookProcess :
 param :
@@ -903,21 +904,96 @@ param :
            strDllName  name must be fullpath ,if not ,it assume this is in the current directory
 
 return value:
-           0 for success 
+           0 for success
            otherwise ,negative error code
 
 remarks :
-           this will give error 
+           this will give error
 ******************************************/
 int D3DHook_HookProcess(HANDLE hProc, char * strDllName)
 {
-	int ret=-1;
-	DWORD processid;
+    int ret=-1;
+    DWORD processid;
+    char* pPartDllName=NULL;
+    BOOL bret;
+#ifdef _UNICODE
+    LPWSTR pDllFullName=NULL,pDllStripName=NULL;
+    int fullsize=0,stripsize=0;
+    LPWSTR dllNames[2];
 
-	processid= GetProcessId(hProc);
-	/*now for */
+#else
+    char *pDllFullName=NULL,*pDllStripName=NULL;
+    char* dllNames[2];
+#endif
 
-fail:
-	return ret;
+    pPartDllName = strrchr(strDllName,'\\');
+    if(pPartDllName == NULL)
+    {
+        pPartDllName = strDllName;
+    }
+    else
+    {
+        /*skip the name*/
+        pPartDllName ++;
+    }
+
+#ifdef _UNICODE
+    ret = AnsiToUnicode(strDllName,&pDllFullName,&fullsize);
+    if(ret < 0)
+    {
+        ret = -ret;
+        goto out;
+    }
+    ret = AnsiToUnicode(pPartDllName,&pDllStripName,&stripsize);
+    if(ret < 0)
+    {
+        ret = -ret;
+        goto out;
+    }
+#else
+    pDllFullName = strdup(strDllName);
+    if(pDllFullName == NULL)
+    {
+        ret = GetLastError();
+        goto out;
+    }
+
+    pDllStripName = strdup(pPartDllName);
+    if(pDllStripName == NULL)
+    {
+        ret = GetLastError();
+        goto out;
+    }
+#endif
+    dllNames[0] = pDllFullName;
+    dllNames[1] = pDllStripName;
+
+    bret = UpdateImports(hProc,dllNames,2);
+    if(!bret)
+    {
+        ret = GetLastError();
+        goto out;
+    }
+
+    /*all is ok*/
+    ret = 0;
+out:
+#ifdef _UNICODE
+    AnsiToUnicode(NULL,&pDllFullName,&fullsize);
+    AnsiToUnicode(NULL,&pDllStripName,&stripsize);
+#else
+    if(pDllFullName)
+    {
+        free(pDllFullName);
+    }
+    pDllFullName = NULL;
+    if(pDllStripName)
+    {
+        free(pDllStripName);
+    }
+    pDllStripName = NULL;
+#endif
+    SetLastError(ret);
+    return -ret;
 }
 
