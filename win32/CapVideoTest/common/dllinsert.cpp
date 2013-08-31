@@ -896,3 +896,28 @@ extern "C" int CaptureFile(DWORD processid,const char* pDllName,const char* pFun
 }
 
 
+/******************************************
+D3DHook_HookProcess :
+param :
+           hProc   HANDLE for process insert
+           strDllName  name must be fullpath ,if not ,it assume this is in the current directory
+
+return value:
+           0 for success 
+           otherwise ,negative error code
+
+remarks :
+           this will give error 
+******************************************/
+int D3DHook_HookProcess(HANDLE hProc, char * strDllName)
+{
+	int ret=-1;
+	DWORD processid;
+
+	processid= GetProcessId(hProc);
+	/*now for */
+
+fail:
+	return ret;
+}
+
