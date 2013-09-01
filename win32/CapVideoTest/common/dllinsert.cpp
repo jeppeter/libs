@@ -1025,6 +1025,11 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
 {
     int ret;
     char* pDllStripName=NULL;
+    capture_buffer_t *pCaptureBuffer=NULL;
+    unsigned int capturesize=sizeof(*pCaptureBuffer);
+    HANDLE hHandleProc=NULL;
+    unsigned int processid=0;
+    BOOL bret;
     pDllStripName = strrchr(strDllName);
     if(pDllStripName == NULL)
     {
@@ -1035,7 +1040,35 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         pDllStripName ++;
     }
 
-	
+    processid = GetProcessId(hProc);
+
+
+    hHandleProc = OpenProcess(PROCESS_VM_OPERATION |PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD ,FALSE,processid);
+    if(hHandleProc == NULL)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        goto fail;
+    }
+
+    pCaptureBuffer = VirtualAllocEx();
+
+fail:
+    if(pCaptureBuffer)
+    {
+        bret = VirtualFreeEx(hHandleProc,pCaptureBuffer,capturesize,MEM_DECOMMIT);
+        if(!bret)
+        {
+            ERROR_INFO("could not free %p size %d on %x error (%d)\n",pCaptureBuffer,capturesize,hHandleProc,GetLastError());
+        }
+    }
+    if(hHandleProc)
+    {
+        CloseHandle(hHandleProc);
+    }
+    hHandleProc = NULL;
+    SetLastError(ret);
+    return -ret;
+
 }
 
 
