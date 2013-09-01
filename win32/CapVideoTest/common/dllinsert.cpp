@@ -7,6 +7,10 @@
 #include <TlHelp32.h>
 #include <assert.h>
 
+#define LAST_ERROR_RETURN()  (GetLastError() ? GetLastError() : 1)
+
+#define REMOTE_OFFSET_OF(ptr,typestruct,member) ((unsigned long)(ptr) + (unsigned long)(((typestruct*)0)->member))
+
 int __LoadInsert(const char* pExec,const char* pCommandLine,const char* pDllFullName,const char* pDllName)
 {
     PROCESS_INFORMATION pi = {0};
@@ -1030,6 +1034,8 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     HANDLE hHandleProc=NULL;
     unsigned int processid=0;
     BOOL bret;
+    DWORD curprocessid;
+    SIZE_T curret;
     pDllStripName = strrchr(strDllName);
     if(pDllStripName == NULL)
     {
@@ -1050,7 +1056,27 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         goto fail;
     }
 
-    pCaptureBuffer = VirtualAllocEx();
+    pCaptureBuffer = VirtualAllocEx(hHandleProc,NULL,capturesize,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+    if(pCaptureBuffer == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    /*now copy the memory*/
+    curprocessid = GetCurrentProcessId();
+    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Processid),&curprocessid,sizeof(curprocessid),&curret);
+    if(!bret)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    if(curret != sizeof(curprocessid))
+    {
+        ret = ERROR_INVALID_PARAMETER;
+        goto out;
+    }
 
 fail:
     if(pCaptureBuffer)
