@@ -11,6 +11,7 @@ x509\routin.cpp
 #include <assert.h>
 #include <TlHelp32.h>
 #include <winbase.h>
+#include "..\\common\\capture.h"
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
@@ -2026,6 +2027,26 @@ int Cleanup()
     RotineClearD11();
     FinializeEnviron();
     return 0;
+}
+
+
+int CaptureBufferDX9(capture_buffer_t* pCapture)
+{
+	return -1;
+}
+
+void* CaptureBuffer(capture_buffer_t *pCapture)
+{
+	int ret;
+
+	ret = CaptureBufferDX9(pCapture);
+	if (ret >= 0)
+	{
+		return (void*) ret;
+	}
+
+	ret = CaptureBufferDX11(pCapture);
+	return (void*)ret;
 }
 
 void AceCrash() {}

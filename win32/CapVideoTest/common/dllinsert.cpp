@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <TlHelp32.h>
 #include <assert.h>
+#include "capture.h"
 
 #define LAST_ERROR_RETURN()  (GetLastError() ? GetLastError() : 1)
 
@@ -1036,6 +1037,14 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     BOOL bret;
     DWORD curprocessid;
     SIZE_T curret;
+    void* pFnAddr=NULL;
+    int getlen=0;
+    HANDLE hThread=NULL;
+    DWORD threadid=0;
+    DWORD stime,etime,ctime,wtime;
+    DWORD dret;
+    int timeout=3;
+    DWORD retcode=(DWORD)-1;
     pDllStripName = strrchr(strDllName);
     if(pDllStripName == NULL)
     {
@@ -1075,10 +1084,134 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(curret != sizeof(curprocessid))
     {
         ret = ERROR_INVALID_PARAMETER;
-        goto out;
+        goto fail;
     }
 
+    /*now we should test if the memory*/
+    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Data),&(data),sizeof(data),curret);
+    if(!bret)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    if(curret != sizeof(data))
+    {
+        ret = ERROR_INVALID_OPERATION;
+        goto fail;
+    }
+
+    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_DataLen),&(len),sizeof(len),curret);
+    if(!bret)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    if(curret != sizeof(len))
+    {
+        ret = ERROR_INVALID_OPERATION;
+        goto fail;
+    }
+
+    /*now to create remote thread*/
+    ret = __GetRemoteProcAddress(processid,pDllStripName,"CaptureBuffer",&pFnAddr);
+    if(ret < 0)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    hThread=CreateRemoteThread(hHandleProc,NULL,0,(LPTHREAD_START_ROUTINE)pFnAddr,pCaptureBuffer,0,&threadid);
+    if(hThread == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    stime = GetTickCount();
+    etime = stime + timeout* 1000;
+    ctime = stime;
+
+    while(__TimeExpire(ctime,etime)==0)
+    {
+		wtime = 2000;
+		if ((etime - ctime) < wtime)
+		{
+			wtime = (etime - ctime);
+		}
+        dret = WaitForSingleObject(hThread,wtime);
+        if(dret == WAIT_OBJECT_0)
+        {
+            bret = GetExitCodeThread(hThread,&retcode);
+            if(bret)
+            {
+                break;
+            }
+            else if(GetLastError() != STILL_ACTIVE)
+            {
+                ret = GetLastError() ? GetLastError() : 1;
+                DEBUG_INFO("\n");
+                goto fail;
+            }
+            /*still alive ,continue*/
+        }
+        else if(dret == WAIT_TIMEOUT)
+        {
+            ;
+        }
+        else
+        {
+            ret = LAST_ERROR_RETURN();
+            goto fail;
+        }
+		ctime= GetTickCount();
+    }
+
+    if(__TimeExpire(ctime, etime))
+    {
+        ret = WAIT_TIMEOUT;
+        goto fail;
+    }
+
+	ret =(int) retcode;
+	if (ret < 0)
+	{
+		ret = -ret;
+		goto fail;
+	}
+
+	/*get the length*/
+	getlen = ret;
+
+	/*all is ok ,so we should do this*/
+    if(hThread)
+    {
+        CloseHandle(hThread);
+    }
+    hThread=NULL;
+    if(pCaptureBuffer)
+    {
+        bret = VirtualFreeEx(hHandleProc,pCaptureBuffer,capturesize,MEM_DECOMMIT);
+        if(!bret)
+        {
+            ERROR_INFO("could not free %p size %d on %x error (%d)\n",pCaptureBuffer,capturesize,hHandleProc,GetLastError());
+        }
+    }
+    if(hHandleProc)
+    {
+        CloseHandle(hHandleProc);
+    }
+    hHandleProc = NULL;
+
+    return getlen;
+
 fail:
+    if(hThread)
+    {
+        CloseHandle(hThread);
+    }
+    hThread=NULL;
     if(pCaptureBuffer)
     {
         bret = VirtualFreeEx(hHandleProc,pCaptureBuffer,capturesize,MEM_DECOMMIT);

@@ -4398,3 +4398,9 @@ fail:
     return ret;
 }
 
+
+int CaptureBufferDX11(capture_buffer_t* pCapture)
+{
+	return -1;
+}
+
