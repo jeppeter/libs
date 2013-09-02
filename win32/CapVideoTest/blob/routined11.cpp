@@ -4821,6 +4821,7 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
     if(rgbabuflen > remotelen)
     {
         ret = ERROR_INSUFFICIENT_BUFFER;
+		DEBUG_INFO("rgbabuflen %d > remotelen %d\n",rgbabuflen,remotelen);
         goto fail;
     }
 
@@ -4828,7 +4829,7 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
     while(writelen < rgbabuflen)
     {
 
-        bret = WriteProcessMemory(hRemoteProc,(LPCVOID)((unsigned long)pRemoteAddr + writelen),rgbabuflen-writelen,resource.pData,&curret);
+        bret = WriteProcessMemory(hRemoteProc,(LPCVOID)((unsigned long)pRemoteAddr + writelen),rgbabuflen-writelen,(LPCVOID)((ptr_t)resource.pData+writelen),&curret);
         if(!bret)
         {
             ret = LAST_ERROR_RETURN();
@@ -4849,7 +4850,6 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
     *pHeight = StagingDesc.Height;
 
     /*all is ok ,so close this*/
-    ret  = 0;
     if(mapped)
     {
         assert(pBackBufferStaging);
@@ -4857,7 +4857,6 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
         DEBUG_INFO("unmap backbuffer staging\n");
     }
     mapped = 0;
-    assert(ret >= 0);
     if(pBackBuffer)
     {
         pBackBuffer->Release();
@@ -4912,6 +4911,7 @@ int CaptureBufferDX11(capture_buffer_t* pCapture)
 		goto fail;
 	}
 
+	idx = 0;
 	while(1)
 	{
 		assert(pDevice==NULL);
@@ -4940,7 +4940,8 @@ int CaptureBufferDX11(capture_buffer_t* pCapture)
 
 		
 
-		assert(ret > 0);
+		assert(ret < 0);
+		assert(pSwapChain && pDevice && pContext);
 		/*now we should get the value*/
 		res = ReleaseD11Context(pSwapChain,pDevice,pContext);
 		if (res == 0)

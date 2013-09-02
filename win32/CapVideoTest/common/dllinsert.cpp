@@ -1030,7 +1030,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
 {
     int ret;
     char* pDllStripName=NULL;
-    capture_buffer_t *pCaptureBuffer=NULL;
+    capture_buffer_t *pCaptureBuffer=NULL,*pCurCaptureBuffer=NULL;
     unsigned int capturesize=sizeof(*pCaptureBuffer);
     HANDLE hHandleProc=NULL;
     unsigned int processid=0;
@@ -1045,7 +1045,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     DWORD dret;
     int timeout=3;
     DWORD retcode=(DWORD)-1;
-	unsigned int resformat,reswidth,resheight;
+
     pDllStripName = strrchr(strDllName);
     if(pDllStripName == NULL)
     {
@@ -1073,45 +1073,28 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         goto fail;
     }
 
+    pCurCaptureBuffer = calloc(sizeof(*pCurCaptureBuffer),1);
+    if(pCurCaptureBuffer == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
+
+    pCurCaptureBuffer->m_Data = data;
+    pCurCaptureBuffer->m_DataLen = len;
+    pCurCaptureBuffer->m_Processid = GetCurrentProcessId();
+
     /*now copy the memory*/
-    curprocessid = GetCurrentProcessId();
-    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Processid),&curprocessid,sizeof(curprocessid),&curret);
+    bret = WriteProcessMemory(hHandleProc,pCaptureBuffer,pCurCaptureBuffer,sizeof(*pCaptureBuffer),&curret);
     if(!bret)
     {
         ret = LAST_ERROR_RETURN();
         goto fail;
     }
 
-    if(curret != sizeof(curprocessid))
+    if(curret != sizeof(*pCaptureBuffer))
     {
         ret = ERROR_INVALID_PARAMETER;
-        goto fail;
-    }
-
-    /*now we should test if the memory*/
-    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Data),&(data),sizeof(data),curret);
-    if(!bret)
-    {
-        ret = LAST_ERROR_RETURN();
-        goto fail;
-    }
-
-    if(curret != sizeof(data))
-    {
-        ret = ERROR_INVALID_OPERATION;
-        goto fail;
-    }
-
-    bret = WriteProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_DataLen),&(len),sizeof(len),curret);
-    if(!bret)
-    {
-        ret = LAST_ERROR_RETURN();
-        goto fail;
-    }
-
-    if(curret != sizeof(len))
-    {
-        ret = ERROR_INVALID_OPERATION;
         goto fail;
     }
 
@@ -1136,11 +1119,11 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
 
     while(__TimeExpire(ctime,etime)==0)
     {
-		wtime = 2000;
-		if ((etime - ctime) < wtime)
-		{
-			wtime = (etime - ctime);
-		}
+        wtime = 2000;
+        if((etime - ctime) < wtime)
+        {
+            wtime = (etime - ctime);
+        }
         dret = WaitForSingleObject(hThread,wtime);
         if(dret == WAIT_OBJECT_0)
         {
@@ -1151,7 +1134,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
             }
             else if(GetLastError() != STILL_ACTIVE)
             {
-                ret = GetLastError() ? GetLastError() : 1;
+                ret = LAST_ERROR_RETURN();
                 DEBUG_INFO("\n");
                 goto fail;
             }
@@ -1166,7 +1149,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
             ret = LAST_ERROR_RETURN();
             goto fail;
         }
-		ctime= GetTickCount();
+        ctime= GetTickCount();
     }
 
     if(__TimeExpire(ctime, etime))
@@ -1175,64 +1158,37 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         goto fail;
     }
 
-	ret =(int) retcode;
-	if (ret < 0)
-	{
-		ret = -ret;
-		goto fail;
-	}
+    ret =(int) retcode;
+    if(ret < 0)
+    {
+        ret = -ret;
+        goto fail;
+    }
 
-	/*get the length*/
-	getlen = ret;
+    /*get the length*/
+    getlen = ret;
 
-	/*now to read from the memory as the  result*/
-	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Format),&resformat,sizeof(resformat),&curret);
-	if (!bret)
-	{
-		ret = LAST_ERROR_RETURN();
-		goto fail;
-	}
+    /*now to read from the memory as the  result*/
+    bret = ReadProcessMemory(hHandleProc,pCaptureBuffer,pCurCaptureBuffer,sizeof(*pCurCaptureBuffer),&curret);
+    if(!bret)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
 
-	if (curret != sizeof(resformat))
-	{
-		ret = ERROR_INVALID_OPERATION;
-		goto fail;
-	}
+    if(curret != sizeof(*pCurCaptureBuffer))
+    {
+        ret = ERROR_INVALID_OPERATION;
+        goto fail;
+    }
 
-	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Width),&reswidth,sizeof(reswidth),&curret);
-	if (!bret)
-	{
-		ret = LAST_ERROR_RETURN();
-		goto fail;
-	}
 
-	if (curret != sizeof(reswidth))
-	{
-		ret = ERROR_INVALID_OPERATION;
-		goto fail;
-	}
+    *format = pCurCaptureBuffer->m_Format;
+    *width = pCurCaptureBuffer->m_Width;
+    *height = pCurCaptureBuffer->m_Height;
 
-	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Height),&resheight,sizeof(resheight),&curret);
-	if (!bret)
-	{
-		ret = LAST_ERROR_RETURN();
-		goto fail;
-	}
 
-	if (curret != sizeof(resheight))
-	{
-		ret = ERROR_INVALID_OPERATION;
-		goto fail;
-	}
-
-	bret = 
-
-	*format = resformat;
-	*width = reswidth;
-	*height = resheight;
-	
-
-	/*all is ok ,so we should do this*/
+    /*all is ok ,so we should do this*/
     if(hThread)
     {
         CloseHandle(hThread);
@@ -1246,6 +1202,11 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
             ERROR_INFO("could not free %p size %d on %x error (%d)\n",pCaptureBuffer,capturesize,hHandleProc,GetLastError());
         }
     }
+    if(pCurCaptureBuffer)
+    {
+        free(pCurCaptureBuffer);
+    }
+    pCurCaptureBuffer = NULL;
     if(hHandleProc)
     {
         CloseHandle(hHandleProc);
@@ -1268,6 +1229,11 @@ fail:
             ERROR_INFO("could not free %p size %d on %x error (%d)\n",pCaptureBuffer,capturesize,hHandleProc,GetLastError());
         }
     }
+    if(pCurCaptureBuffer)
+    {
+        free(pCurCaptureBuffer);
+    }
+    pCurCaptureBuffer = NULL;
     if(hHandleProc)
     {
         CloseHandle(hHandleProc);

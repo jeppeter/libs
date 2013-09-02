@@ -318,7 +318,7 @@ void CDIDialogDlg::OnLoad()
             AfxMessageBox(TEXT("Ctrl Alt Win Must specify one"));
             goto out;
         }
-        
+
         if(charsel == CB_ERR || charsel < 0 || charsel >= 26)
         {
             AfxMessageBox(TEXT("Must Select one char"));
@@ -512,11 +512,179 @@ out:
     return -ret;
 }
 
+int CDIDialogDlg::SnapShot()
+{
+    /*now to get top window*/
+    char *pDllName=NULL,*pFullDllName=NULL,*pBmpFile=NULL;
+    int fulldllnamesize=0,execnamesize=0,bmpfilesize=0,paramsize=0;
+    unsigned int processid;
+    int ret=-1;
+    CString errstr;
+    CString strFormatBmp;
+    HWND hProc=NULL;
+    int getlen=0,writelen = 0;
+    HANDLE hFile=NULL;
+    VOID* pData=NULL;
+    int datalen = 0x800000;
+    int format,width,height;
+    int getlen=0;
+    DWORD curret;
+    BOOL bret;
+    processid = m_CallProcessId;
+    DEBUG_INFO("\n");
+
+    strFormatBmp.Format(TEXT("%s.%d.bmp"),(const WCHAR*)m_strBmp,m_BmpId);
+    m_BmpId ++;
+
+#ifdef _UNICODE
+    DEBUG_INFO("\n");
+    ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)m_strDll),&pFullDllName,&fulldllnamesize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+
+    ret = UnicodeToAnsi((wchar_t*)((const WCHAR*)strFormatBmp),&pBmpFile,&bmpfilesize);
+    if(ret < 0)
+    {
+        goto out;
+    }
+    DEBUG_INFO("pBmpFile %s (%S)\n",pBmpFile,(const WCHAR*)m_strBmp);
+
+
+#else
+    pFullDllName = (const char*) m_strDll;
+    pBmpFile = (const char*) m_strBmp;
+
+#endif
+    DEBUG_INFO("\n");
+    pDllName = strrchr(pFullDllName,'\\');
+    if(pDllName)
+    {
+        pDllName += 1;
+    }
+    else
+    {
+        pDllName = pFullDllName;
+    }
+    DEBUG_INFO("\n");
+
+    pData = malloc(datalen);
+    if(pData == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        ret = -ret;
+        ERROR_INFO("could not open datalen %d\n",datalen);
+        goto out;
+    }
+
+#ifdef _UNICODE
+    hFile = CreateFile((wchar_t*)((const WCHAR*)strFormatBmp),GENERIC_WRITE | GENERIC_READ , FILE_SHARE_READ ,NULL,
+                       OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+#else
+    hFile = CreateFile(pBmpFile,GENERIC_WRITE | GENERIC_READ , FILE_SHARE_READ ,NULL,
+                       OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+#endif
+    if(hFile == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        ret = -ret;
+        ERROR_INFO("could not open %s file for write (%d)\n",pBmpFile,-ret);
+        goto out;
+    }
+
+    hProc = OpenProcess(PROCESS_VM_OPERATION,FALSE,processid);
+    if(hProc==NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        ret = -ret;
+        ERROR_INFO("could not open process (%d) (%d)\n",processid,-ret);
+        goto out;
+    }
+
+
+
+    while(1)
+    {
+        ret = D3DHook_CaptureImageBuffer(hProc,pDllName,pData,datalen,&format,&width,&height);
+        if(ret < 0)
+        {
+            goto out;
+        }
+
+        if(ret >= 0)
+        {
+            getlen = ret;
+            break;
+        }
+
+        if(datalen >= 0x8000000)
+        {
+            ret = LAST_ERROR_RETURN();
+            ret = -ret;
+            goto out;
+        }
+        if(pData)
+        {
+            free(pData);
+        }
+        pData = NULL;
+        datalen <<= 1;
+        pData = malloc(datalen);
+        if(pData == NULL)
+        {
+            ret = LAST_ERROR_RETURN();
+            ret = -ret;
+            goto out;
+        }
+    }
+
+    writelen = 0;
+    while(writelen < getlen)
+    {
+        bret = WriteFile(hFile,(LPCVOID)((ptr_t)pData+writelen),(getlen-writelen),&curret,NULL);
+        if(!bret)
+        {
+            ret = LAST_ERROR_RETURN();
+            ret = -ret;
+            goto out;
+        }
+
+        writelen += curret;
+    }
+
+    ret = 0;
+
+
+out:
+#ifdef _UNICODE
+    UnicodeToAnsi(NULL,&pFullDllName,&fulldllnamesize);
+    UnicodeToAnsi(NULL,&pBmpFile,&bmpfilesize);
+#endif
+    if(hProc)
+    {
+        CloseHandle(hProc);
+    }
+    hProc = NULL;
+    if(hFile)
+    {
+        CloseHandle(hFile);
+    }
+    hFile = NULL;
+    if(pData)
+    {
+        free(pData);
+    }
+    pData = NULL;
+    datalen = 0;
+    return -ret;
+}
+
 LRESULT CDIDialogDlg::OnHotKey(WPARAM wParam, LPARAM lParam)
 {
     if(wParam == CAPTURE_HOTKEY_ID)
     {
-        SnapShort();
+        SnapShot();
     }
     return 0;
 }
@@ -526,7 +694,7 @@ void CDIDialogDlg::OnTimer(UINT nEvent)
     DEBUG_INFO("Timer++++++++++\n");
     if(nEvent == SNAPSHOT_TIME_ID)
     {
-        SnapShort();
+        SnapShot();
     }
 
     CDialogEx::OnTimer(nEvent);

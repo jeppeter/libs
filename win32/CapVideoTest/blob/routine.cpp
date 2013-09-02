@@ -2241,6 +2241,8 @@ AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
 }
 
 
+typedef unsigned long ptr_t;
+
 int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRemoteAddr,int RemoteSize,unsigned int* pFormat,unsigned int *pWidth,unsigned int* pHeight)
 {
     int ret=1;
@@ -2252,6 +2254,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
     DWORD curret;
     int lockedrect=0;
     int totalbytes=0;
+    int writelen=0;
     DEBUG_INFO("\n");
     __try
     {
@@ -2259,7 +2262,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         hr = pDevice->Present(NULL,NULL,NULL,NULL);
         if(FAILED(hr))
         {
-            ret = GetLastError() ? GetLastError() : 1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("not preset (0x%08x)\n",hr);
             goto fail;
         }
@@ -2268,7 +2271,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
         if(FAILED(hr))
         {
-            ret = GetLastError() ? GetLastError():1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("could not get backbuffer(0x%08x) (%d)\n",hr,ret);
             goto fail;
         }
@@ -2281,7 +2284,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         }
         else
         {
-            ret = GetLastError() ? GetLastError() : 1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
             goto fail;
         }
@@ -2292,7 +2295,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
                 D3DPOOL_SYSTEMMEM, &pSurface, NULL);
         if(FAILED(hr))
         {
-            ret = GetLastError() ? GetLastError():1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
             goto fail;
         }
@@ -2301,7 +2304,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         hr = pSurface->GetDesc(&desc);
         if(FAILED(hr))
         {
-            ret = GetLastError() ? GetLastError() : 1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("pSurface->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
             goto fail;
         }
@@ -2313,7 +2316,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
         if(FAILED(hr))
         {
-            ret = GetLastError() ? GetLastError():1;
+            ret = LAST_ERROR_RETURN();
             DEBUG_INFO("could not get render target data (0x%08x)  (%d)\n",hr,ret);
             goto fail;
         }
@@ -2341,13 +2344,18 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         }
 
 
-        bret = WriteProcessMemory(hRemoteHandle,pRemoteAddr,totalbytes,LockRect.pBits,&curret);
-        if(!bret)
+		writelen = 0;
+        while(writelen < totalbytes)
         {
-            ret = LAST_ERROR_RETURN();
-            ERROR_INFO("could not write (%d process address 0x%p with size %d) error(%d)\n",hRemoteHandle,
-                       pRemoteAddr,totalbytes,ret);
-            goto fail;
+            bret = WriteProcessMemory(hRemoteHandle,(LPVOID)((ptr_t)pRemoteAddr + writelen),totalbytes-writelen,(LPCVOID)(((ptr_t)LockRect.pBits)+writelen),&curret);
+            if(!bret)
+            {
+                ret = LAST_ERROR_RETURN();
+                ERROR_INFO("could not write (%d process address 0x%p with size %d) error(%d)\n",hRemoteHandle,
+                           pRemoteAddr,totalbytes,ret);
+                goto fail;
+            }
+			writelen += curret;
         }
 
         hr = pSurface->UnlockRect();
@@ -2361,9 +2369,9 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         lockedrect = 0;
 
         /*now to set format we will */
-		*pFormat =(unsigned int)__TransD3DFORMAT(desc.Format);
-		*pWidth = desc.Width;
-		*pHeight = desc.Height;
+        *pFormat =(unsigned int)__TransD3DFORMAT(desc.Format);
+        *pWidth = desc.Width;
+        *pHeight = desc.Height;
 
     }
     __except(EXCEPTION_EXECUTE_HANDLER)
@@ -2417,68 +2425,71 @@ fail:
 
 int CaptureBufferDX9(capture_buffer_t* pCapture)
 {
-	IDirect3DDevice9* pDevice=NULL;
-	int idx=0;
-	int ret;
-	HANDLE hRemoteProc=NULL;
-	int getlen;
+    IDirect3DDevice9* pDevice=NULL;
+    int idx=0;
+    int ret;
+    HANDLE hRemoteProc=NULL;
+    int getlen;
 
-	hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE ,FALSE,pCapture->m_Processid);
-	if (hRemoteProc == NULL)
-	{
-		ret = LAST_ERROR_RETURN();
-		goto fail;
-	}
+    hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE ,FALSE,pCapture->m_Processid);
+    if(hRemoteProc == NULL)
+    {
+        ret = LAST_ERROR_RETURN();
+        goto fail;
+    }
 
-	while(1)
-	{
-		pDevice = GrapPointer(idx);
-		if (pDevice == NULL)
-		{
-			ret = ERROR_DEVICE_ENUMERATION_ERROR;
-			goto fail;
-		}
+    while(1)
+    {
+        pDevice = GrapPointer(idx);
+        if(pDevice == NULL)
+        {
+            ret = ERROR_DEVICE_ENUMERATION_ERROR;
+            goto fail;
+        }
 
-		ret = __CaptureBufferDX9(pDevice,hRemoteProc,pCapture->m_Data,pCapture->m_DataLen,&(pCapture->m_Format),&(pCapture->m_Width),&(pCapture->m_Height));
-		if (ret >= 0)
-		{
-			break;
-		}
+        ret = __CaptureBufferDX9(pDevice,hRemoteProc,pCapture->m_Data,pCapture->m_DataLen,&(pCapture->m_Format),&(pCapture->m_Width),&(pCapture->m_Height));
+        if(ret >= 0)
+        {
+            break;
+        }
 
-		FreePointer (pDevice);
-		pDevice = NULL;
-		idx ++;
-		
-	}
+        FreePointer(pDevice);
+        pDevice = NULL;
+        idx ++;
 
-	getlen = ret;
-	if (pDevice)
-	{
-		FreePointer(pDevice);
-	}
-	pDevice=NULL;
-	if (hRemoteProc)
-	{
-		CloseHandle(hRemoteProc);
-	}
-	hRemoteProc = NULL;
-	return getlen;
+    }
+
+    getlen = ret;
+    if(pDevice)
+    {
+        FreePointer(pDevice);
+    }
+    pDevice=NULL;
+    if(hRemoteProc)
+    {
+        CloseHandle(hRemoteProc);
+    }
+    hRemoteProc = NULL;
+    return getlen;
 fail:
-	assert(ret > 0);
-	if (pDevice)
-	{
-		FreePointer(pDevice);
-	}
-	pDevice=NULL;
-	if (hRemoteProc)
-	{
-		CloseHandle(hRemoteProc);
-	}
-	hRemoteProc = NULL;
-	SetLastError(ret);
+    assert(ret > 0);
+    if(pDevice)
+    {
+        FreePointer(pDevice);
+    }
+    pDevice=NULL;
+    if(hRemoteProc)
+    {
+        CloseHandle(hRemoteProc);
+    }
+    hRemoteProc = NULL;
+    SetLastError(ret);
     return -ret;
 }
 
+EXTERN_C __declspec(dllexport) void* CaptureBuffer(capture_buffer_t *pCapture);
+
+extern "C" int CaptureBufferDX11(capture_buffer_t* pCapture);
 void* CaptureBuffer(capture_buffer_t *pCapture)
 {
     int ret;

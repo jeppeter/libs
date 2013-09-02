@@ -26,6 +26,7 @@ public:
 
 private:
 	int SnapShort();
+	int SnapShot();
 private:
 	DWORD m_CallProcessId;
 	int m_BmpId;
