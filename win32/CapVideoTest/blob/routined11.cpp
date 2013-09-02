@@ -4506,169 +4506,253 @@ AVPixelFormat __TransDXGI_FORMAT(DXGI_FORMAT format)
         avformat = AV_PIX_FMT_RGBA;
         break;
     case DXGI_FORMAT_R16G16_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16G16_FLOAT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16G16_UNORM:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16G16_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16G16_SNORM:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16G16_SINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_D32_FLOAT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32_FLOAT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32_SINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R24G8_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_D24_UNORM_S8_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R8G8_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R8G8_UNORM:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R8G8_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R8G8_SNORM:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R8G8_SINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R16_FLOAT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_D16_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R16_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R16_UINT:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R16_SNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R16_SINT:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8_UINT:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8_SNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8_SINT:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_A8_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R1_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_R8G8_B8G8_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_G8R8_G8B8_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC1_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC1_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC2_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC2_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC3_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC3_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC4_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC4_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC4_SNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC5_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC5_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_BC5_SNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case  DXGI_FORMAT_B5G6R5_UNORM:
+        avformat = AV_PIX_FMT_BGR565LE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_B5G5R5A1_UNORM:
+        avformat = AV_PIX_FMT_BGR555LE;
         break;
-    case :
-        avformat = ;
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+        avformat = AV_PIX_FMT_BGRA;
+        break;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+        avformat = AV_PIX_FMT_BGR0;
+        break;
+    case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        avformat = AV_PIX_FMT_BGRA;
+        break;
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        avformat = AV_PIX_FMT_BGRA;
+        break;
+    case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+        avformat = AV_PIX_FMT_BGR0;
+        break;
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        avformat = AV_PIX_FMT_BGR0;
+        break;
+    case DXGI_FORMAT_BC6H_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_BC6H_UF16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_BC6H_SF16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_BC7_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_BC7_UNORM:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_AYUV:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_Y410:
+        avformat = PIX_FMT_YUV410P;
+        break;
+    case DXGI_FORMAT_Y416:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_NV12:
+        avformat = PIX_FMT_NV12;
+        break;
+    case DXGI_FORMAT_P010:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_P016:
+        avformat = AV_PIX_FMT_GRAY16LE;
+        break;
+    case DXGI_FORMAT_420_OPAQUE:
+        avformat = AV_PIX_FMT_YUV420P;
+        break;
+    case DXGI_FORMAT_YUY2:
+        avformat = AV_PIX_FMT_YUYV422;
+        break;
+    case DXGI_FORMAT_Y210:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_Y216:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_NV11:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_AI44:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_IA44:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_P8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_A8P8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+        avformat = AV_PIX_FMT_NONE;
         break;
     default:
         avformat = AV_PIX_FMT_NONE;
