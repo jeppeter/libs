@@ -2031,6 +2031,117 @@ int Cleanup()
     return 0;
 }
 
+AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
+{
+    AVPixelFormat avformat;
+    switch(format)
+    {
+    case D3DFMT_UNKNOWN:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_R8G8B8:
+        avformat = AV_PIX_FMT_RGB24;
+        break;
+    case D3DFMT_A8R8G8B8:
+        avformat = AV_PIX_FMT_ARGB;
+        break;
+    case D3DFMT_X8R8G8B8:
+        avformat = PIX_FMT_0RGB;
+        break;
+    case D3DFMT_R5G6B5:
+        avformat = AV_PIX_FMT_RGB565LE;
+        break;
+    case D3DFMT_X1R5G5B5:
+        avformat = AV_PIX_FMT_RGB555LE;
+        break;
+    case D3DFMT_A1R5G5B5:
+        avformat = AV_PIX_FMT_BGR555LE;
+        break;
+    case D3DFMT_A4R4G4B4:
+        avformat = AV_PIX_FMT_RGB444LE;
+        break;
+    case D3DFMT_R3G3B2:
+        avformat = PIX_FMT_BGR8;
+        break;
+    case D3DFMT_A8:
+        avformat = AV_PIX_FMT_GRAY8A;
+        break;
+    case D3DFMT_A8R3G3B2:
+		/*can not find the correct one*/
+        avformat =  AV_PIX_FMT_BGR8;
+        break;
+    case D3DFMT_X4R4G4B4:
+        avformat = AV_PIX_FMT_RGB444LE;
+        break;
+    case D3DFMT_A2B10G10R10:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A8B8G8R8:
+        avformat = AV_PIX_FMT_ABGR;
+        break;
+    case D3DFMT_X8B8G8R8:
+        avformat =AV_PIX_FMT_0BGR ;
+        break;
+    case D3DFMT_G16R16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A2R10G10B10 :
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A16B16G16R16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A8P8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_P8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_L8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A8L8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A4L4:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_V8U8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_L6V5U5:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_X8L8V8U8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_Q8W8V8U8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_V16U16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A2W10V10U10:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_UYVY:
+        avformat = AV_PIX_FMT_UYVY422;
+        break;
+    case D3DFMT_R8G8_B8G8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case :
+        avformat = ;
+        break;
+    default:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    }
+
+    return avformat;
+}
+
+
 int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRemoteAddr,int RemoteSize,unsigned int* pFormat,unsigned int *pWidth,unsigned int* pHeight)
 {
     int ret=1;
@@ -2038,6 +2149,10 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
     LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
     BOOL bret;
     D3DSURFACE_DESC desc;
+    D3DLOCKED_RECT LockRect;
+    DWORD curret;
+    int lockedrect=0;
+    int totalbytes=0;
     DEBUG_INFO("\n");
     __try
     {
@@ -2105,7 +2220,48 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         }
         DEBUG_INFO("\n");
 
-		
+        /*now to lock rect for it will give the for copy memory*/
+        hr = pSurface->LockRect(&LockRect,NULL, D3DLOCK_NO_DIRTY_UPDATE|D3DLOCK_NOSYSLOCK|D3DLOCK_READONLY);
+        if(FAILED(hr))
+        {
+            ret = LAST_ERROR_RETURN();
+            DEBUG_INFO("could not lock rect (0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+
+        lockedrect= 1;
+
+        /*now to copy memory*/
+        totalbytes = desc.Width * desc.Heigth * BITSPERPIXEL / 8;
+        if(RemoteSize < totalbytes)
+        {
+            ret = ERROR_INSUFFICIENT_BUFFER;
+            DEBUG_INFO("buffer size %d < needsize  (%d)\n",RemoteSize,
+                       totalbytes);
+            goto fail;
+        }
+
+
+        bret = WriteProcessMemory(hRemoteHandle,pRemoteAddr,totalbytes,LockRect.pBits,&curret);
+        if(!bret)
+        {
+            ret = LAST_ERROR_RETURN();
+            ERROR_INFO("could not write (%d process address 0x%p with size %d) error(%d)\n",hRemoteHandle,
+                       pRemoteAddr,totalbytes,ret);
+            goto fail;
+        }
+
+        hr = pSurface->UnlockRect();
+        if(FAILED(hr))
+        {
+            ret = LAST_ERROR_RETURN();
+            ERROR_INFO("could not unlockrect (0x%08lx)(%d)\n",hr,ret);
+            goto fail;
+        }
+        /*now to unlock*/
+        lockedrect = 0;
+
+        /*now to set format we will */
 
     }
     __except(EXCEPTION_EXECUTE_HANDLER)
@@ -2115,6 +2271,12 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         goto fail;
     }
     DEBUG_INFO("\n");
+    if(lockedrect)
+    {
+        assert(pSurface);
+        pSurface->UnlockRect();
+    }
+    lockedrect = 0;
     if(pSurface)
     {
         pSurface->Release();
@@ -2129,6 +2291,13 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
     return 0;
 fail:
     assert(ret > 0);
+
+    if(lockedrect)
+    {
+        assert(pSurface);
+        pSurface->UnlockRect();
+    }
+    lockedrect = 0;
     if(pSurface)
     {
         pSurface->Release();
