@@ -4487,88 +4487,88 @@ AVPixelFormat __TransDXGI_FORMAT(DXGI_FORMAT format)
     case DXGI_FORMAT_R11G11B10_FLOAT:
         avformat = AV_PIX_FMT_NONE;
         break;
-    case :
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+        avformat = AV_PIX_FMT_RGBA;
+        break;
+    case DXGI_FORMAT_R16G16_TYPELESS:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16G16_FLOAT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16G16_UNORM:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16G16_UINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16G16_SNORM:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16G16_SINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R32_TYPELESS:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_D32_FLOAT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R32_FLOAT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R32_UINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R32_SINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R24G8_TYPELESS:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R8G8_TYPELESS:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R8G8_UNORM:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R8G8_UINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R8G8_SNORM:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R8G8_SINT:
         avformat = ;
         break;
-    case :
+    case DXGI_FORMAT_R16_TYPELESS:
         avformat = ;
         break;
-    case :
-        avformat = ;
-        break;
-    case :
-        avformat = ;
-        break;
-    case :
-        avformat = ;
-        break;
-    case :
-        avformat = ;
-        break;
-    case :
-        avformat = ;
-        break;
-    case :
-        avformat = ;
-        break;
-    case :
+    case DXGI_FORMAT_R16_FLOAT:
         avformat = ;
         break;
     case :
