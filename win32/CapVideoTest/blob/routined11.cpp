@@ -4766,10 +4766,10 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
         ERROR_INFO("can not map staging buffer 0x%08lx (%d)\n",hr,ret);
         goto fail;
     }
-    DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
     mapped = 1;
 
     rgbabuflen = (StagingDesc.Width << 2) * StagingDesc.Height;
+	DEBUG_INFO("rgbabuflen 0x%x remotelen 0x%x\n",rgbabuflen,remotelen);
 
     if(rgbabuflen > remotelen)
     {
@@ -4786,10 +4786,13 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
         if(!bret)
         {
             ret = LAST_ERROR_RETURN();
+			ERROR_INFO("remote hRemoteProc (0x%08x ) addr 0x%p size(0x%x) error %d\n",
+				hRemoteProc,(LPVOID)((unsigned long)pRemoteAddr + writelen),(rgbabuflen-writelen),ret);
             goto fail;
         }
         writelen += curret;
     }
+	DEBUG_INFO("rgbabuflen %d\n",rgbabuflen);
 
 
     /*unmap as quickly as we can*/
@@ -4858,7 +4861,7 @@ int CaptureBufferDX11(capture_buffer_t* pCapture)
 	HANDLE hRemoteProc=NULL;
 	int getlen=0;
 
-	hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE ,FALSE,pCapture->m_Processid);
+	hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION ,FALSE,pCapture->m_Processid);
 	if (hRemoteProc == NULL)
 	{
 		ret = LAST_ERROR_RETURN();

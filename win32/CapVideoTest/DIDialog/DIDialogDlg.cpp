@@ -578,6 +578,7 @@ int CDIDialogDlg::SnapShot()
         ERROR_INFO("could not open datalen %d\n",datalen);
         goto out;
     }
+	DEBUG_INFO("\n");
 
 #ifdef _UNICODE
     hFile = CreateFile((wchar_t*)((const WCHAR*)strFormatBmp),GENERIC_WRITE | GENERIC_READ , FILE_SHARE_READ ,NULL,
@@ -593,8 +594,9 @@ int CDIDialogDlg::SnapShot()
         ERROR_INFO("could not open %s file for write (%d)\n",pBmpFile,-ret);
         goto out;
     }
+	DEBUG_INFO("\n");
 
-    hProc = OpenProcess(PROCESS_VM_OPERATION,FALSE,processid);
+    hProc = OpenProcess(PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION,FALSE,processid);
     if(hProc==NULL)
     {
         ret = LAST_ERROR_RETURN();
@@ -603,13 +605,15 @@ int CDIDialogDlg::SnapShot()
         goto out;
     }
 
+	DEBUG_INFO("open process(%d) hProc 0x%08lx\n",processid,hProc);
 
 
     while(1)
     {
         ret = D3DHook_CaptureImageBuffer(hProc,pDllName,pData,datalen,&format,&width,&height);
         if(ret < 0)
-        {
+        {        	
+			DEBUG_INFO("\n");
             goto out;
         }
 

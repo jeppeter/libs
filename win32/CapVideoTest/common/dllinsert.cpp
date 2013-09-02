@@ -1021,6 +1021,8 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     int timeout=3;
     DWORD retcode=(DWORD)-1;
 
+	
+	DEBUG_INFO("\n");
     pDllStripName = strrchr(strDllName,'\\');
     if(pDllStripName == NULL)
     {
@@ -1030,14 +1032,17 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     {
         pDllStripName ++;
     }
+	DEBUG_INFO("\n");
 
     processid = GetProcessId(hProc);
+	DEBUG_INFO("get hProc 0x%08lx processid (%d)\n",hProc,processid);
 
 
     hHandleProc = OpenProcess(PROCESS_VM_OPERATION |PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD ,FALSE,processid);
     if(hHandleProc == NULL)
     {
         ret = GetLastError() ? GetLastError() : 1;
+		DEBUG_INFO("OpenProcess (%d) error (%d)\n",processid,ret);
         goto fail;
     }
 
@@ -1045,6 +1050,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(pCaptureBuffer == NULL)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1052,9 +1058,11 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(pCurCaptureBuffer == NULL)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
+	DEBUG_INFO("current 0x%08lx data 0x%p len(0x%08x)\n",GetCurrentProcess(),data,len);
     pCurCaptureBuffer->m_Data = data;
     pCurCaptureBuffer->m_DataLen = len;
     pCurCaptureBuffer->m_Processid = GetCurrentProcessId();
@@ -1064,12 +1072,14 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(!bret)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
     if(curret != sizeof(*pCaptureBuffer))
     {
         ret = ERROR_INVALID_PARAMETER;
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1078,6 +1088,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(ret < 0)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1085,6 +1096,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(hThread == NULL)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1122,6 +1134,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         else
         {
             ret = LAST_ERROR_RETURN();
+			DEBUG_INFO("\n");
             goto fail;
         }
         ctime= GetTickCount();
@@ -1130,6 +1143,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(__TimeExpire(ctime, etime))
     {
         ret = WAIT_TIMEOUT;
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1137,6 +1151,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(ret < 0)
     {
         ret = -ret;
+		DEBUG_INFO("\n");
         goto fail;
     }
 
@@ -1148,12 +1163,14 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     if(!bret)
     {
         ret = LAST_ERROR_RETURN();
+		DEBUG_INFO("\n");
         goto fail;
     }
 
     if(curret != sizeof(*pCurCaptureBuffer))
     {
         ret = ERROR_INVALID_OPERATION;
+		DEBUG_INFO("\n");
         goto fail;
     }
 

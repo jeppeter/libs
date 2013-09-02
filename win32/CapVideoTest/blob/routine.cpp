@@ -2258,14 +2258,6 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
     __try
     {
         DEBUG_INFO("\n");
-        hr = pDevice->Present(NULL,NULL,NULL,NULL);
-        if(FAILED(hr))
-        {
-            ret = LAST_ERROR_RETURN();
-            DEBUG_INFO("not preset (0x%08x)\n",hr);
-            goto fail;
-        }
-        DEBUG_INFO("\n");
 
         hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
         if(FAILED(hr))
@@ -2430,10 +2422,11 @@ int CaptureBufferDX9(capture_buffer_t* pCapture)
     HANDLE hRemoteProc=NULL;
     int getlen;
 
-    hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE ,FALSE,pCapture->m_Processid);
+    hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION ,FALSE,pCapture->m_Processid);
     if(hRemoteProc == NULL)
     {
         ret = LAST_ERROR_RETURN();
+		ERROR_INFO("\n");
         goto fail;
     }
 
@@ -2443,6 +2436,7 @@ int CaptureBufferDX9(capture_buffer_t* pCapture)
         if(pDevice == NULL)
         {
             ret = ERROR_DEVICE_ENUMERATION_ERROR;
+			ERROR_INFO("\n");
             goto fail;
         }
 
