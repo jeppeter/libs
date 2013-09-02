@@ -1045,6 +1045,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     DWORD dret;
     int timeout=3;
     DWORD retcode=(DWORD)-1;
+	unsigned int resformat,reswidth,resheight;
     pDllStripName = strrchr(strDllName);
     if(pDllStripName == NULL)
     {
@@ -1183,6 +1184,51 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
 
 	/*get the length*/
 	getlen = ret;
+
+	/*now to read from the memory as the  result*/
+	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Format),&resformat,sizeof(resformat),&curret);
+	if (!bret)
+	{
+		ret = LAST_ERROR_RETURN();
+		goto fail;
+	}
+
+	if (curret != sizeof(resformat))
+	{
+		ret = ERROR_INVALID_OPERATION;
+		goto fail;
+	}
+
+	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Width),&reswidth,sizeof(reswidth),&curret);
+	if (!bret)
+	{
+		ret = LAST_ERROR_RETURN();
+		goto fail;
+	}
+
+	if (curret != sizeof(reswidth))
+	{
+		ret = ERROR_INVALID_OPERATION;
+		goto fail;
+	}
+
+	bret = ReadProcessMemory(hHandleProc,REMOTE_OFFSET_OF(pCaptureBuffer,capture_buffer_t,m_Height),&resheight,sizeof(resheight),&curret);
+	if (!bret)
+	{
+		ret = LAST_ERROR_RETURN();
+		goto fail;
+	}
+
+	if (curret != sizeof(resheight))
+	{
+		ret = ERROR_INVALID_OPERATION;
+		goto fail;
+	}
+
+	*format = resformat;
+	*width = reswidth;
+	*height = resheight;
+	
 
 	/*all is ok ,so we should do this*/
     if(hThread)

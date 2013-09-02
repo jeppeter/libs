@@ -14,6 +14,8 @@ x509\routin.cpp
 #include "..\\common\\capture.h"
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
+#define LAST_ERROR_RETURN()  (GetLastError() ? GetLastError() : 1)
+
 
 extern "C" int RoutineDetourD11(void);
 extern "C" void RotineClearD11(void);
@@ -2029,24 +2031,136 @@ int Cleanup()
     return 0;
 }
 
+int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRemoteAddr,int RemoteSize,unsigned int* pFormat,unsigned int *pWidth,unsigned int* pHeight)
+{
+    int ret=1;
+    HRESULT hr;
+    LPDIRECT3DSURFACE9 pSurface = NULL,pBackBuffer=NULL;
+    BOOL bret;
+    D3DSURFACE_DESC desc;
+    DEBUG_INFO("\n");
+    __try
+    {
+        DEBUG_INFO("\n");
+        hr = pDevice->Present(NULL,NULL,NULL,NULL);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("not preset (0x%08x)\n",hr);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+
+        hr = pDevice->GetBackBuffer(0,0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get backbuffer(0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+        hr = pBackBuffer->GetDesc(&desc);
+        if(!FAILED(hr))
+        {
+            DEBUG_INFO("pBackBuffer Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
+                       desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
+        }
+        else
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("pBackBuffer->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
+            goto fail;
+        }
+
+        hr = pDevice->CreateOffscreenPlainSurface(desc.Width,
+                desc.Height,
+                desc.Format,
+                D3DPOOL_SYSTEMMEM, &pSurface, NULL);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not create surface (0x%08x) (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+
+        hr = pSurface->GetDesc(&desc);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError() : 1;
+            DEBUG_INFO("pSurface->GetDesc Failed(0x%08x)(%d)\n",hr,ret);
+            goto fail;
+        }
+
+        DEBUG_INFO("pSurface	Format 0x%08x Type 0x%08x Usage 0x%08x Pool 0x%08x SampleType 0x%08x SampleQuality 0x%08x Width %d Height %d\n",
+                   desc.Format,desc.Type,desc.Usage,desc.Pool,desc.MultiSampleType,desc.MultiSampleQuality,desc.Width,desc.Height);
+
+        SetLastError(0);
+        hr = pDevice->GetRenderTargetData(pBackBuffer,pSurface);
+        if(FAILED(hr))
+        {
+            ret = GetLastError() ? GetLastError():1;
+            DEBUG_INFO("could not get render target data (0x%08x)  (%d)\n",hr,ret);
+            goto fail;
+        }
+        DEBUG_INFO("\n");
+
+		
+
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        DEBUG_INFO("catch exception %d\n",GetExceptionCode());
+        goto fail;
+    }
+    DEBUG_INFO("\n");
+    if(pSurface)
+    {
+        pSurface->Release();
+    }
+    pSurface = NULL;
+
+    if(pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    return 0;
+fail:
+    assert(ret > 0);
+    if(pSurface)
+    {
+        pSurface->Release();
+    }
+    pSurface = NULL;
+    if(pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    SetLastError(ret);
+    return -ret;
+}
+
 
 int CaptureBufferDX9(capture_buffer_t* pCapture)
 {
-	return -1;
+    return -1;
 }
 
 void* CaptureBuffer(capture_buffer_t *pCapture)
 {
-	int ret;
+    int ret;
 
-	ret = CaptureBufferDX9(pCapture);
-	if (ret >= 0)
-	{
-		return (void*) ret;
-	}
+    ret = CaptureBufferDX9(pCapture);
+    if(ret >= 0)
+    {
+        return (void*) ret;
+    }
 
-	ret = CaptureBufferDX11(pCapture);
-	return (void*)ret;
+    ret = CaptureBufferDX11(pCapture);
+    return (void*)ret;
 }
 
 void AceCrash() {}

@@ -14,6 +14,7 @@
 #pragma comment(lib,"d3dx11.lib")
 
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
+#define LAST_ERROR_RETURN()  (GetLastError() ? GetLastError() : 1)
 
 
 extern "C" int RoutineDetourD11(void);
@@ -4396,6 +4397,10 @@ fail:
         ReleaseD11Context(pSwapChain,pDevice,pDeviceContext);
     }
     return ret;
+}
+
+int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXGISwapChain* pSwapChain,HANDLE hRemoteProc,void* pRemoteAddr,int remotelen,unsigned int *pFormat,unsigned int* pWidth,unsigned int* pHeight)
+{
 }
 
 
