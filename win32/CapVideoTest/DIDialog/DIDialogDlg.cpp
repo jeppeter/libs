@@ -18,6 +18,8 @@
 // CDIDialogDlg dialog
 
 
+#define LAST_ERROR_RETURN()  (GetLastError() ? GetLastError() : 1)
+typedef unsigned long ptr_t;
 
 
 CDIDialogDlg::CDIDialogDlg(CWnd* pParent /*=NULL*/)
@@ -521,13 +523,12 @@ int CDIDialogDlg::SnapShot()
     int ret=-1;
     CString errstr;
     CString strFormatBmp;
-    HWND hProc=NULL;
+    HANDLE hProc=NULL;
     int getlen=0,writelen = 0;
     HANDLE hFile=NULL;
-    VOID* pData=NULL;
+    char* pData=NULL;
     int datalen = 0x800000;
     int format,width,height;
-    int getlen=0;
     DWORD curret;
     BOOL bret;
     processid = m_CallProcessId;
@@ -569,7 +570,7 @@ int CDIDialogDlg::SnapShot()
     }
     DEBUG_INFO("\n");
 
-    pData = malloc(datalen);
+    pData = (char*)malloc(datalen);
     if(pData == NULL)
     {
         ret = LAST_ERROR_RETURN();
@@ -630,7 +631,7 @@ int CDIDialogDlg::SnapShot()
         }
         pData = NULL;
         datalen <<= 1;
-        pData = malloc(datalen);
+        pData = (char*)malloc(datalen);
         if(pData == NULL)
         {
             ret = LAST_ERROR_RETURN();

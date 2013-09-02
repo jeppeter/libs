@@ -2241,7 +2241,6 @@ AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
 }
 
 
-typedef unsigned long ptr_t;
 
 int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRemoteAddr,int RemoteSize,unsigned int* pFormat,unsigned int *pWidth,unsigned int* pHeight)
 {
@@ -2334,7 +2333,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         lockedrect= 1;
 
         /*now to copy memory*/
-        totalbytes = desc.Width * desc.Heigth * BITSPERPIXEL / 8;
+        totalbytes = desc.Width * desc.Height * 32 / 8;
         if(RemoteSize < totalbytes)
         {
             ret = ERROR_INSUFFICIENT_BUFFER;
@@ -2347,7 +2346,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
 		writelen = 0;
         while(writelen < totalbytes)
         {
-            bret = WriteProcessMemory(hRemoteHandle,(LPVOID)((ptr_t)pRemoteAddr + writelen),totalbytes-writelen,(LPCVOID)(((ptr_t)LockRect.pBits)+writelen),&curret);
+            bret = WriteProcessMemory(hRemoteHandle,(LPVOID)((ptr_t)pRemoteAddr + writelen),(LPCVOID)(((ptr_t)LockRect.pBits)+writelen),totalbytes-writelen,&curret);
             if(!bret)
             {
                 ret = LAST_ERROR_RETURN();
@@ -2426,7 +2425,7 @@ fail:
 int CaptureBufferDX9(capture_buffer_t* pCapture)
 {
     IDirect3DDevice9* pDevice=NULL;
-    int idx=0;
+    unsigned int idx=0;
     int ret;
     HANDLE hRemoteProc=NULL;
     int getlen;

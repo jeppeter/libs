@@ -901,6 +901,9 @@ extern "C" int CaptureFile(DWORD processid,const char* pDllName,const char* pFun
 }
 
 
+extern "C" BOOL UpdateImports(HANDLE hProcess, LPCSTR *plpDlls, DWORD nDlls);
+
+
 
 /******************************************
 D3DHook_HookProcess :
@@ -918,18 +921,11 @@ remarks :
 int D3DHook_HookProcess(HANDLE hProc, char * strDllName)
 {
     int ret=-1;
-    DWORD processid;
     char* pPartDllName=NULL;
     BOOL bret;
-#ifdef _UNICODE
-    LPWSTR pDllFullName=NULL,pDllStripName=NULL;
-    int fullsize=0,stripsize=0;
-    LPWSTR dllNames[2];
-
-#else
     char *pDllFullName=NULL,*pDllStripName=NULL;
     char* dllNames[2];
-#endif
+
 
     pPartDllName = strrchr(strDllName,'\\');
     if(pPartDllName == NULL)
@@ -942,38 +938,23 @@ int D3DHook_HookProcess(HANDLE hProc, char * strDllName)
         pPartDllName ++;
     }
 
-#ifdef _UNICODE
-    ret = AnsiToUnicode(strDllName,&pDllFullName,&fullsize);
-    if(ret < 0)
-    {
-        ret = -ret;
-        goto out;
-    }
-    ret = AnsiToUnicode(pPartDllName,&pDllStripName,&stripsize);
-    if(ret < 0)
-    {
-        ret = -ret;
-        goto out;
-    }
-#else
-    pDllFullName = strdup(strDllName);
+    pDllFullName = _strdup(strDllName);
     if(pDllFullName == NULL)
     {
         ret = GetLastError();
         goto out;
     }
 
-    pDllStripName = strdup(pPartDllName);
+    pDllStripName = _strdup(pPartDllName);
     if(pDllStripName == NULL)
     {
         ret = GetLastError();
         goto out;
     }
-#endif
     dllNames[0] = pDllFullName;
     dllNames[1] = pDllStripName;
 
-    bret = UpdateImports(hProc,dllNames,2);
+    bret = UpdateImports(hProc,(LPCSTR*)dllNames,2);
     if(!bret)
     {
         ret = GetLastError();
@@ -983,10 +964,6 @@ int D3DHook_HookProcess(HANDLE hProc, char * strDllName)
     /*all is ok*/
     ret = 0;
 out:
-#ifdef _UNICODE
-    AnsiToUnicode(NULL,&pDllFullName,&fullsize);
-    AnsiToUnicode(NULL,&pDllStripName,&stripsize);
-#else
     if(pDllFullName)
     {
         free(pDllFullName);
@@ -997,7 +974,6 @@ out:
         free(pDllStripName);
     }
     pDllStripName = NULL;
-#endif
     SetLastError(ret);
     return -ret;
 }
@@ -1035,7 +1011,6 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     HANDLE hHandleProc=NULL;
     unsigned int processid=0;
     BOOL bret;
-    DWORD curprocessid;
     SIZE_T curret;
     void* pFnAddr=NULL;
     int getlen=0;
@@ -1046,7 +1021,7 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
     int timeout=3;
     DWORD retcode=(DWORD)-1;
 
-    pDllStripName = strrchr(strDllName);
+    pDllStripName = strrchr(strDllName,'\\');
     if(pDllStripName == NULL)
     {
         pDllStripName = strDllName;
@@ -1066,14 +1041,14 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
         goto fail;
     }
 
-    pCaptureBuffer = VirtualAllocEx(hHandleProc,NULL,capturesize,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+    pCaptureBuffer = (capture_buffer_t*)VirtualAllocEx(hHandleProc,NULL,capturesize,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
     if(pCaptureBuffer == NULL)
     {
         ret = LAST_ERROR_RETURN();
         goto fail;
     }
 
-    pCurCaptureBuffer = calloc(sizeof(*pCurCaptureBuffer),1);
+    pCurCaptureBuffer =(capture_buffer_t*) calloc(sizeof(*pCurCaptureBuffer),1);
     if(pCurCaptureBuffer == NULL)
     {
         ret = LAST_ERROR_RETURN();

@@ -8,6 +8,7 @@
 #include "..\\common\\uniansi.h"
 #include <D3DX11tex.h >
 #include "..\\common\\StackWalker.h"
+#include "..\\common\\capture.h"
 
 #pragma comment(lib,"d3d11.lib")
 #pragma comment(lib,"dxgi.lib")
@@ -4242,7 +4243,7 @@ int __CaptureFullScreenFileD11(ID3D11Device *pDevice,ID3D11DeviceContext* pConte
     if(StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
     {
         /*to change the buffer */
-        for(i = 0,pCurRGBABuffer=pRGBABuffer; i < rgbabuflen; i+=4,pCurRGBABuffer += 4)
+        for(i = 0,pCurRGBABuffer=pRGBABuffer; i <(unsigned int) rgbabuflen; i+=4,pCurRGBABuffer += 4)
         {
             ch = *pCurRGBABuffer;
             pCurRGBABuffer[0] = pCurRGBABuffer[2];
@@ -4706,54 +4707,6 @@ AVPixelFormat __TransDXGI_FORMAT(DXGI_FORMAT format)
     case DXGI_FORMAT_BC7_UNORM_SRGB:
         avformat = AV_PIX_FMT_NONE;
         break;
-    case DXGI_FORMAT_AYUV:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_Y410:
-        avformat = PIX_FMT_YUV410P;
-        break;
-    case DXGI_FORMAT_Y416:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_NV12:
-        avformat = PIX_FMT_NV12;
-        break;
-    case DXGI_FORMAT_P010:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_P016:
-        avformat = AV_PIX_FMT_GRAY16LE;
-        break;
-    case DXGI_FORMAT_420_OPAQUE:
-        avformat = AV_PIX_FMT_YUV420P;
-        break;
-    case DXGI_FORMAT_YUY2:
-        avformat = AV_PIX_FMT_YUYV422;
-        break;
-    case DXGI_FORMAT_Y210:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_Y216:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_NV11:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_AI44:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_IA44:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_P8:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_A8P8:
-        avformat = AV_PIX_FMT_NONE;
-        break;
-    case DXGI_FORMAT_B4G4R4A4_UNORM:
-        avformat = AV_PIX_FMT_NONE;
-        break;
     default:
         avformat = AV_PIX_FMT_NONE;
         break;
@@ -4829,7 +4782,7 @@ int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXG
     while(writelen < rgbabuflen)
     {
 
-        bret = WriteProcessMemory(hRemoteProc,(LPCVOID)((unsigned long)pRemoteAddr + writelen),rgbabuflen-writelen,(LPCVOID)((ptr_t)resource.pData+writelen),&curret);
+        bret = WriteProcessMemory(hRemoteProc,(LPVOID)((unsigned long)pRemoteAddr + writelen),(LPCVOID)((ptr_t)resource.pData+writelen),rgbabuflen-writelen,&curret);
         if(!bret)
         {
             ret = LAST_ERROR_RETURN();
@@ -4893,6 +4846,7 @@ fail:
     return -ret;
 }
 
+extern "C" int CaptureBufferDX11(capture_buffer_t* pCapture);
 
 int CaptureBufferDX11(capture_buffer_t* pCapture)
 {

@@ -368,7 +368,9 @@ PVOID FindExe(HANDLE hProcess)
     return NULL;
 }
 
-static BOOL UpdateImports(HANDLE hProcess, LPCSTR *plpDlls, DWORD nDlls)
+extern "C" BOOL UpdateImports(HANDLE hProcess, LPCSTR *plpDlls, DWORD nDlls);
+
+BOOL UpdateImports(HANDLE hProcess, LPCSTR *plpDlls, DWORD nDlls)
 {
     BOOL fSucceeded = FALSE;
     BYTE * pbNew = NULL;
