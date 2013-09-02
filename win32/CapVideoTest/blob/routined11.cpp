@@ -4399,13 +4399,234 @@ fail:
     return ret;
 }
 
+
+AVPixelFormat __TransDXGI_FORMAT(DXGI_FORMAT format)
+{
+    AVPixelFormat avformat = AV_PIX_FMT_NONE;
+
+    switch(format)
+    {
+    case DXGI_FORMAT_UNKNOWN:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        avformat = ;
+        break;
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        avformat = ;
+        break;
+    case DXGI_FORMAT_R32G32B32A32_UINT:
+        avformat = ;
+        break;
+    case DXGI_FORMAT_R32G32B32A32_SINT:
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    default:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    }
+
+    return avformat;
+}
+
+
 int __CaptureBufferDX11(ID3D11Device *pDevice,ID3D11DeviceContext* pContext,IDXGISwapChain* pSwapChain,HANDLE hRemoteProc,void* pRemoteAddr,int remotelen,unsigned int *pFormat,unsigned int* pWidth,unsigned int* pHeight)
 {
+    D3D11_TEXTURE2D_DESC StagingDesc;
+    ID3D11Texture2D *pBackBuffer = NULL;
+    ID3D11Texture2D *pBackBufferStaging = NULL;
+    HRESULT hr;
+    int mapped=0;
+    D3D11_MAPPED_SUBRESOURCE resource;
+    unsigned int subresource = D3D11CalcSubresource(0, 0, 0);
+    int rgbabuflen=0,writelen=0;
+    DWORD curret;
+    BOOL bret;
+    int ret=1;
+    hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    if(FAILED(hr))
+    {
+        ret = LAST_ERROR_RETURN();
+        ERROR_INFO("can not get buffer 0x%08x (%d)\n",hr,ret);
+        goto fail;
+    }
+
+    /**/
+    pBackBuffer->GetDesc(&StagingDesc);
+
+    StagingDesc.Usage = D3D11_USAGE_STAGING;
+    StagingDesc.BindFlags = 0;
+    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+    DEBUG_INFO("Width %ld height %ld MipLevel %ld ArraySize %ld Format %d\n",StagingDesc.Width,StagingDesc.Height,StagingDesc.MipLevels,StagingDesc.ArraySize,StagingDesc.Format);
+    DEBUG_INFO("SampleDesc.Count %ld SampleDesc.Quality %ld Usage %d  BindFlags 0x%08lx CpuAccessFlag 0x%08lx\n",StagingDesc.SampleDesc.Count,StagingDesc.SampleDesc.Quality,
+               StagingDesc.Usage,StagingDesc.BindFlags,StagingDesc.CPUAccessFlags);
+    DEBUG_INFO("MiscFlags 0x%08lx\n",StagingDesc.MiscFlags);
+
+    hr = pDevice->CreateTexture2D(&StagingDesc, NULL, &pBackBufferStaging);
+    if(FAILED(hr))
+    {
+        ret = LAST_ERROR_RETURN();
+        ERROR_INFO("can not create texture2d 0x%08x (%d)\n",hr,ret);
+        goto fail;
+    }
+
+    pContext->CopyResource(pBackBufferStaging,pBackBuffer);
+
+    hr = pContext->Map(pBackBufferStaging,subresource,D3D11_MAP_READ_WRITE,0,&resource);
+    DEBUG_INFO("Map return 0x%08lx\n",hr);
+    if(FAILED(hr))
+    {
+        ret = GetLastError() ? GetLastError() : 1;
+        ERROR_INFO("can not map staging buffer 0x%08lx (%d)\n",hr,ret);
+        goto fail;
+    }
+    DEBUG_INFO("data 0x%p width %ld height %ld\n",resource.pData,resource.RowPitch,resource.DepthPitch);
+    mapped = 1;
+
+    rgbabuflen = (StagingDesc.Width << 2) * StagingDesc.Height;
+
+    if(rgbabuflen > remotelen)
+    {
+        ret = ERROR_INSUFFICIENT_BUFFER;
+        goto fail;
+    }
+
+    writelen = 0;
+    while(writelen < rgbabuflen)
+    {
+
+        bret = WriteProcessMemory(hRemoteProc,(LPCVOID)((unsigned long)pRemoteAddr + writelen),rgbabuflen-writelen,resource.pData,&curret);
+        if(!bret)
+        {
+            ret = LAST_ERROR_RETURN();
+            goto fail;
+        }
+        writelen += curret;
+    }
+
+
+    /*unmap as quickly as we can*/
+    pContext->Unmap(pBackBufferStaging,subresource);
+    mapped = 0;
+
+
+
+    *pFormat = (unsigned int)
+
+
+
+
+
+
+               /*all is ok ,so close this*/
+               ret  = 0;
+    if(mapped)
+    {
+        assert(pBackBufferStaging);
+        pContext->Unmap(pBackBufferStaging,subresource);
+        DEBUG_INFO("unmap backbuffer staging\n");
+    }
+    mapped = 0;
+    assert(ret >= 0);
+    if(pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    if(pBackBufferStaging)
+    {
+        pBackBufferStaging->Release();
+    }
+    pBackBufferStaging = NULL;
+
+    return rgbabuflen;
+
+fail:
+    if(mapped)
+    {
+        assert(pBackBufferStaging);
+        pContext->Unmap(pBackBufferStaging,subresource);
+        DEBUG_INFO("unmap backbuffer staging\n");
+    }
+    mapped = 0;
+    assert(ret >= 0);
+    if(pBackBuffer)
+    {
+        pBackBuffer->Release();
+    }
+    pBackBuffer = NULL;
+    if(pBackBufferStaging)
+    {
+        pBackBufferStaging->Release();
+    }
+    pBackBufferStaging = NULL;
+    SetLastError(ret);
+    return -ret;
 }
 
 
 int CaptureBufferDX11(capture_buffer_t* pCapture)
 {
-	return -1;
+    return -1;
 }
 

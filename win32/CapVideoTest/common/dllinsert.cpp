@@ -1225,6 +1225,8 @@ int D3DHook_CaptureImageBuffer(HANDLE hProc,char* strDllName,char * data, int le
 		goto fail;
 	}
 
+	bret = 
+
 	*format = resformat;
 	*width = reswidth;
 	*height = resheight;

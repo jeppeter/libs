@@ -2199,11 +2199,38 @@ AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
     case D3DFMT_Q16W16V16U16:
         avformat = AV_PIX_FMT_NONE;
         break;
-    case :
-        avformat = ;
+    case D3DFMT_MULTI2_ARGB8:
+        avformat = AV_PIX_FMT_ARGB;
         break;
-    case :
-        avformat = ;
+    case D3DFMT_R16F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_G16R16F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A16B16G16R16F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_R32F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_G32R32F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A32B32G32R32F:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_CxV8U8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A1:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_A2B10G10R10_XR_BIAS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_BINARYBUFFER:
+        avformat = AV_PIX_FMT_NONE;
         break;
     default:
         avformat = AV_PIX_FMT_NONE;
@@ -2334,6 +2361,9 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         lockedrect = 0;
 
         /*now to set format we will */
+		*pFormat =(unsigned int)__TransD3DFORMAT(desc.Format);
+		*pWidth = desc.Width;
+		*pHeight = desc.Height;
 
     }
     __except(EXCEPTION_EXECUTE_HANDLER)
@@ -2360,7 +2390,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         pBackBuffer->Release();
     }
     pBackBuffer = NULL;
-    return 0;
+    return totalbytes;
 fail:
     assert(ret > 0);
 
@@ -2387,7 +2417,66 @@ fail:
 
 int CaptureBufferDX9(capture_buffer_t* pCapture)
 {
-    return -1;
+	IDirect3DDevice9* pDevice=NULL;
+	int idx=0;
+	int ret;
+	HANDLE hRemoteProc=NULL;
+	int getlen;
+
+	hRemoteProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE ,FALSE,pCapture->m_Processid);
+	if (hRemoteProc == NULL)
+	{
+		ret = LAST_ERROR_RETURN();
+		goto fail;
+	}
+
+	while(1)
+	{
+		pDevice = GrapPointer(idx);
+		if (pDevice == NULL)
+		{
+			ret = ERROR_DEVICE_ENUMERATION_ERROR;
+			goto fail;
+		}
+
+		ret = __CaptureBufferDX9(pDevice,hRemoteProc,pCapture->m_Data,pCapture->m_DataLen,&(pCapture->m_Format),&(pCapture->m_Width),&(pCapture->m_Height));
+		if (ret >= 0)
+		{
+			break;
+		}
+
+		FreePointer (pDevice);
+		pDevice = NULL;
+		idx ++;
+		
+	}
+
+	getlen = ret;
+	if (pDevice)
+	{
+		FreePointer(pDevice);
+	}
+	pDevice=NULL;
+	if (hRemoteProc)
+	{
+		CloseHandle(hRemoteProc);
+	}
+	hRemoteProc = NULL;
+	return getlen;
+fail:
+	assert(ret > 0);
+	if (pDevice)
+	{
+		FreePointer(pDevice);
+	}
+	pDevice=NULL;
+	if (hRemoteProc)
+	{
+		CloseHandle(hRemoteProc);
+	}
+	hRemoteProc = NULL;
+	SetLastError(ret);
+    return -ret;
 }
 
 void* CaptureBuffer(capture_buffer_t *pCapture)
