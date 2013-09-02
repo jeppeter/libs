@@ -2067,7 +2067,7 @@ AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
         avformat = AV_PIX_FMT_GRAY8A;
         break;
     case D3DFMT_A8R3G3B2:
-		/*can not find the correct one*/
+        /*can not find the correct one*/
         avformat =  AV_PIX_FMT_BGR8;
         break;
     case D3DFMT_X4R4G4B4:
@@ -2129,6 +2129,78 @@ AVPixelFormat __TransD3DFORMAT(D3DFORMAT format)
         break;
     case D3DFMT_R8G8_B8G8:
         avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_YUY2:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_G8R8_G8B8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_DXT1:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_DXT2:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_DXT3:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_DXT4:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_DXT5:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D16_LOCKABLE:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D32:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D15S1:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D24S8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D24X8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D24X4S4:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D32F_LOCKABLE:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D24FS8:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_D32_LOCKABLE:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_S8_LOCKABLE:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_L16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_VERTEXDATA:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_INDEX16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_INDEX32:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case D3DFMT_Q16W16V16U16:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case :
+        avformat = ;
         break;
     case :
         avformat = ;
