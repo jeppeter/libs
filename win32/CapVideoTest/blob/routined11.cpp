@@ -4410,15 +4410,204 @@ AVPixelFormat __TransDXGI_FORMAT(DXGI_FORMAT format)
         avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32G32B32A32_UINT:
-        avformat = ;
+        avformat = AV_PIX_FMT_NONE;
         break;
     case DXGI_FORMAT_R32G32B32A32_SINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32B32_UINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32B32_SINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_UINT:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_SNORM:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_SINT:
+        avformat = AV_PIX_FMT_RGBA64LE;
+        break;
+    case DXGI_FORMAT_R32G32_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32_FLOAT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G32_UINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case  DXGI_FORMAT_R32G32_SINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+        avformat = AV_PIX_FMT_NONE;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
+        avformat = ;
+        break;
+    case :
         avformat = ;
         break;
     case :
