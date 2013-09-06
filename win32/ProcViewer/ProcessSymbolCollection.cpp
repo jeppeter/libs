@@ -131,11 +131,17 @@ bool ProcessSymbolCollection::Init( HANDLE hProcess_i,
 
     // Initialize symbols for this process
     USES_CONVERSION;
+#ifdef _UNICODE
+    if( !SymInitialize( m_hProcess,(PCWSTR) T2A( GetSymbolPath() ), TRUE ))
+    {
+        return false;
+    }
+#else
     if( !SymInitialize( m_hProcess, T2A( GetSymbolPath() ), TRUE ))
     {
         return false;
     }
-
+#endif
     m_bInitialized = true;
     m_csProcessName = lpctszProcessName_i;
 

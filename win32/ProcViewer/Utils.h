@@ -822,7 +822,7 @@ namespace Utils
         if ( PersistFilePtr != NULL && SUCCEEDED( PersistFilePtr->Load( T2COLE( lptszFileOut_io ), STGM_READ)) )
         {
             // Specify how to resolve link, don't show "Failed to find shortcut" dialog.
-            const WORD wFlags = SLR_ANY_MATCH | SLR_NO_UI | SLR_NOUPDATE | SLR_NOSEARCH;
+            const WORD wFlags = (const WORD)(SLR_ANY_MATCH | SLR_NO_UI | SLR_NOUPDATE | SLR_NOSEARCH);
 
 			// Start resolving
             if ( SUCCEEDED( ShellLinkPtr->Resolve( 0, wFlags )))
