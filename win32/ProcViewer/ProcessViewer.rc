@@ -1,0 +1,453 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\ProcessViewer.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG  0, 0, 235, 71
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About ProcessViewer"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,21,20
+    LTEXT           "ProcessViewer Version 1.0",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2007 Nibu babu thomas, dedicated to my Lord and Savior Jesus Christ and to my dearest Amma.",IDC_STATIC,39,31,174,18
+    DEFPUSHBUTTON   "OK",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_PROCESSVIEWER_DIALOG DIALOGEX 0, 0, 450, 254
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Process viewer"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "Tree1",IDC_TREE_PROCESS,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP | 0x800,3,3,49,248
+    CONTROL         "List1",IDC_LIST_PROCESSMODULES,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | WS_BORDER | WS_TABSTOP,216,3,108,248
+    CONTROL         "Tree1",IDC_TREE_PROCESSDETAILS,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP | 0x800,325,3,122,248
+    CONTROL         "Progress1",IDC_PROGRESS_LOAD,"msctls_progress32",NOT WS_VISIBLE | 0x1,123,140,94,13,WS_EX_STATICEDGE
+    CONTROL         "List1",IDC_LIST_MODULESYMBOLS,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | WS_BORDER | WS_TABSTOP,68,3,53,248
+END
+
+IDD_DIALOG_SEARCH DIALOG  0, 0, 231, 63
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Search"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "Search for...",IDC_STATIC,7,7,67,30
+    CONTROL         "&DLL",IDC_RADIO_DLL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,13,16,29,10
+    CONTROL         "&Process",IDC_RADIO_PROCESS,"Button",BS_AUTORADIOBUTTON,13,26,41,10
+    PUSHBUTTON      "&Go",IDC_OK,7,41,38,15,WS_GROUP
+    LTEXT           "&Search string:",IDC_STATIC,76,20,44,8
+    EDITTEXT        IDC_EDIT_SRCH_STRING,124,17,100,15,ES_AUTOHSCROLL
+END
+
+IDD_DIALOG_OPTIONS DIALOG  0, 0, 258, 162
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Options"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,5,146,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,57,146,50,14
+    CONTROL         "Tab1",IDC_TAB_OPTION,"SysTabControl32",0x0,1,7,253,129
+END
+
+IDD_DIALOG_PROCESS_DETAILS_OPTIONS DIALOGEX 0, 0, 208, 102
+STYLE DS_SETFONT | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "Show",IDC_STATIC,2,3,202,74,0,WS_EX_TRANSPARENT
+    CONTROL         "&Size",IDC_CHECK_SIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,14,29,10,WS_EX_TRANSPARENT
+    CONTROL         "P&rocess times",IDC_CHECK_PROCTIMES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,14,59,10,WS_EX_TRANSPARENT
+    CONTROL         "&Process type",IDC_CHECK_PROCESS_TYPE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,24,57,10,WS_EX_TRANSPARENT
+    CONTROL         "&File times",IDC_CHECK_FILETIMES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,24,45,10,WS_EX_TRANSPARENT
+    CONTROL         "&Hwnd",IDC_CHECK_HWND,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,34,35,10,WS_EX_TRANSPARENT
+    CONTROL         "&GDI resource information",IDC_CHECK_GDIINFO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,34,94,10,WS_EX_TRANSPARENT
+    CONTROL         "&Version",IDC_CHECK_VERSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,44,39,10,WS_EX_TRANSPARENT
+    CONTROL         "Process priorit&y",IDC_CHECK_PROCESSPRIORITY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,44,63,10,WS_EX_TRANSPARENT
+    CONTROL         "&Memory information",IDC_CHECK_MEMINFO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,54,77,10,WS_EX_TRANSPARENT
+    CONTROL         "Process IO &Counters",IDC_CHECK_PROCESSIOCOUNTERS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,54,81,10,WS_EX_TRANSPARENT
+    PUSHBUTTON      "T&oggle Selection",IDC_BUTTON_TOGGLE,2,84,64,14,BS_VCENTER
+    CONTROL         "Process privi&leges",IDC_CHECK_PROCESSPRIVILEGES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,64,73,10
+END
+
+IDD_DIALOG_MODULE_DETAILS_DIALOG DIALOGEX 0, 0, 136, 71
+STYLE DS_SETFONT | WS_CHILD
+EXSTYLE WS_EX_TRANSPARENT | WS_EX_CONTROLPARENT
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "&Index",IDC_CHECK_INDEX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,13,33,10,WS_EX_TRANSPARENT
+    CONTROL         "&Module name",IDC_CHECK_MODULENAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,23,59,10,WS_EX_TRANSPARENT
+    CONTROL         "M&odule path",IDC_CHECK_MODULEPATH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,33,55,10,WS_EX_TRANSPARENT
+    CONTROL         "&Load address",IDC_CHECK_LOADADDRESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,43,59,10,WS_EX_TRANSPARENT
+    CONTROL         "Ima&ge size",IDC_CHECK_IMAGESIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,53,49,10,WS_EX_TRANSPARENT
+    CONTROL         "&Entry point",IDC_CHECK_ENTRYPOINT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,13,49,10,WS_EX_TRANSPARENT
+    CONTROL         "&Version",IDC_CHECK_VERSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,23,39,10,WS_EX_TRANSPARENT
+    CONTROL         "&Size",IDC_CHECK_FILESIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,33,29,10,WS_EX_TRANSPARENT
+    CONTROL         "&Company",IDC_CHECK_COMPANY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,43,45,10,WS_EX_TRANSPARENT
+    CONTROL         "&Description",IDC_CHECK_DESCRIPTION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,53,51,10,WS_EX_TRANSPARENT
+    GROUPBOX        "Show",IDC_STATIC,3,2,128,65
+END
+
+IDD_DIALOG_GENERALOPTIONS DIALOGEX 0, 0, 186, 90
+STYLE DS_SETFONT | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "&Prompt before killing process",IDC_CHECK_PROMPTBEFOREKILL,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,106,10
+END
+
+IDD_PRIVILEGE_MGR DIALOGEX 0, 0, 352, 326
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Privilege Manager"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_LIST_PRIVILEGE_COLLECTION,7,7,338,289,LBS_SORT | LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "&Refresh",ID_BUTTON_REFRESH,7,300,50,18
+    PUSHBUTTON      "&Disable all",ID_BUTTON_DISABLEALL,61,300,50,18
+    PUSHBUTTON      "&Enable All",IDC_BUTTON_ENABLE_ALL,115,300,50,18
+    PUSHBUTTON      "&Remove All",IDC_BUTTON_REMOVE_ALL,169,300,50,18
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,2
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x29L
+#else
+ FILEFLAGS 0x28L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "Dedicated to My Lord and Savior Jesus Christ and My Amma. I am whatever I am by the Grace Of Jesus Christ."
+            VALUE "CompanyName", "ThomasSoft International Private Ltd"
+            VALUE "FileDescription", "ProcessViewer MFC Application"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "ProcessViewer"
+            VALUE "LegalCopyright", "Copyright (C) 2007 Nibu Babu Thomas"
+            VALUE "LegalTrademarks", "Copyright(C) 2007 Nibu Babu Thomas"
+            VALUE "OriginalFilename", "ProcessViewer.EXE"
+            VALUE "PrivateBuild", "None"
+            VALUE "ProductName", "ProcessViewer Application"
+            VALUE "ProductVersion", "1, 0, 0, 2"
+            VALUE "SpecialBuild", "None"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 64
+    END
+
+    IDD_PROCESSVIEWER_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 447
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 251
+    END
+
+    IDD_DIALOG_SEARCH, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 224
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 56
+    END
+
+    IDD_DIALOG_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 1
+        RIGHTMARGIN, 254
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 160
+    END
+
+    IDD_DIALOG_PROCESS_DETAILS_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 2
+        RIGHTMARGIN, 204
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_DIALOG_MODULE_DETAILS_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 131
+        TOPMARGIN, 2
+        BOTTOMMARGIN, 67
+    END
+
+    IDD_DIALOG_GENERALOPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 83
+    END
+
+    IDD_PRIVILEGE_MGR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 345
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 318
+        HORZGUIDE, 296
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\ProcViewer.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP_IMAGES       BITMAP                  "clienticex.bmp"
+IDB_BITMAP_SORTDESC     BITMAP                  "dnarrow.bmp"
+IDB_BITMAP_SORTASC      BITMAP                  "uparrow.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_DLGMENU MENU 
+BEGIN
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "Refresh\tF5",                 ID_OPTIONS_REFRESH
+        MENUITEM "Swap layout\tF6",             ID_OPTIONS_SWAPLAYOUT
+        MENUITEM "Show path",                   ID_OPTIONS_SHOWPATH
+        MENUITEM "&Enable Depends",             ID_OPTIONS_ENABLEDEPENDS
+        MENUITEM "Search",                      ID_OPTIONS_SEARCH
+        MENUITEM "&Settings",                   ID_OPTIONS_SETTINGS
+        MENUITEM "Kill process",                ID_OPTIONS_KILLPROCESS
+        MENUITEM SEPARATOR
+        MENUITEM "&About\tF2",                  ID_OPTIONS_ABOUT
+        MENUITEM SEPARATOR
+        MENUITEM "Exit\tCtrl+X",                ID_OPTIONS_EXIT
+    END
+END
+
+IDR_MENU_PROCESS_UTILS MENU 
+BEGIN
+    POPUP "Utils"
+    BEGIN
+        MENUITEM "&Realtime\tCtrl + 1",         ID_PRIORITY_REALTIME
+        MENUITEM "&High\tCtrl + 2",             ID_PRIORITY_HIGH
+        MENUITEM "&Above normal\tCtrl + 3",     ID_PRIORITY_ABOVENORMAL
+        MENUITEM "Normal\tCtrl + 4",            ID_PRIORITY_NORMAL
+        MENUITEM "&Below normal\tCtrl + 5",     ID_PRIORITY_BELOWNORMAL
+        MENUITEM "&Low\tCtrl + 6",              ID_PRIORITY_LOW
+        MENUITEM SEPARATOR
+        MENUITEM "Disable priority boost\tCtrl + D", ID_PRIORITY_DISABLEBOOSTPRIORITY
+        MENUITEM SEPARATOR
+        MENUITEM "&Open parent folder\tF3",     ID_UTILS_OPENPARENTFOLDER
+        MENUITEM "Properties\tF4",              ID_UTILS_PROPERTIES
+        MENUITEM "Privilege Manager\tCtrl + M", ID_UTILS_PRIVILEGEMANAGER
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCEL_MENU ACCELERATORS 
+BEGIN
+    VK_F2,          ID_OPTIONS_ABOUT,       VIRTKEY, NOINVERT
+    "X",            ID_OPTIONS_EXIT,        VIRTKEY, CONTROL, NOINVERT
+    VK_F8,          ID_OPTIONS_KILLPROCESS, VIRTKEY, NOINVERT
+    VK_F8,          ID_OPTIONS_KILLPROCESS_ALL_INSTANCES, VIRTKEY, CONTROL, NOINVERT
+    VK_F5,          ID_OPTIONS_REFRESH,     VIRTKEY, NOINVERT
+    "F",            ID_OPTIONS_SEARCH,      VIRTKEY, CONTROL, NOINVERT
+    VK_F7,          ID_OPTIONS_SETTINGS,    VIRTKEY, NOINVERT
+    VK_F6,          ID_OPTIONS_SWAPLAYOUT,  VIRTKEY, NOINVERT
+    "3",            ID_PRIORITY_ABOVENORMAL, VIRTKEY, CONTROL, NOINVERT
+    "5",            ID_PRIORITY_BELOWNORMAL, VIRTKEY, CONTROL, NOINVERT
+    "D",            ID_PRIORITY_DISABLEBOOSTPRIORITY, VIRTKEY, CONTROL, NOINVERT
+    "2",            ID_PRIORITY_HIGH,       VIRTKEY, CONTROL, NOINVERT
+    "6",            ID_PRIORITY_LOW,        VIRTKEY, CONTROL, NOINVERT
+    "4",            ID_PRIORITY_NORMAL,     VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_PRIORITY_REALTIME,   VIRTKEY, CONTROL, NOINVERT
+    VK_F3,          ID_UTILS_OPENPARENTFOLDER, VIRTKEY, NOINVERT
+    VK_F4,          ID_UTILS_PROPERTIES,    VIRTKEY, NOINVERT
+    "M",            ID_UTILS_PRIVILEGEMANAGER, VIRTKEY, CONTROL, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_ABOUTBOX            "&About ProcessViewer..."
+END
+
+STRINGTABLE 
+BEGIN
+    ID_OPTIONS_REFRESH      "Refreshes display with latest information (F5)"
+    ID_OPTIONS_SWAPLAYOUT   "Swaps layout of divider (F6)"
+    ID_OPTIONS_EXIT         "Exits application (Ctrl+X)"
+    ID_OPTIONS_ABOUT        "Who made this (F2)"
+    ID_OPTIONS_SHOWPATH     "Toggles display of full path of processes"
+    ID_OPTIONS_ENABLEDEPENDS "Enables viewing with dependency walker"
+    ID_SP_MODULE_COUNT      "Modules: %d                    "
+    ID_OPTIONS_SEARCH       "Search (Ctrl + F)"
+    ID_OPTIONS_SETTINGS     "Settings for process viewer (F7)"
+    ID_OPTIONS_KILLPROCESS  "Kill selected process (F8), to kill all instances (Ctrl+F8)"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_SP_DEDICATION        "Dedicated to my Lord and Savior Jesus Christ and my dearest Amma     "
+    ID_SP_PROCESS_COUNT     "Processes: %d         "
+    ID_SP_COPYRIGHT         "Copyright(c) 2007 Everybody              "
+    ID_SP_PERFORMANCE       "                                                     "
+    ID_PRIORITY_REALTIME    "Realtime process priority"
+    ID_PRIORITY_HIGH        "High process priority"
+    ID_PRIORITY_ABOVENORMAL "Above normal process priority"
+    ID_PRIORITY_NORMAL      "Normal process priority"
+    ID_PRIORITY_BELOWNORMAL "Below normal priority"
+    ID_PRIORITY_LOW         "Low priority"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_UTILS_OPENPARENTFOLDER "Open target folder"
+    ID_UTILS_PROPERTIES     "Show's exe properties"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\ProcessViewer.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
