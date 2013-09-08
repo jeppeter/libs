@@ -18,7 +18,9 @@ x509\routin.cpp
 
 
 extern "C" int RoutineDetourD11(void);
+extern "C" int RoutineDetourDSound(void);
 extern "C" void RotineClearD11(void);
+extern "C" void RoutineClearDSound(void);
 
 
 #define  POINTER_STATE_GRAB        1
@@ -2018,6 +2020,7 @@ int Routine()
     InitializeHook();
     InitializeEnviron();
     RoutineDetourD11();
+    RoutineDetourDSound();
     return 0;
 }
 
@@ -2026,6 +2029,7 @@ int Cleanup()
     WriteLogger(L"Blob closed");
     CloseLogger();
 
+    RoutineClearDSound();
     RotineClearD11();
     FinializeEnviron();
     return 0;
@@ -2335,7 +2339,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
         }
 
 
-		writelen = 0;
+        writelen = 0;
         while(writelen < totalbytes)
         {
             bret = WriteProcessMemory(hRemoteHandle,(LPVOID)((ptr_t)pRemoteAddr + writelen),(LPCVOID)(((ptr_t)LockRect.pBits)+writelen),totalbytes-writelen,&curret);
@@ -2346,7 +2350,7 @@ int __CaptureBufferDX9(IDirect3DDevice9* pDevice,HANDLE hRemoteHandle,void* pRem
                            pRemoteAddr,totalbytes,ret);
                 goto fail;
             }
-			writelen += curret;
+            writelen += curret;
         }
 
         hr = pSurface->UnlockRect();
@@ -2426,7 +2430,7 @@ int CaptureBufferDX9(capture_buffer_t* pCapture)
     if(hRemoteProc == NULL)
     {
         ret = LAST_ERROR_RETURN();
-		ERROR_INFO("\n");
+        ERROR_INFO("\n");
         goto fail;
     }
 
@@ -2436,7 +2440,7 @@ int CaptureBufferDX9(capture_buffer_t* pCapture)
         if(pDevice == NULL)
         {
             ret = ERROR_DEVICE_ENUMERATION_ERROR;
-			ERROR_INFO("\n");
+            ERROR_INFO("\n");
             goto fail;
         }
 
