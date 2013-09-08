@@ -106,6 +106,7 @@
     <ClCompile Include="routine.cpp" />
     <ClCompile Include="routined11.cpp" />
     <ClCompile Include="routinedsnd.cpp" />
+    <ClCompile Include="routinexaudio2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\StackWalker.h" />
@@ -116,6 +117,7 @@
     <ClInclude Include="routine.h" />
     <ClInclude Include="routined11.h" />
     <ClInclude Include="routinedsnd.h" />
+    <ClInclude Include="routinexaudio2.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\detours\detours.vcxproj">

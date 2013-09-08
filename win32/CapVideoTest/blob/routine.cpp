@@ -19,8 +19,10 @@ x509\routin.cpp
 
 extern "C" int RoutineDetourD11(void);
 extern "C" int RoutineDetourDSound(void);
+extern "C" int RoutineDetourXAudio2(void);
 extern "C" void RotineClearD11(void);
 extern "C" void RoutineClearDSound(void);
+extern "C" void RoutineClearXAudio2(void);
 
 
 #define  POINTER_STATE_GRAB        1
@@ -2021,6 +2023,7 @@ int Routine()
     InitializeEnviron();
     RoutineDetourD11();
     RoutineDetourDSound();
+	RoutineDetourXAudio2();
     return 0;
 }
 
@@ -2029,6 +2032,7 @@ int Cleanup()
     WriteLogger(L"Blob closed");
     CloseLogger();
 
+	RoutineClearXAudio2();
     RoutineClearDSound();
     RotineClearD11();
     FinializeEnviron();
