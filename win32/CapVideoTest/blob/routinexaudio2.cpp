@@ -24,7 +24,7 @@ static HRESULT(__stdcall *CoCreateInstanceNex)(
 ) = CoCreateInstance;
 
 
-HRESULT CoCreateInstanceCallBack(
+HRESULT __stdcall CoCreateInstanceCallBack(
     REFCLSID rclsid,
     LPUNKNOWN pUnkOuter,
     DWORD dwClsContext,
