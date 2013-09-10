@@ -311,6 +311,102 @@ public:
         return ;
     }
 
+    COM_METHOD(HRESULT,SetChannelVolumes)(THIS_ UINT32 Channels, const float* pVolumes,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetChannelVolumes(Channels,pVolumes,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetChannelVolumes)(THIS_ UINT32 Channels,float* pVolumes)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetChannelVolumes(Channels,pVolumes);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,SetOutputMatrix)(THIS_ IXAudio2Voice* pDestinationVoice,UINT32 SourceChannels, UINT32 DestinationChannels,const float* pLevelMatrix,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetOutputMatrix(pDestinationVoice,SourceChannels,DestinationChannels,pLevelMatrix,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetOutputMatrix)(THIS_ IXAudio2Voice* pDestinationVoice,UINT32 SourceChannels, UINT32 DestinationChannels,float* pLevelMatrix)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetOutputMatrix(pDestinationVoice,SourceChannels,DestinationChannels,pLevelMatrix);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(void, DestroyVoice)(THIS)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->DestroyVoice();
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,Start)(THIS_ UINT32 Flags X2DEFAULT(0), UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->Start(Flags,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Stop)(THIS_ UINT32 Flags X2DEFAULT(0), UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->Stop(Flags,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,SubmitSourceBuffer)(THIS_ const XAUDIO2_BUFFER* pBuffer,const XAUDIO2_BUFFER_WMA* pBufferWMA X2DEFAULT(NULL))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SubmitSourceBuffer(pBuffer,pBufferWMA);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,FlushSourceBuffers)(THIS)
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->FlushSourceBuffers();
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Discontinuity)(THIS)
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->Discontinuity();
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,ExitLoop)(THIS_ UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->ExitLoop(OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
 };
 
 
