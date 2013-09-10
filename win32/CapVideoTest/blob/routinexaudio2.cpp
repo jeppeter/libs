@@ -180,6 +180,138 @@ public:
 };
 
 
+#define XAUDIO2SOURCEVOICE_IN()
+#define XAUDIO2SOURCEVOICE_OUT()
+
+class CXAudio2SourceVoiceHook : public IXAudio2SourceVoice
+{
+private:
+    IXAudio2SourceVoice *m_ptr;
+public:
+    CXAudio2SourceVoiceHook(IXAudio2SourceVoice* ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(void, GetVoiceDetails)(THIS_ XAUDIO2_VOICE_DETAILS* pVoiceDetails)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetVoiceDetails(pVoiceDetails);
+        XAUDIO2SOURCEVOICE_OUT();
+        return;
+    }
+
+    COM_METHOD(HRESULT,SetOutputVoices)(THIS_ const XAUDIO2_VOICE_SENDS* pSendList)
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetOutputVoices(pSendList);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,SetEffectChain)(THIS_ const XAUDIO2_EFFECT_CHAIN* pEffectChain)
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetEffectChain(pEffectChain);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,EnableEffect)(THIS_ UINT32 EffectIndex,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->EnableEffect(EffectIndex,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,DisableEffect)(THIS_ UINT32 EffectIndex,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->DisableEffect(EffectIndex,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetEffectState)(THIS_ UINT32 EffectIndex, __out BOOL* pEnabled)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetEffectState(EffectIndex,pEnabled);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,SetEffectParameters)(THIS_ UINT32 EffectIndex, const void* pParameters,UINT32 ParametersByteSize,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetEffectParameters(EffectIndex,pParameters,ParametersByteSize,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetEffectParameters)(THIS_ UINT32 EffectIndex,void* pParameters,UINT32 ParametersByteSize)
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->GetEffectParameters(EffectIndex,pParameters,ParametersByteSize);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,SetFilterParameters)(THIS_ const XAUDIO2_FILTER_PARAMETERS* pParameters,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetFilterParameters(pParameters,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetFilterParameters)(THIS_ XAUDIO2_FILTER_PARAMETERS* pParameters)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetFilterParameters(pParameters);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,SetOutputFilterParameters)(THIS_ IXAudio2Voice* pDestinationVoice,const XAUDIO2_FILTER_PARAMETERS* pParameters,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetOutputFilterParameters(pDestinationVoice,pParameters,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetOutputFilterParameters)(THIS_ IXAudio2Voice* pDestinationVoice,XAUDIO2_FILTER_PARAMETERS* pParameters)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetOutputFilterParameters(pDestinationVoice,pParameters);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,SetVolume)(THIS_ float Volume,UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW))
+    {
+        HRESULT hr;
+        XAUDIO2SOURCEVOICE_IN();
+        hr = m_ptr->SetVolume(Volume,OperationSet);
+        XAUDIO2SOURCEVOICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetVolume)(THIS_ float* pVolume)
+    {
+        XAUDIO2SOURCEVOICE_IN();
+        m_ptr->GetVolume(pVolume);
+        XAUDIO2SOURCEVOICE_OUT();
+        return ;
+    }
+
+};
 
 
 static HRESULT(*XAudio2CreateNext)(
@@ -211,7 +343,7 @@ HRESULT __stdcall CoCreateInstanceCallBack(
     if(SUCCEEDED(hr) && (rclsid == __uuidof(XAudio2_Debug) ||
                          rclsid == __uuidof(XAudio2)))
     {
-    	
+
         DEBUG_INFO("get xaudio2\n");
     }
     return hr;
