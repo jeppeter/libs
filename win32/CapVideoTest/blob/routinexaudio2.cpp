@@ -143,8 +143,44 @@ public:
         return hr;
     }
 
+    COM_METHOD(void, StopEngine)(THIS)
+    {
+        XAUDIO2_IN();
+        m_ptr->StopEngine();
+        XAUDIO2_OUT();
+        return ;
+    }
+
+    COM_METHOD(HRESULT,CommitChanges)(THIS_ UINT32 OperationSet)
+    {
+        HRESULT hr;
+        XAUDIO2_IN();
+        hr = m_ptr->CommitChanges(OperationSet);
+        XAUDIO2_OUT();
+        return hr;
+    }
+
+    COM_METHOD(void, GetPerformanceData)(THIS_ XAUDIO2_PERFORMANCE_DATA* pPerfData)
+    {
+        XAUDIO2_IN();
+        m_ptr->GetPerformanceData(pPerfData);
+        XAUDIO2_OUT();
+        return ;
+    }
+
+    COM_METHOD(void, SetDebugConfiguration)(THIS_ const XAUDIO2_DEBUG_CONFIGURATION* pDebugConfiguration,
+                                            void* pReserved X2DEFAULT(NULL))
+    {
+        XAUDIO2_IN();
+        m_ptr->SetDebugConfiguration(pDebugConfiguration,pReserved);
+        XAUDIO2_OUT();
+        return;
+    }
 
 };
+
+
+
 
 static HRESULT(*XAudio2CreateNext)(
     IXAudio2 **ppXAudio2,
@@ -175,6 +211,7 @@ HRESULT __stdcall CoCreateInstanceCallBack(
     if(SUCCEEDED(hr) && (rclsid == __uuidof(XAudio2_Debug) ||
                          rclsid == __uuidof(XAudio2)))
     {
+    	
         DEBUG_INFO("get xaudio2\n");
     }
     return hr;
