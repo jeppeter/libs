@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <Objbase.h>
 #include "..\\detours\\detours.h"
+#include <Mmdeviceapi.h>
 
 
 //#pragma comment(lib,"Xaudio2.lib")
@@ -620,6 +621,63 @@ public:
 
 };
 
+#define  MMDEVICE_ENUMERRATOR_IN()
+#define  MMDEVICE_ENUMERRATOR_OUT()
+
+class CIMMDeviceEnumeratorHook : public IMMDeviceEnumerator
+{
+private:
+    IMMDeviceEnumerator *m_ptr;
+public:
+    CIMMDeviceEnumeratorHook(IMMDeviceEnumerator *ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_ENUMERRATOR_IN();
+        uret = m_ptr->AddRef();
+        MMDEVICE_ENUMERRATOR_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_ENUMERRATOR_IN();
+        uret = m_ptr->Release();
+        MMDEVICE_ENUMERRATOR_OUT();
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,EnumAudioEndpoints)(THIS_  EDataFlow dataFlow,DWORD dwStateMask,IMMDeviceCollection **ppDevices)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetDefaultAudioEndpoint)(THIS_ EDataFlow dataFlow,ERole role,IMMDevice **ppEndpoint)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+};
+
 
 static HRESULT(*XAudio2CreateNext)(
     IXAudio2 **ppXAudio2,
@@ -652,6 +710,10 @@ HRESULT __stdcall CoCreateInstanceCallBack(
     {
 
         DEBUG_INFO("get xaudio2\n");
+    }
+    else if(SUCCEEDED(hr) && (rclsid == __uuidof(MMDeviceEnumerator)))
+    {
+        DEBUG_INFO("find enumerator\n");
     }
     return hr;
 }
