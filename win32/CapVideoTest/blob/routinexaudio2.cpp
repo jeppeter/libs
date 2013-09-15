@@ -301,6 +301,26 @@ public:
 
 };
 
+#define  AUDIO_CLIENT_IN()
+#define  AUDIO_CLIENT_OUT()
+
+class CIAudioClientHook : public IAudioClient
+{
+private:
+    IAudioClient *m_ptr;
+public:
+    CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+};
+
 
 #define MMDEVICE_IN()
 #define MMDEVICE_OUT()
@@ -356,6 +376,13 @@ public:
         HRESULT hr;
         MMDEVICE_IN();
         hr = m_ptr->Activate(iid,dwClsCtx,pActivationParams,ppInterface);
+        if(SUCCEEDED(hr))
+        {
+            if(iid == __uuidof(IAudioClient))
+            {
+                DEBUG_INFO("dwClsCtx 0x%x void* 0x%p\n",dwClsCtx,*ppInterface);
+            }
+        }
         MMDEVICE_OUT();
         return hr;
     }
@@ -739,6 +766,8 @@ public:
     }
 
 };
+
+
 
 
 #define XAUDIO2SOURCEVOICE_IN()
@@ -1186,15 +1215,6 @@ public:
 
 
 
-
-
-class CIAudioClientHook : public IAudioClient
-{
-private:
-    IAudioClient *m_ptr;
-public:
-    CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
-};
 
 
 
