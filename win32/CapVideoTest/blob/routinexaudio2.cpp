@@ -16,8 +16,11 @@
 #define  MMDEVICE_ENUMERRATOR_IN()
 #define  MMDEVICE_ENUMERRATOR_OUT()
 
-static ULONG UnRegisterEnumerator(IMMDeviceEnumerator *pEnumerator);
 
+class CIMMDeviceHook;
+static ULONG UnRegisterMMEnumerator(IMMDeviceEnumerator *pEnumerator);
+static ULONG UnRegisterMMDevice(IMMDevice *pDevice);
+static CIMMDeviceHook* RegisterMMDevice(IMMDevice* pDevice);
 
 class CIMMDeviceEnumeratorHook : public IMMDeviceEnumerator
 {
@@ -53,9 +56,18 @@ public:
         DEBUG_INFO("Release return %ld\n",uret);
         if(uret == 1)
         {
-            uret = UnRegisterEnumerator(m_ptr);
+            uret = UnRegisterMMEnumerator(m_ptr);
+            if(uret == 0)
+            {
+                this->m_ptr = NULL;
+            }
         }
         MMDEVICE_ENUMERRATOR_OUT();
+
+        if(uret == 0)
+        {
+            delete this;
+        }
         return uret;
     }
 
@@ -80,7 +92,12 @@ public:
         hr = m_ptr->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint);
         if(SUCCEEDED(hr))
         {
+            CIMMDeviceHook* pDevHook=NULL;
+            IMMDevice* pDevice= (IMMDevice*)*ppEndpoint;
             DEBUG_INFO("put dataflow %d role %d pointer 0x%p\n",dataFlow,role,*ppEndpoint);
+            pDevHook = RegisterMMDevice(pDevice);
+            *ppEndpoint = (IMMDevice*)pDevice;
+
         }
         MMDEVICE_ENUMERRATOR_OUT();
         return hr;
@@ -93,7 +110,12 @@ public:
         hr = m_ptr->GetDevice(pwstrId,ppDevice);
         if(SUCCEEDED(hr))
         {
-            DEBUG_INFO("Get Device %S 0x%p\n",pwstrId,*ppDevice);
+            CIMMDeviceHook* pDevHook=NULL;
+            IMMDevice* pDevice=*ppDevice;
+            pDevHook = RegisterMMDevice(pDevice);
+            DEBUG_INFO("Get Device %S 0x%p hook 0x%p\n",pwstrId,*ppDevice,pDevHook);
+            *ppDevice = (IMMDevice*)pDevHook;
+
         }
         MMDEVICE_ENUMERRATOR_OUT();
         return hr;
@@ -120,12 +142,104 @@ public:
 };
 
 
+#define MMDEVICE_IN()
+#define MMDEVICE_OUT()
 
+class CIMMDeviceHook : public IMMDevice
+{
+private:
+    IMMDevice *m_ptr;
+public:
+    CIMMDeviceHook(IMMDevice* ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_IN();
+        uret = m_ptr->AddRef();
+        MMDEVICE_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_IN();
+        uret = m_ptr->Release();
+        if(uret == 1)
+        {
+            uret = UnRegisterMMDevice(m_ptr);
+            if(uret == 0)
+            {
+                this->m_ptr=NULL;
+            }
+        }
+        MMDEVICE_OUT();
+        if(uret == 0)
+        {
+            delete this;
+        }
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,Activate)(THIS_ REFIID iid,DWORD dwClsCtx,PROPVARIANT *pActivationParams,void **ppInterface)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->Activate(iid,dwClsCtx,pActivationParams,ppInterface);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,OpenPropertyStore)(THIS_ DWORD stgmAccess,IPropertyStore **ppProperties)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->OpenPropertyStore(stgmAccess,ppProperties);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetId)(THIS_ LPWSTR *ppstrId)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->GetId(ppstrId);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetState)(THIS_ DWORD *pdwState)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->GetState(pdwState);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+
+};
+
+
+
+static CRITICAL_SECTION st_MMDevEnumCS;
 static CRITICAL_SECTION st_MMDevCS;
 static int st_InitializeXAudio2=0;
 
-static std::vector<IMMDeviceEnumerator*> st_Enumerators;
-static std::vector<CIMMDeviceEnumeratorHook*> st_EnumHooks;
+
+static std::vector<IMMDeviceEnumerator*> st_EnumeratorVecs;
+static std::vector<CIMMDeviceEnumeratorHook*> st_EnumHookVecs;
+
 
 static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumerator)
 {
@@ -133,13 +247,13 @@ static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumer
     unsigned int i;
     int findidx = -1;
     CIMMDeviceEnumeratorHook* pEnumHook=NULL;
-    EnterCriticalSection(&st_MMDevCS);
+    EnterCriticalSection(&st_MMDevEnumCS);
     ULONG uret;
 
     findidx = -1;
-    for(i=0; i<st_Enumerators.size() ; i++)
+    for(i=0; i<st_EnumeratorVecs.size() ; i++)
     {
-        if(st_Enumerators[i] == pEnumerator)
+        if(st_EnumeratorVecs[i] == pEnumerator)
         {
             findidx = i;
             break;
@@ -149,16 +263,16 @@ static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumer
     if(findidx < 0)
     {
         pEnumHook = new CIMMDeviceEnumeratorHook(pEnumerator);
-        st_Enumerators.push_back(pEnumerator);
-        st_EnumHooks.push_back(pEnumHook);
+        st_EnumeratorVecs.push_back(pEnumerator);
+        st_EnumHookVecs.push_back(pEnumHook);
         uret = pEnumerator->AddRef();
     }
     else
     {
-        pEnumHook = st_EnumHooks[findidx];
+        pEnumHook = st_EnumHookVecs[findidx];
     }
 
-    LeaveCriticalSection(&st_MMDevCS);
+    LeaveCriticalSection(&st_MMDevEnumCS);
 
     if(findidx < 0)
     {
@@ -168,18 +282,18 @@ static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumer
     return pEnumHook;
 }
 
-static ULONG UnRegisterEnumerator(IMMDeviceEnumerator *pEnumerator)
+static ULONG UnRegisterMMEnumerator(IMMDeviceEnumerator *pEnumerator)
 {
     ULONG uret=1;
     unsigned int i;
     int findidx =-1;
 
     DEBUG_INFO("Unregister Enumerator 0x%p\n",pEnumerator);
-    EnterCriticalSection(&st_MMDevCS);
+    EnterCriticalSection(&st_MMDevEnumCS);
 
-    for(i=0; i<st_Enumerators.size() ; i++)
+    for(i=0; i<st_EnumeratorVecs.size() ; i++)
     {
-        if(st_Enumerators[i] == pEnumerator)
+        if(st_EnumeratorVecs[i] == pEnumerator)
         {
             findidx = i;
             break;
@@ -188,16 +302,108 @@ static ULONG UnRegisterEnumerator(IMMDeviceEnumerator *pEnumerator)
 
     if(findidx >= 0)
     {
-        st_Enumerators.erase(st_Enumerators.begin() + findidx);
-        st_EnumHooks.erase(st_EnumHooks.begin() + findidx);
+        st_EnumeratorVecs.erase(st_EnumeratorVecs.begin() + findidx);
+        st_EnumHookVecs.erase(st_EnumHookVecs.begin() + findidx);
     }
 
-    LeaveCriticalSection(&st_MMDevCS);
+    LeaveCriticalSection(&st_MMDevEnumCS);
 
     uret = 1;
     if(findidx >= 0)
     {
         uret = pEnumerator->Release();
+    }
+
+    return uret;
+}
+
+
+static std::vector<IMMDevice*> st_MMDeviceVecs;
+static std::vector<CIMMDeviceHook*> st_MMDeviceHookVecs;
+
+
+static void __DebugMMDevice()
+{
+    unsigned int i;
+    DEBUG_INFO("MMDeviceVecs %d\n",st_MMDeviceVecs.size());
+    for(i=0; i<st_MMDeviceVecs.size(); i++)
+    {
+        DEBUG_INFO("[%d] device 0x%p\n",i,st_MMDeviceVecs[i]);
+    }
+    return;
+}
+
+static CIMMDeviceHook* RegisterMMDevice(IMMDevice* pDevice)
+{
+    CIMMDeviceHook* pDevHook=NULL;
+    int findidx = -1;
+    unsigned int i;
+    EnterCriticalSection(&st_MMDevCS);
+    __DebugMMDevice();
+    assert(st_MMDeviceVecs.size() == st_MMDeviceHookVecs.size());
+    DEBUG_INFO("DEVICE size %d hook size %d\n",st_MMDeviceVecs.size(),st_MMDeviceHookVecs.size());
+    for(i=0; i<st_MMDeviceVecs.size(); i++)
+    {
+        DEBUG_INFO("device[%d] 0x%p\n",i,st_MMDeviceVecs[i]);
+        if(st_MMDeviceVecs[i] == pDevice)
+        {
+            findidx = i;
+            DEBUG_INFO("find [%d]\n",i);
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        pDevHook = st_MMDeviceHookVecs[findidx];
+    }
+    else
+    {
+        pDevHook = new CIMMDeviceHook(pDevice);
+        st_MMDeviceVecs.push_back(pDevice);
+        st_MMDeviceHookVecs.push_back(pDevHook);
+        DEBUG_INFO("PUSH[%d] device 0x%p\n",st_MMDeviceVecs.size(),pDevice);
+        __DebugMMDevice();
+        assert(pDevHook);
+        pDevice->AddRef();
+    }
+
+    LeaveCriticalSection(&st_MMDevCS);
+    DEBUG_INFO("[%d]pDevice  0x%p => Hook 0x%p\n",findidx,pDevice,pDevHook);
+
+    return pDevHook;
+
+}
+
+static ULONG UnRegisterMMDevice(IMMDevice* pDevice)
+{
+    int findidx=-1;
+    ULONG uret;
+    unsigned int i;
+    CIMMDeviceHook* pDevHook=NULL;
+    EnterCriticalSection(&st_MMDevCS);
+    for(i=0; i<st_MMDeviceVecs.size(); i++)
+    {
+        if(st_MMDeviceVecs[i] == pDevice)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        pDevHook = st_MMDeviceHookVecs[findidx];
+        st_MMDeviceHookVecs.erase(st_MMDeviceHookVecs.begin()+findidx);
+        st_MMDeviceVecs.erase(st_MMDeviceVecs.begin() + findidx);
+    }
+
+    LeaveCriticalSection(&st_MMDevCS);
+    uret = 1;
+    if(findidx >= 0)
+    {
+        DEBUG_INFO("UnRegister[%d] 0x%p\n",findidx,pDevice);
+        uret = pDevice->Release();
     }
 
     return uret;
@@ -827,73 +1033,6 @@ public:
 };
 
 
-#define MMDEVICE_IN()
-#define MMDEVICE_OUT()
-
-class CIMMDeviceHook : public IMMDevice
-{
-private:
-    IMMDevice *m_ptr;
-public:
-    CIMMDeviceHook(IMMDevice* ptr) : m_ptr(ptr) {};
-public:
-    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
-    {
-        HRESULT hr;
-        MMDEVICE_IN();
-        hr = m_ptr->QueryInterface(riid,ppvObject);
-        MMDEVICE_OUT();
-        return hr;
-    }
-
-    COM_METHOD(ULONG,AddRef)(THIS)
-    {
-        ULONG uret;
-        MMDEVICE_IN();
-        uret = m_ptr->AddRef();
-        MMDEVICE_OUT();
-        return uret;
-    }
-
-    COM_METHOD(ULONG,Release)(THIS)
-    {
-        ULONG uret;
-        MMDEVICE_IN();
-        uret = m_ptr->Release();
-        MMDEVICE_OUT();
-        return uret;
-    }
-
-    COM_METHOD(HRESULT,Activate)(THIS_ REFIID iid,DWORD dwClsCtx,PROPVARIANT *pActivationParams,void **ppInterface)
-    {
-        HRESULT hr;
-        MMDEVICE_IN();
-        hr = m_ptr->Activate(iid,dwClsCtx,pActivationParams,ppInterface);
-        MMDEVICE_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT,OpenPropertyStore)(THIS_ DWORD stgmAccess,IPropertyStore **ppProperties)
-    {
-        HRESULT hr;
-        MMDEVICE_IN();
-        hr = m_ptr->OpenPropertyStore(stgmAccess,ppProperties);
-        MMDEVICE_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT,GetId)(THIS_ LPWSTR *ppstrId)
-    {
-        HRESULT hr;
-        MMDEVICE_IN();
-        hr = m_ptr->GetId(ppstrId);
-        MMDEVICE_OUT();
-        return hr;
-    }
-
-
-
-};
 
 
 
@@ -959,6 +1098,7 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
 
 static int InitEnvironMentXAudio2(void)
 {
+    InitializeCriticalSection(&st_MMDevEnumCS);
     InitializeCriticalSection(&st_MMDevCS);
     st_InitializeXAudio2 = 1;
     return 0;
