@@ -1,11 +1,12 @@
 
-#include <xaudio2.h>
 #include "routinexaudio2.h"
 #include "..\\common\\output_debug.h"
 #include <assert.h>
 #include <Objbase.h>
 #include "..\\detours\\detours.h"
 #include <Mmdeviceapi.h>
+#include <Audioclient.h>
+#include <XAudio2.h>
 
 
 //#pragma comment(lib,"Xaudio2.lib")
@@ -676,6 +677,33 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,GetDevice)(THIS_ LPCWSTR pwstrId,IMMDevice **ppDevice)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->GetDevice(pwstrId,ppDevice);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT ,RegisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->RegisterEndpointNotificationCallback(pClient);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT ,UnregisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->UnregisterEndpointNotificationCallback(pClient);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
 };
 
 class CIMMDeviceCollectionHook : public IMMDeviceCollection
@@ -687,6 +715,7 @@ public:
 public:
 };
 
+
 class CIMMDeviceHook : public IMMDevice
 {
 private:
@@ -694,6 +723,9 @@ private:
 public:
     CIMMDeviceHook(IMMDevice* ptr) : m_ptr(ptr) {};
 };
+
+
+
 
 class CIAudioClientHook : public IAudioClient
 {
@@ -703,22 +735,18 @@ public:
     CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
 };
 
+
+
 class CIAudioRenderClientHook : public IAudioRenderClient
 {
 private:
     IAudioRenderClient *m_ptr;
 public:
     CIAudioRenderClientHook(IAudioRenderClient *ptr) : m_ptr(ptr) {};
-}
+};
 
 
-static HRESULT(*XAudio2CreateNext)(
-    IXAudio2 **ppXAudio2,
-    UINT32 Flags,
-    XAUDIO2_PROCESSOR XAudio2Processor
-) = XAudio2Create;
-
-static HRESULT(__stdcall *CoCreateInstanceNex)(
+static  HRESULT(WINAPI *CoCreateInstanceNext)(
     REFCLSID rclsid,
     LPUNKNOWN pUnkOuter,
     DWORD dwClsContext,
@@ -727,7 +755,7 @@ static HRESULT(__stdcall *CoCreateInstanceNex)(
 ) = CoCreateInstance;
 
 
-HRESULT __stdcall CoCreateInstanceCallBack(
+HRESULT WINAPI  CoCreateInstanceCallBack(
     REFCLSID rclsid,
     LPUNKNOWN pUnkOuter,
     DWORD dwClsContext,
@@ -736,8 +764,8 @@ HRESULT __stdcall CoCreateInstanceCallBack(
 )
 {
     HRESULT hr;
-    hr = CoCreateInstanceNex(rclsid,
-                             pUnkOuter,dwClsContext,riid,ppv);
+    hr = CoCreateInstanceNext(rclsid,
+                              pUnkOuter,dwClsContext,riid,ppv);
     if(SUCCEEDED(hr) && (rclsid == __uuidof(XAudio2_Debug) ||
                          rclsid == __uuidof(XAudio2)))
     {
@@ -746,31 +774,18 @@ HRESULT __stdcall CoCreateInstanceCallBack(
     }
     else if(SUCCEEDED(hr) && (rclsid == __uuidof(MMDeviceEnumerator)))
     {
-        DEBUG_INFO("find enumerator\n");
+        DEBUG_INFO("find enumerator 0x%p\n",*ppv);
     }
     return hr;
 }
 
-HRESULT WINAPI XAudio2CreateCallBack(
-    IXAudio2 **ppXAudio2,
-    UINT32 Flags,
-    XAUDIO2_PROCESSOR XAudio2Processor
-)
-{
-    HRESULT hr;
-
-    hr = XAudio2CreateNext(ppXAudio2,Flags,XAudio2Processor);
-    DEBUG_INFO("call XAudio2CreateCallBack return hr 0x%08x\n",hr);
-    return hr;
-}
 
 int RoutineDetourXAudio2(void)
 {
     assert(DirectSoundCreate8Next);
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    DetourAttach((PVOID*)&XAudio2CreateNext,XAudio2CreateCallBack);
-    DetourAttach((PVOID*)&CoCreateInstanceNex,CoCreateInstanceCallBack);
+    DetourAttach((PVOID*)&CoCreateInstanceNext,CoCreateInstanceCallBack);
     DetourTransactionCommit();
 
     DEBUG_INFO("xaudio2\n");
