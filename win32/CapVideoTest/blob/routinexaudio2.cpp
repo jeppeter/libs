@@ -678,6 +678,39 @@ public:
 
 };
 
+class CIMMDeviceCollectionHook : public IMMDeviceCollection
+{
+private:
+    IMMDeviceCollection *m_ptr;
+public:
+    CIMMDeviceCollectionHook(IMMDeviceCollection *ptr) : m_ptr(ptr) {};
+public:
+};
+
+class CIMMDeviceHook : public IMMDevice
+{
+private:
+    IMMDevice *m_ptr;
+public:
+    CIMMDeviceHook(IMMDevice* ptr) : m_ptr(ptr) {};
+};
+
+class CIAudioClientHook : public IAudioClient
+{
+private:
+    IAudioClient *m_ptr;
+public:
+    CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
+};
+
+class CIAudioRenderClientHook : public IAudioRenderClient
+{
+private:
+    IAudioRenderClient *m_ptr;
+public:
+    CIAudioRenderClientHook(IAudioRenderClient *ptr) : m_ptr(ptr) {};
+}
+
 
 static HRESULT(*XAudio2CreateNext)(
     IXAudio2 **ppXAudio2,
