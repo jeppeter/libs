@@ -319,6 +319,37 @@ public:
         AUDIO_CLIENT_OUT();
         return hr;
     }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        AUDIO_CLIENT_IN();
+        uret = m_ptr->AddRef();
+        AUDIO_CLIENT_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        AUDIO_CLIENT_IN();
+        uret = m_ptr->Release();
+        AUDIO_CLIENT_OUT();
+        return uret;
+    }
+
+
+    COM_METHOD(HRESULT,Initialize)(THIS_  AUDCLNT_SHAREMODE ShareMode,DWORD StreamFlags,REFERENCE_TIME hnsBufferDuration,
+                                   REFERENCE_TIME hnsPeriodicity,const WAVEFORMATEX *pFormat,LPCGUID AudioSessionGuid)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->Initialize(ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+
 };
 
 
