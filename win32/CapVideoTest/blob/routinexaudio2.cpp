@@ -11,6 +11,9 @@
 
 //#pragma comment(lib,"Xaudio2.lib")
 
+static CRITICAL_SECTION st_MMDevCS;
+static int st_InitializeXAudio2=0;
+
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
 
@@ -775,18 +778,41 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
     else if(SUCCEEDED(hr) && (rclsid == __uuidof(MMDeviceEnumerator)))
     {
         DEBUG_INFO("find enumerator 0x%p\n",*ppv);
+
     }
     return hr;
+}
+
+static int InitEnvironMentXAudio2(void)
+{
+    InitializeCriticalSection(&st_MMDevCS);
+    st_InitializeXAudio2 = 1;
+    return 0;
+}
+
+static void ClearEnvironmentXAudio2(void)
+{
+    if(st_InitializeXAudio2)
+    {
+    }
+    return ;
 }
 
 
 int RoutineDetourXAudio2(void)
 {
+    int ret;
+    ret = InitEnvironMentXAudio2();
+    if(ret < 0)
+    {
+        return 0;
+    }
     assert(DirectSoundCreate8Next);
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&CoCreateInstanceNext,CoCreateInstanceCallBack);
     DetourTransactionCommit();
+
 
     DEBUG_INFO("xaudio2\n");
     return 0;
@@ -794,6 +820,7 @@ int RoutineDetourXAudio2(void)
 
 void RoutineClearXAudio2(void)
 {
+    ClearEnvironmentXAudio2();
     return;
 }
 
