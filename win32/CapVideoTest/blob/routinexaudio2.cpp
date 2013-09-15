@@ -13,14 +13,170 @@
 //#pragma comment(lib,"Xaudio2.lib")
 #define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
 
-#define  MMDEVICE_ENUMERRATOR_IN()
-#define  MMDEVICE_ENUMERRATOR_OUT()
+class CIMMDeviceCollectionHook;
+static ULONG UnRegisterMMDevCollection(IMMDeviceCollection* pCollection);
+static CIMMDeviceCollectionHook* RegisterMMDevCollection(IMMDeviceCollection* pCollection);
 
 
 class CIMMDeviceHook;
 static ULONG UnRegisterMMEnumerator(IMMDeviceEnumerator *pEnumerator);
 static ULONG UnRegisterMMDevice(IMMDevice *pDevice);
 static CIMMDeviceHook* RegisterMMDevice(IMMDevice* pDevice);
+
+
+
+static CRITICAL_SECTION st_MMDevCollectionCS;
+static std::vector<IMMDeviceCollection*> st_MMDevCollectionVecs;
+static std::vector<CIMMDeviceCollectionHook*> st_MMColHookVecs;
+
+#define  MMDEV_COLLECTION_IN()
+#define  MMDEV_COLLECTION_OUT()
+
+class CIMMDeviceCollectionHook : public IMMDeviceCollection
+{
+private:
+    IMMDeviceCollection *m_ptr;
+public:
+    CIMMDeviceCollectionHook(IMMDeviceCollection *ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEV_COLLECTION_IN();
+        uret = m_ptr->AddRef();
+        MMDEV_COLLECTION_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEV_COLLECTION_IN();
+        uret = m_ptr->Release();
+        if(uret == 1)
+        {
+            uret = UnRegisterMMDevCollection(m_ptr);
+            if(uret == 0)
+            {
+                this->m_ptr = NULL;
+            }
+        }
+        MMDEV_COLLECTION_OUT();
+        if(uret == 0)
+        {
+            delete this;
+        }
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,GetCount)(THIS_ UINT *pcDevices)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->GetCount(pcDevices);
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Item)(THIS_ UINT nDevice,IMMDevice **ppDevice)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->Item(nDevice,ppDevice);
+        if(SUCCEEDED(hr))
+        {
+            CIMMDeviceHook* pHook=NULL;
+            IMMDevice   *pDevice= *ppDevice;
+            pHook = RegisterMMDevice(pDevice);
+            *ppDevice = (IMMDevice*)pHook;
+            DEBUG_INFO("item %d device 0x%p hook 0x%p\n",nDevice,pDevice,pHook);
+        }
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
+};
+
+static CIMMDeviceCollectionHook* RegisterMMDevCollection(IMMDeviceCollection * pCollection)
+{
+    int findidx = -1;
+    unsigned int i;
+    CIMMDeviceCollectionHook* pCollectHook=NULL;
+    EnterCriticalSection(&st_MMDevCollectionCS);
+
+    assert(st_MMDevCollectionVecs.size() == st_MMColHookVecs.size());
+    for(i=0; i<st_MMDevCollectionVecs.size(); i++)
+    {
+        if(st_MMDevCollectionVecs[i] == pCollection)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx < 0)
+    {
+        pCollectHook = new CIMMDeviceCollectionHook(pCollection);
+        st_MMDevCollectionVecs.push_back(pCollection);
+        st_MMColHookVecs.push_back(pCollectHook);
+        pCollection->AddRef();
+    }
+    else
+    {
+        pCollectHook = st_MMColHookVecs[findidx];
+    }
+    LeaveCriticalSection(&st_MMDevCollectionCS);
+    return pCollectHook;
+}
+
+
+static ULONG UnRegisterMMDevCollection(IMMDeviceCollection * pCollection)
+{
+    ULONG uret;
+    CIMMDeviceCollectionHook *pColHook=NULL;
+    int findidx=-1;
+    unsigned int i;
+
+    EnterCriticalSection(&st_MMDevCollectionCS);
+    for(i=0; i<st_MMDevCollectionVecs.size(); i++)
+    {
+        if(st_MMDevCollectionVecs[i] == pCollection)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        st_MMDevCollectionVecs.erase(st_MMDevCollectionVecs.begin() + findidx);
+        st_MMColHookVecs.erase(st_MMColHookVecs.begin() + findidx);
+    }
+
+    LeaveCriticalSection(&st_MMDevCollectionCS);
+    uret = 1;
+    if(findidx >= 0)
+    {
+        uret = pCollection->Release();
+    }
+    return uret;
+}
+
+
+
+#define  MMDEVICE_ENUMERRATOR_IN()
+#define  MMDEVICE_ENUMERRATOR_OUT()
+
+
+
 
 class CIMMDeviceEnumeratorHook : public IMMDeviceEnumerator
 {
@@ -78,7 +234,11 @@ public:
         hr = m_ptr->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices);
         if(SUCCEEDED(hr))
         {
-            DEBUG_INFO("dataflow %d statemask %d pointer 0x%p\n",dataFlow,dwStateMask,*ppDevices);
+            CIMMDeviceCollectionHook *pColHook=NULL;
+            IMMDeviceCollection* pCollection=*ppDevices;
+            pColHook = RegisterMMDevCollection(pCollection);
+            *ppDevices =(IMMDeviceCollection*) pColHook;
+            DEBUG_INFO("dataflow %d statemask %d pointer 0x%p Hook 0x%p\n",dataFlow,dwStateMask,pCollection,pColHook);
         }
         MMDEVICE_ENUMERRATOR_OUT();
 
@@ -1022,61 +1182,6 @@ public:
 };
 
 
-#define  MMDEV_COLLECTION_IN()
-#define  MMDEV_COLLECTION_OUT()
-
-class CIMMDeviceCollectionHook : public IMMDeviceCollection
-{
-private:
-    IMMDeviceCollection *m_ptr;
-public:
-    CIMMDeviceCollectionHook(IMMDeviceCollection *ptr) : m_ptr(ptr) {};
-public:
-    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
-    {
-        HRESULT hr;
-        MMDEV_COLLECTION_IN();
-        hr = m_ptr->QueryInterface(riid,ppvObject);
-        MMDEV_COLLECTION_OUT();
-        return hr;
-    }
-
-    COM_METHOD(ULONG,AddRef)(THIS)
-    {
-        ULONG uret;
-        MMDEV_COLLECTION_IN();
-        uret = m_ptr->AddRef();
-        MMDEV_COLLECTION_OUT();
-        return uret;
-    }
-
-    COM_METHOD(ULONG,Release)(THIS)
-    {
-        ULONG uret;
-        MMDEV_COLLECTION_IN();
-        uret = m_ptr->Release();
-        MMDEV_COLLECTION_OUT();
-        return uret;
-    }
-
-    COM_METHOD(HRESULT,GetCount)(THIS_ UINT *pcDevices)
-    {
-        HRESULT hr;
-        MMDEV_COLLECTION_IN();
-        hr = m_ptr->GetCount(pcDevices);
-        MMDEV_COLLECTION_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT,Item)(THIS_ UINT nDevice,IMMDevice **ppDevice)
-    {
-        HRESULT hr;
-        MMDEV_COLLECTION_IN();
-        hr = m_ptr->Item(nDevice,ppDevice);
-        MMDEV_COLLECTION_OUT();
-        return hr;
-    }
-};
 
 
 
@@ -1146,6 +1251,7 @@ static int InitEnvironMentXAudio2(void)
 {
     InitializeCriticalSection(&st_MMDevEnumCS);
     InitializeCriticalSection(&st_MMDevCS);
+    InitializeCriticalSection(&st_MMDevCollectionCS);
     st_InitializeXAudio2 = 1;
     return 0;
 }
