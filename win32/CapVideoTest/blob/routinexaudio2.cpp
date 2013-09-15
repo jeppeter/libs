@@ -1022,6 +1022,8 @@ public:
 };
 
 
+#define  MMDEV_COLLECTION_IN()
+#define  MMDEV_COLLECTION_OUT()
 
 class CIMMDeviceCollectionHook : public IMMDeviceCollection
 {
@@ -1030,6 +1032,50 @@ private:
 public:
     CIMMDeviceCollectionHook(IMMDeviceCollection *ptr) : m_ptr(ptr) {};
 public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEV_COLLECTION_IN();
+        uret = m_ptr->AddRef();
+        MMDEV_COLLECTION_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEV_COLLECTION_IN();
+        uret = m_ptr->Release();
+        MMDEV_COLLECTION_OUT();
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,GetCount)(THIS_ UINT *pcDevices)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->GetCount(pcDevices);
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Item)(THIS_ UINT nDevice,IMMDevice **ppDevice)
+    {
+        HRESULT hr;
+        MMDEV_COLLECTION_IN();
+        hr = m_ptr->Item(nDevice,ppDevice);
+        MMDEV_COLLECTION_OUT();
+        return hr;
+    }
 };
 
 
