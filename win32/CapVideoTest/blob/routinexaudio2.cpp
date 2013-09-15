@@ -7,14 +7,204 @@
 #include <Mmdeviceapi.h>
 #include <Audioclient.h>
 #include <XAudio2.h>
+#include <vector>
 
 
 //#pragma comment(lib,"Xaudio2.lib")
+#define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
+
+#define  MMDEVICE_ENUMERRATOR_IN()
+#define  MMDEVICE_ENUMERRATOR_OUT()
+
+static ULONG UnRegisterEnumerator(IMMDeviceEnumerator *pEnumerator);
+
+
+class CIMMDeviceEnumeratorHook : public IMMDeviceEnumerator
+{
+private:
+    IMMDeviceEnumerator *m_ptr;
+public:
+    CIMMDeviceEnumeratorHook(IMMDeviceEnumerator *ptr):m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_ENUMERRATOR_IN();
+        uret = m_ptr->AddRef();
+        MMDEVICE_ENUMERRATOR_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_ENUMERRATOR_IN();
+        uret = m_ptr->Release();
+
+        DEBUG_INFO("Release return %ld\n",uret);
+        if(uret == 1)
+        {
+            uret = UnRegisterEnumerator(m_ptr);
+        }
+        MMDEVICE_ENUMERRATOR_OUT();
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,EnumAudioEndpoints)(THIS_  EDataFlow dataFlow,DWORD dwStateMask,IMMDeviceCollection **ppDevices)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("dataflow %d statemask %d pointer 0x%p\n",dataFlow,dwStateMask,*ppDevices);
+        }
+        MMDEVICE_ENUMERRATOR_OUT();
+
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetDefaultAudioEndpoint)(THIS_ EDataFlow dataFlow,ERole role,IMMDevice **ppEndpoint)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("put dataflow %d role %d pointer 0x%p\n",dataFlow,role,*ppEndpoint);
+        }
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetDevice)(THIS_ LPCWSTR pwstrId,IMMDevice **ppDevice)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->GetDevice(pwstrId,ppDevice);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("Get Device %S 0x%p\n",pwstrId,*ppDevice);
+        }
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT ,RegisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->RegisterEndpointNotificationCallback(pClient);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT ,UnregisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
+    {
+        HRESULT hr;
+        MMDEVICE_ENUMERRATOR_IN();
+        hr = m_ptr->UnregisterEndpointNotificationCallback(pClient);
+        MMDEVICE_ENUMERRATOR_OUT();
+        return hr;
+    }
+
+};
+
+
 
 static CRITICAL_SECTION st_MMDevCS;
 static int st_InitializeXAudio2=0;
 
-#define COM_METHOD(TYPE, METHOD) TYPE STDMETHODCALLTYPE METHOD
+static std::vector<IMMDeviceEnumerator*> st_Enumerators;
+static std::vector<CIMMDeviceEnumeratorHook*> st_EnumHooks;
+
+static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumerator)
+{
+    int ret=1;
+    unsigned int i;
+    int findidx = -1;
+    CIMMDeviceEnumeratorHook* pEnumHook=NULL;
+    EnterCriticalSection(&st_MMDevCS);
+    ULONG uret;
+
+    findidx = -1;
+    for(i=0; i<st_Enumerators.size() ; i++)
+    {
+        if(st_Enumerators[i] == pEnumerator)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx < 0)
+    {
+        pEnumHook = new CIMMDeviceEnumeratorHook(pEnumerator);
+        st_Enumerators.push_back(pEnumerator);
+        st_EnumHooks.push_back(pEnumHook);
+        uret = pEnumerator->AddRef();
+    }
+    else
+    {
+        pEnumHook = st_EnumHooks[findidx];
+    }
+
+    LeaveCriticalSection(&st_MMDevCS);
+
+    if(findidx < 0)
+    {
+        DEBUG_INFO("0x%p uret %d\n",pEnumHook,uret);
+    }
+
+    return pEnumHook;
+}
+
+static ULONG UnRegisterEnumerator(IMMDeviceEnumerator *pEnumerator)
+{
+    ULONG uret=1;
+    unsigned int i;
+    int findidx =-1;
+
+    DEBUG_INFO("Unregister Enumerator 0x%p\n",pEnumerator);
+    EnterCriticalSection(&st_MMDevCS);
+
+    for(i=0; i<st_Enumerators.size() ; i++)
+    {
+        if(st_Enumerators[i] == pEnumerator)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        st_Enumerators.erase(st_Enumerators.begin() + findidx);
+        st_EnumHooks.erase(st_EnumHooks.begin() + findidx);
+    }
+
+    LeaveCriticalSection(&st_MMDevCS);
+
+    uret = 1;
+    if(findidx >= 0)
+    {
+        uret = pEnumerator->Release();
+    }
+
+    return uret;
+}
+
+
+
 
 
 #define  XAUDIO2_IN()
@@ -625,89 +815,7 @@ public:
 
 };
 
-#define  MMDEVICE_ENUMERRATOR_IN()
-#define  MMDEVICE_ENUMERRATOR_OUT()
 
-class CIMMDeviceEnumeratorHook : public IMMDeviceEnumerator
-{
-private:
-    IMMDeviceEnumerator *m_ptr;
-public:
-    CIMMDeviceEnumeratorHook(IMMDeviceEnumerator *ptr) : m_ptr(ptr) {};
-public:
-    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->QueryInterface(riid,ppvObject);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-    COM_METHOD(ULONG,AddRef)(THIS)
-    {
-        ULONG uret;
-        MMDEVICE_ENUMERRATOR_IN();
-        uret = m_ptr->AddRef();
-        MMDEVICE_ENUMERRATOR_OUT();
-        return uret;
-    }
-
-    COM_METHOD(ULONG,Release)(THIS)
-    {
-        ULONG uret;
-        MMDEVICE_ENUMERRATOR_IN();
-        uret = m_ptr->Release();
-        MMDEVICE_ENUMERRATOR_OUT();
-        return uret;
-    }
-
-    COM_METHOD(HRESULT,EnumAudioEndpoints)(THIS_  EDataFlow dataFlow,DWORD dwStateMask,IMMDeviceCollection **ppDevices)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT,GetDefaultAudioEndpoint)(THIS_ EDataFlow dataFlow,ERole role,IMMDevice **ppEndpoint)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT,GetDevice)(THIS_ LPCWSTR pwstrId,IMMDevice **ppDevice)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->GetDevice(pwstrId,ppDevice);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT ,RegisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->RegisterEndpointNotificationCallback(pClient);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-    COM_METHOD(HRESULT ,UnregisterEndpointNotificationCallback)(THIS_ IMMNotificationClient *pClient)
-    {
-        HRESULT hr;
-        MMDEVICE_ENUMERRATOR_IN();
-        hr = m_ptr->UnregisterEndpointNotificationCallback(pClient);
-        MMDEVICE_ENUMERRATOR_OUT();
-        return hr;
-    }
-
-};
 
 class CIMMDeviceCollectionHook : public IMMDeviceCollection
 {
@@ -719,12 +827,72 @@ public:
 };
 
 
+#define MMDEVICE_IN()
+#define MMDEVICE_OUT()
+
 class CIMMDeviceHook : public IMMDevice
 {
 private:
     IMMDevice *m_ptr;
 public:
     CIMMDeviceHook(IMMDevice* ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_IN();
+        uret = m_ptr->AddRef();
+        MMDEVICE_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        MMDEVICE_IN();
+        uret = m_ptr->Release();
+        MMDEVICE_OUT();
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,Activate)(THIS_ REFIID iid,DWORD dwClsCtx,PROPVARIANT *pActivationParams,void **ppInterface)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->Activate(iid,dwClsCtx,pActivationParams,ppInterface);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,OpenPropertyStore)(THIS_ DWORD stgmAccess,IPropertyStore **ppProperties)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->OpenPropertyStore(stgmAccess,ppProperties);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetId)(THIS_ LPWSTR *ppstrId)
+    {
+        HRESULT hr;
+        MMDEVICE_IN();
+        hr = m_ptr->GetId(ppstrId);
+        MMDEVICE_OUT();
+        return hr;
+    }
+
+
+
 };
 
 
@@ -777,7 +945,13 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
     }
     else if(SUCCEEDED(hr) && (rclsid == __uuidof(MMDeviceEnumerator)))
     {
-        DEBUG_INFO("find enumerator 0x%p\n",*ppv);
+        IMMDeviceEnumerator* pEnumerator = (IMMDeviceEnumerator*)(*ppv);
+        CIMMDeviceEnumeratorHook* pEnumHook=NULL;
+        pEnumHook = RegisterEnumerator(pEnumerator);
+
+        DEBUG_INFO("find enumerator 0x%p hook 0x%p\n",pEnumerator,pEnumHook);
+        assert(pEnumHook);
+        *ppv = (LPVOID)pEnumHook;
 
     }
     return hr;
