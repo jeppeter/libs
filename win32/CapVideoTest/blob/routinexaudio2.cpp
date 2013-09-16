@@ -301,8 +301,18 @@ public:
 
 };
 
+class CIAudioClientHook;
+
 #define  AUDIO_CLIENT_IN()
 #define  AUDIO_CLIENT_OUT()
+
+static std::vector<IAudioClient*> st_AudioClientVecs;
+static std::vector<CIAudioClientHook*> st_AudioClientHookVecs;
+static CRITICAL_SECTION st_AudioClientCS;
+
+static CIAudioClientHook* RegisterAudioClient(IAudioClient* pAudio);
+static ULONG UnRegisterAudioClient(IAudioClient* pAudio);
+
 
 class CIAudioClientHook : public IAudioClient
 {
@@ -450,6 +460,76 @@ public:
 
 
 };
+
+
+static CIAudioClientHook* RegisterAudioClient(IAudioClient * pAudio)
+{
+    CIAudioClientHook* pAudioHook=NULL;
+    int findidx = -1;
+    unsigned int i;
+
+    EnterCriticalSection(&st_AudioClientCS);
+
+    assert(st_AudioClientHookVecs.size() ==  st_AudioClientVecs.size());
+    for(i=0; i<st_AudioClientVecs.size() ; i++)
+    {
+        if(st_AudioClientVecs[i] == pAudio)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        pAudioHook = st_AudioClientHookVecs[findidx];
+    }
+    else
+    {
+        pAudioHook = new CIAudioClientHook(pAudio);
+        st_AudioClientHookVecs.push_back(pAudioHook);
+        st_AudioClientVecs.push_back(pAudio);
+        pAudio->AddRef();
+    }
+
+    LeaveCriticalSection(&st_AudioClientCS);
+    return pAudioHook;
+}
+
+static ULONG UnRegisterAudioClient(IAudioClient * pAudio)
+{
+    int findidx = -1;
+    unsigned int i;
+    ULONG uret;
+
+    EnterCriticalSection(&st_AudioClientCS);
+
+    assert(st_AudioClientHookVecs.size() ==  st_AudioClientVecs.size());
+    for(i=0; i<st_AudioClientVecs.size() ; i++)
+    {
+        if(st_AudioClientVecs[i] == pAudio)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        st_AudioClientHookVecs.erase(st_AudioClientHookVecs.begin() + findidx);
+        st_AudioClientVecs.erase(st_AudioClientVecs.begin() + findidx);
+    }
+
+    LeaveCriticalSection(&st_AudioClientCS);
+
+    uret = 1;
+    if(findidx >= 0)
+    {
+        uret = pAudio->Release();
+    }
+    return uret;
+}
+
 
 
 #define MMDEVICE_IN()
@@ -1402,6 +1482,7 @@ static int InitEnvironMentXAudio2(void)
     InitializeCriticalSection(&st_MMDevEnumCS);
     InitializeCriticalSection(&st_MMDevCS);
     InitializeCriticalSection(&st_MMDevCollectionCS);
+    InitializeCriticalSection(&st_AudioClientCS);
     st_InitializeXAudio2 = 1;
     return 0;
 }
