@@ -302,6 +302,14 @@ public:
 };
 
 
+class CIAudioRenderClientHook;
+static std::vector<IAudioRenderClient*> st_AudioRenderClientVecs;
+static std::vector<CIAudioRenderClientHook*> st_AudioRenderClientHookVecs;
+static CRITICAL_SECTION st_AudioRenderClientCS;
+
+static CIAudioRenderClientHook* RegisterAudioRenderClient(IAudioRenderClient* pRender);
+static ULONG UnRegisterAudioRenderClient(IAudioRenderClient* pRender);
+
 #define AUDIO_RENDER_CLIENT_IN()
 #define AUDIO_RENDER_CLIENT_OUT()
 
@@ -320,7 +328,116 @@ public:
         AUDIO_RENDER_CLIENT_OUT();
         return hr;
     }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        AUDIO_RENDER_CLIENT_IN();
+        uret = m_ptr->AddRef();
+        AUDIO_RENDER_CLIENT_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        AUDIO_RENDER_CLIENT_IN();
+        uret = m_ptr->Release();
+        if(uret == 1)
+        {
+            uret = UnRegisterAudioRenderClient(m_ptr);
+        }
+        AUDIO_RENDER_CLIENT_OUT();
+        if(uret == 0)
+        {
+            delete this;
+        }
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,GetBuffer)(THIS_ UINT32 NumFramesRequested,BYTE **ppData)
+    {
+        HRESULT hr;
+        AUDIO_RENDER_CLIENT_IN();
+        hr = m_ptr->GetBuffer(NumFramesRequested,ppData);
+        AUDIO_RENDER_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,ReleaseBuffer)(THIS_ UINT32 NumFramesWritten,DWORD dwFlags)
+    {
+        HRESULT hr;
+        AUDIO_RENDER_CLIENT_IN();
+        hr = m_ptr->ReleaseBuffer(NumFramesWritten,dwFlags);
+        AUDIO_RENDER_CLIENT_OUT();
+        return hr;
+    }
+
+
 };
+
+static CIAudioRenderClientHook* RegisterAudioRenderClient(IAudioRenderClient * pRender)
+{
+    CIAudioRenderClientHook* pHook=NULL;
+    int findidx=-1;
+    unsigned int i;
+
+    EnterCriticalSection(&st_AudioRenderClientCS);
+    assert(st_AudioRenderClientVecs.size() == st_AudioRenderClientHookVecs.size());
+    for(i=0; i<st_AudioRenderClientVecs.size(); i++)
+    {
+        if(st_AudioRenderClientVecs[i] == pRender)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        pHook = st_AudioRenderClientHookVecs[findidx];
+    }
+    else
+    {
+        pHook = new CIAudioRenderClientHook(pRender);
+        st_AudioRenderClientVecs.push_back(pRender);
+        st_AudioRenderClientHookVecs.push_back(pHook);
+        pRender->AddRef();
+    }
+    LeaveCriticalSection(&st_AudioRenderClientCS);
+    return pHook;
+}
+
+static ULONG UnRegisterAudioRenderClient(IAudioRenderClient * pRender)
+{
+    int findidx=-1;
+    unsigned int i;
+    ULONG uret;
+
+    EnterCriticalSection(&st_AudioRenderClientCS);
+    assert(st_AudioRenderClientVecs.size() == st_AudioRenderClientHookVecs.size());
+    for(i=0; i<st_AudioRenderClientVecs.size(); i++)
+    {
+        if(st_AudioRenderClientVecs[i] == pRender)
+        {
+            findidx = i;
+            break;
+        }
+    }
+
+    if(findidx >= 0)
+    {
+        st_AudioRenderClientVecs.erase(st_AudioRenderClientVecs.begin()+findidx);
+        st_AudioRenderClientHookVecs.erase(st_AudioRenderClientHookVecs.begin() + findidx);
+    }
+    LeaveCriticalSection(&st_AudioRenderClientCS);
+    uret = 1;
+    if(findidx >= 0)
+    {
+        uret = pRender->Release();
+    }
+    return uret;
+}
 
 class CIAudioClientHook;
 
@@ -483,6 +600,16 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->GetService(riid,ppv);
+        if(SUCCEEDED(hr))
+        {
+            if(riid == __uuidof(IAudioRenderClient))
+            {
+                IAudioRenderClient* pRender=(IAudioRenderClient*)*ppv;
+                CIAudioRenderClientHook* pHook=NULL;
+                pHook = RegisterAudioRenderClient(pRender);
+                *ppv = (IAudioRenderClient*) pHook;
+            }
+        }
         AUDIO_CLIENT_OUT();
         return hr;
     }
@@ -1502,6 +1629,7 @@ static int InitEnvironMentXAudio2(void)
     InitializeCriticalSection(&st_MMDevCS);
     InitializeCriticalSection(&st_MMDevCollectionCS);
     InitializeCriticalSection(&st_AudioClientCS);
+    InitializeCriticalSection(&st_AudioRenderClientCS);
     st_InitializeXAudio2 = 1;
     return 0;
 }
