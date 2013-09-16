@@ -344,7 +344,15 @@ public:
         ULONG uret;
         AUDIO_CLIENT_IN();
         uret = m_ptr->Release();
+        if(uret == 1)
+        {
+            uret = UnRegisterAudioClient(m_ptr);
+        }
         AUDIO_CLIENT_OUT();
+        if(uret == 0)
+        {
+            delete this;
+        }
         return uret;
     }
 
@@ -591,6 +599,10 @@ public:
             if(iid == __uuidof(IAudioClient))
             {
                 DEBUG_INFO("dwClsCtx 0x%x void* 0x%p\n",dwClsCtx,*ppInterface);
+                CIAudioClientHook* pAudioHook=NULL;
+                IAudioClient* pAudio=(IAudioClient*)*ppInterface;
+                pAudioHook = new CIAudioClientHook(pAudio);
+                *ppInterface = (IAudioClient*) pAudioHook;
             }
         }
         MMDEVICE_OUT();
