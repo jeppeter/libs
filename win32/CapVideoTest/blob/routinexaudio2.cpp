@@ -349,6 +349,105 @@ public:
         return hr;
     }
 
+    COM_METHOD(HRESULT,GetBufferSize)(THIS_ UINT32 *pNumBufferFrames)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetBufferSize(pNumBufferFrames);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetStreamLatency)(THIS_  REFERENCE_TIME *phnsLatency)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetStreamLatency(phnsLatency);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetCurrentPadding)(THIS_  UINT32 *pNumPaddingFrames)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetCurrentPadding(pNumPaddingFrames);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,IsFormatSupported)(THIS_  AUDCLNT_SHAREMODE ShareMode,const WAVEFORMATEX *pFormat,WAVEFORMATEX **ppClosestMatch)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->IsFormatSupported(ShareMode,pFormat,ppClosestMatch);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetMixFormat)(THIS_  WAVEFORMATEX **ppDeviceFormat)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetMixFormat(ppDeviceFormat);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetDevicePeriod)(THIS_  REFERENCE_TIME *phnsDefaultDevicePeriod,REFERENCE_TIME *phnsMinimumDevicePeriod)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetDevicePeriod(phnsDefaultDevicePeriod,phnsMinimumDevicePeriod);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Start)(THIS)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->Start();
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Stop)(THIS)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->Stop();
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,Reset)(THIS)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->Reset();
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,SetEventHandle)(THIS_ HANDLE eventHandle)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->SetEventHandle(eventHandle);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(HRESULT,GetService)(THIS_  REFIID riid,void **ppv)
+    {
+        HRESULT hr;
+        AUDIO_CLIENT_IN();
+        hr = m_ptr->GetService(riid,ppv);
+        AUDIO_CLIENT_OUT();
+        return hr;
+    }
+
 
 };
 
