@@ -301,6 +301,27 @@ public:
 
 };
 
+
+#define AUDIO_RENDER_CLIENT_IN()
+#define AUDIO_RENDER_CLIENT_OUT()
+
+class CIAudioRenderClientHook : IAudioRenderClient
+{
+private:
+    IAudioRenderClient* m_ptr;
+public:
+    CIAudioRenderClientHook(IAudioRenderClient *ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_  REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        AUDIO_RENDER_CLIENT_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        AUDIO_RENDER_CLIENT_OUT();
+        return hr;
+    }
+};
+
 class CIAudioClientHook;
 
 #define  AUDIO_CLIENT_IN()
@@ -1433,20 +1454,6 @@ public:
 };
 
 
-
-
-
-
-
-
-
-class CIAudioRenderClientHook : public IAudioRenderClient
-{
-private:
-    IAudioRenderClient *m_ptr;
-public:
-    CIAudioRenderClientHook(IAudioRenderClient *ptr) : m_ptr(ptr) {};
-};
 
 
 static  HRESULT(WINAPI *CoCreateInstanceNext)(
