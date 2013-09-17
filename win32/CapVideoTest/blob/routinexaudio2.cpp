@@ -44,6 +44,17 @@ public:
         HRESULT hr;
         MMDEV_COLLECTION_IN();
         hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         MMDEV_COLLECTION_OUT();
         return hr;
     }
@@ -194,6 +205,17 @@ public:
         HRESULT hr;
         MMDEVICE_ENUMERRATOR_IN();
         hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         MMDEVICE_ENUMERRATOR_OUT();
         return hr;
     }
@@ -327,6 +349,17 @@ public:
         HRESULT hr;
         AUDIO_RENDER_CLIENT_IN();
         hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         AUDIO_RENDER_CLIENT_OUT();
         return hr;
     }
@@ -478,6 +511,17 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         AUDIO_CLIENT_OUT();
         return hr;
     }
@@ -620,6 +664,14 @@ public:
         hr = m_ptr->GetService(riid,ppv);
         if(SUCCEEDED(hr))
         {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
             if(riid == __uuidof(IAudioRenderClient))
             {
                 IAudioRenderClient* pRender=(IAudioRenderClient*)*ppv;
@@ -722,6 +774,17 @@ public:
         HRESULT hr;
         MMDEVICE_IN();
         hr = m_ptr->QueryInterface(riid,ppvObject);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         MMDEVICE_OUT();
         return hr;
     }
@@ -997,6 +1060,17 @@ public:
         HRESULT hr;
         XAUDIO2_IN();
         hr = m_ptr->QueryInterface(riid,ppvObj);
+        if(SUCCEEDED(hr))
+        {
+            LPOLESTR pstr=NULL,iidstr=NULL;
+            HRESULT rhr,shr;
+            rhr = StringFromCLSID(riid,&iidstr);
+            shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+            {
+                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+            }
+        }
         XAUDIO2_OUT();
         return hr;
     }
@@ -1616,11 +1690,15 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
                               pUnkOuter,dwClsContext,riid,ppv);
     if(SUCCEEDED(hr))
     {
+        HRESULT rhr,shr;
         unsigned char* pClsId = (unsigned char*)&rclsid;
-        DEBUG_INFO("classid %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",pClsId[3],pClsId[2],pClsId[1],pClsId[0],pClsId[5],pClsId[4],
-                   pClsId[7],pClsId[6],
-                   pClsId[8],pClsId[9],
-                   pClsId[10],pClsId[11],pClsId[12],pClsId[13],pClsId[14],pClsId[15]);
+        LPOLESTR pstr=NULL,clsstr=NULL;
+        rhr = OleRegGetUserType(rclsid, USERCLASSTYPE_FULL,&pstr);
+        shr = StringFromCLSID(rclsid,&clsstr);
+        if(SUCCEEDED(rhr) && SUCCEEDED(shr))
+        {
+            DEBUG_INFO("classid (%S) (%S)\n",clsstr,pstr);
+        }
         if(rclsid == __uuidof(XAudio2_Debug))
         {
             DEBUG_INFO("XAudio2_Debug Interface\n");
@@ -1639,10 +1717,6 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
             assert(pEnumHook);
             *ppv = (LPVOID)pEnumHook;
             DEBUG_INFO("IMMDeviceEnumerator interface\n");
-        }
-        else if(rclsid == __uuidof(IMMDevice))
-        {
-            DEBUG_INFO("IMMDevice interface\n");
         }
 
     }
