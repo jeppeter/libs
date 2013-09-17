@@ -29,8 +29,8 @@ static CRITICAL_SECTION st_MMDevCollectionCS;
 static std::vector<IMMDeviceCollection*> st_MMDevCollectionVecs;
 static std::vector<CIMMDeviceCollectionHook*> st_MMColHookVecs;
 
-#define  MMDEV_COLLECTION_IN()
-#define  MMDEV_COLLECTION_OUT()
+#define  MMDEV_COLLECTION_IN() do{DEBUG_INFO("MMDEV_COLLECTION_IN\n");}while(0)
+#define  MMDEV_COLLECTION_OUT() 
 
 class CIMMDeviceCollectionHook : public IMMDeviceCollection
 {
@@ -172,7 +172,7 @@ static ULONG UnRegisterMMDevCollection(IMMDeviceCollection * pCollection)
 
 
 
-#define  MMDEVICE_ENUMERRATOR_IN()
+#define  MMDEVICE_ENUMERRATOR_IN() do{DEBUG_INFO("MMDEVICE_ENUMERATOR_IN\n");}while(0)
 #define  MMDEVICE_ENUMERRATOR_OUT()
 
 
@@ -209,7 +209,6 @@ public:
         MMDEVICE_ENUMERRATOR_IN();
         uret = m_ptr->Release();
 
-        DEBUG_INFO("Release return %ld\n",uret);
         if(uret == 1)
         {
             uret = UnRegisterMMEnumerator(m_ptr);
@@ -309,7 +308,7 @@ static CRITICAL_SECTION st_AudioRenderClientCS;
 static CIAudioRenderClientHook* RegisterAudioRenderClient(IAudioRenderClient* pRender);
 static ULONG UnRegisterAudioRenderClient(IAudioRenderClient* pRender);
 
-#define AUDIO_RENDER_CLIENT_IN()
+#define AUDIO_RENDER_CLIENT_IN() do{DEBUG_INFO("AUDIO_RENDER_CLIENT_IN\n");}while(0)
 #define AUDIO_RENDER_CLIENT_OUT()
 
 class CIAudioRenderClientHook : IAudioRenderClient
@@ -452,8 +451,8 @@ static ULONG UnRegisterAudioRenderClient(IAudioRenderClient * pRender)
 
 class CIAudioClientHook;
 
-#define  AUDIO_CLIENT_IN()
-#define  AUDIO_CLIENT_OUT()
+#define  AUDIO_CLIENT_IN() do{DEBUG_INFO("AUDIO CLIENT IN\n");}while(0)
+#define  AUDIO_CLIENT_OUT() 
 
 static std::vector<IAudioClient*> st_AudioClientVecs;
 static std::vector<CIAudioClientHook*> st_AudioClientHookVecs;
@@ -623,6 +622,7 @@ public:
                 CIAudioRenderClientHook* pHook=NULL;
                 pHook = RegisterAudioRenderClient(pRender);
                 *ppv = (IAudioRenderClient*) pHook;
+				DEBUG_INFO("Render 0x%p hook 0x%p\n",pRender,pHook);
             }
         }
         AUDIO_CLIENT_OUT();
@@ -703,7 +703,7 @@ static ULONG UnRegisterAudioClient(IAudioClient * pAudio)
 
 
 
-#define MMDEVICE_IN()
+#define MMDEVICE_IN() do{DEBUG_INFO("MMDEVICE_IN\n");}while(0)
 #define MMDEVICE_OUT()
 
 class CIMMDeviceHook : public IMMDevice

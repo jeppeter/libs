@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-#define  DEBUG_INFO(fmt,...) DebugOutString(__FILE__,__LINE__,fmt,__VA_ARGS__)
-#define  ERROR_INFO(fmt,...) DebugOutString(__FILE__,__LINE__,fmt,__VA_ARGS__)
-#define  DEBUG_BUFFER(ptr,blen) DebugBuffer(__FILE__,__LINE__,(unsigned char*)ptr,blen)
+#define  DEBUG_INFO(fmt,...) DebugOutString(__FILE__,__FUNCTION__,__LINE__,fmt,__VA_ARGS__)
+#define  ERROR_INFO(fmt,...) DebugOutString(__FILE__,__FUNCTION__,__LINE__,fmt,__VA_ARGS__)
+#define  DEBUG_BUFFER(ptr,blen) DebugBuffer(__FILE__,__FUNCTION__,__LINE__,(unsigned char*)ptr,blen)
 
-extern "C" void DebugOutString(const char* file,int lineno,const char* fmt,...);
-extern "C" void DebugBuffer(const char* file,int lineno,unsigned char* pBuffer,int buflen);
+extern "C" void DebugOutString(const char* file,const char* func,int lineno,const char* fmt,...);
+extern "C" void DebugBuffer(const char* file,const char* func,int lineno,unsigned char* pBuffer,int buflen);
 
 #ifdef __cplusplus
 }
