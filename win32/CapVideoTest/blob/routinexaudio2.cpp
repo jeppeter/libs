@@ -30,7 +30,7 @@ static std::vector<IMMDeviceCollection*> st_MMDevCollectionVecs;
 static std::vector<CIMMDeviceCollectionHook*> st_MMColHookVecs;
 
 #define  MMDEV_COLLECTION_IN() do{DEBUG_INFO("MMDEV_COLLECTION_IN\n");}while(0)
-#define  MMDEV_COLLECTION_OUT() 
+#define  MMDEV_COLLECTION_OUT()
 
 class CIMMDeviceCollectionHook : public IMMDeviceCollection
 {
@@ -83,6 +83,10 @@ public:
         HRESULT hr;
         MMDEV_COLLECTION_IN();
         hr = m_ptr->GetCount(pcDevices);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("count %d\n",*pcDevices);
+        }
         MMDEV_COLLECTION_OUT();
         return hr;
     }
@@ -452,7 +456,7 @@ static ULONG UnRegisterAudioRenderClient(IAudioRenderClient * pRender)
 class CIAudioClientHook;
 
 #define  AUDIO_CLIENT_IN() do{DEBUG_INFO("AUDIO CLIENT IN\n");}while(0)
-#define  AUDIO_CLIENT_OUT() 
+#define  AUDIO_CLIENT_OUT()
 
 static std::vector<IAudioClient*> st_AudioClientVecs;
 static std::vector<CIAudioClientHook*> st_AudioClientHookVecs;
@@ -622,7 +626,7 @@ public:
                 CIAudioRenderClientHook* pHook=NULL;
                 pHook = RegisterAudioRenderClient(pRender);
                 *ppv = (IAudioRenderClient*) pHook;
-				DEBUG_INFO("Render 0x%p hook 0x%p\n",pRender,pHook);
+                DEBUG_INFO("Render 0x%p hook 0x%p\n",pRender,pHook);
             }
         }
         AUDIO_CLIENT_OUT();
@@ -1610,21 +1614,36 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
     HRESULT hr;
     hr = CoCreateInstanceNext(rclsid,
                               pUnkOuter,dwClsContext,riid,ppv);
-    if(SUCCEEDED(hr) && (rclsid == __uuidof(XAudio2_Debug) ||
-                         rclsid == __uuidof(XAudio2)))
+    if(SUCCEEDED(hr))
     {
+        unsigned char* pClsId = (unsigned char*)&rclsid;
+        DEBUG_INFO("classid %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",pClsId[3],pClsId[2],pClsId[1],pClsId[0],pClsId[5],pClsId[4],
+                   pClsId[7],pClsId[6],
+                   pClsId[8],pClsId[9],
+                   pClsId[10],pClsId[11],pClsId[12],pClsId[13],pClsId[14],pClsId[15]);
+        if(rclsid == __uuidof(XAudio2_Debug))
+        {
+            DEBUG_INFO("XAudio2_Debug Interface\n");
+        }
+        else if(rclsid == __uuidof(XAudio2))
+        {
+            DEBUG_INFO("XAudio2 Interface\n");
+        }
+        else if(rclsid == __uuidof(MMDeviceEnumerator))
+        {
+            IMMDeviceEnumerator* pEnumerator = (IMMDeviceEnumerator*)(*ppv);
+            CIMMDeviceEnumeratorHook* pEnumHook=NULL;
+            pEnumHook = RegisterEnumerator(pEnumerator);
 
-        DEBUG_INFO("get xaudio2\n");
-    }
-    else if(SUCCEEDED(hr) && (rclsid == __uuidof(MMDeviceEnumerator)))
-    {
-        IMMDeviceEnumerator* pEnumerator = (IMMDeviceEnumerator*)(*ppv);
-        CIMMDeviceEnumeratorHook* pEnumHook=NULL;
-        pEnumHook = RegisterEnumerator(pEnumerator);
-
-        DEBUG_INFO("find enumerator 0x%p hook 0x%p\n",pEnumerator,pEnumHook);
-        assert(pEnumHook);
-        *ppv = (LPVOID)pEnumHook;
+            DEBUG_INFO("find enumerator 0x%p hook 0x%p\n",pEnumerator,pEnumHook);
+            assert(pEnumHook);
+            *ppv = (LPVOID)pEnumHook;
+            DEBUG_INFO("IMMDeviceEnumerator interface\n");
+        }
+        else if(rclsid == __uuidof(IMMDevice))
+        {
+            DEBUG_INFO("IMMDevice interface\n");
+        }
 
     }
     return hr;
