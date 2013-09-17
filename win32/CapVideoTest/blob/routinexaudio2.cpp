@@ -254,9 +254,9 @@ public:
         {
             CIMMDeviceHook* pDevHook=NULL;
             IMMDevice* pDevice= (IMMDevice*)*ppEndpoint;
-            DEBUG_INFO("put dataflow %d role %d pointer 0x%p\n",dataFlow,role,*ppEndpoint);
             pDevHook = RegisterMMDevice(pDevice);
             *ppEndpoint = (IMMDevice*)pDevice;
+            DEBUG_INFO("put dataflow %d role %d pointer 0x%p Hook 0x%p\n",dataFlow,role,pDevice,pDevHook);
 
         }
         MMDEVICE_ENUMERRATOR_OUT();
@@ -273,9 +273,8 @@ public:
             CIMMDeviceHook* pDevHook=NULL;
             IMMDevice* pDevice=*ppDevice;
             pDevHook = RegisterMMDevice(pDevice);
-            DEBUG_INFO("Get Device %S 0x%p hook 0x%p\n",pwstrId,*ppDevice,pDevHook);
             *ppDevice = (IMMDevice*)pDevHook;
-
+            DEBUG_INFO("Get Device %S 0x%p hook 0x%p\n",pwstrId,*ppDevice,pDevHook);
         }
         MMDEVICE_ENUMERRATOR_OUT();
         return hr;
@@ -346,6 +345,10 @@ public:
         if(uret == 1)
         {
             uret = UnRegisterAudioRenderClient(m_ptr);
+            if(uret == 0)
+            {
+                this->m_ptr = NULL;
+            }
         }
         AUDIO_RENDER_CLIENT_OUT();
         if(uret == 0)
@@ -360,6 +363,10 @@ public:
         HRESULT hr;
         AUDIO_RENDER_CLIENT_IN();
         hr = m_ptr->GetBuffer(NumFramesRequested,ppData);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("request %d data 0x%p\n",NumFramesRequested,*ppData);
+        }
         AUDIO_RENDER_CLIENT_OUT();
         return hr;
     }
@@ -369,6 +376,10 @@ public:
         HRESULT hr;
         AUDIO_RENDER_CLIENT_IN();
         hr = m_ptr->ReleaseBuffer(NumFramesWritten,dwFlags);
+        if(SUCCEEDED(hr))
+        {
+            DEBUG_INFO("written %d flags 0x%08x\n",NumFramesWritten,dwFlags);
+        }
         AUDIO_RENDER_CLIENT_OUT();
         return hr;
     }
@@ -485,6 +496,10 @@ public:
         if(uret == 1)
         {
             uret = UnRegisterAudioClient(m_ptr);
+            if(uret == 0)
+            {
+                this->m_ptr = NULL;
+            }
         }
         AUDIO_CLIENT_OUT();
         if(uret == 0)
@@ -746,11 +761,11 @@ public:
         {
             if(iid == __uuidof(IAudioClient))
             {
-                DEBUG_INFO("dwClsCtx 0x%x void* 0x%p\n",dwClsCtx,*ppInterface);
                 CIAudioClientHook* pAudioHook=NULL;
                 IAudioClient* pAudio=(IAudioClient*)*ppInterface;
                 pAudioHook = new CIAudioClientHook(pAudio);
                 *ppInterface = (IAudioClient*) pAudioHook;
+                DEBUG_INFO("dwClsCtx 0x%x audioclient 0x%p hook 0x%p\n",dwClsCtx,pAudio,pAudioHook);
             }
         }
         MMDEVICE_OUT();
@@ -896,16 +911,12 @@ static CIMMDeviceHook* RegisterMMDevice(IMMDevice* pDevice)
     int findidx = -1;
     unsigned int i;
     EnterCriticalSection(&st_MMDevCS);
-    __DebugMMDevice();
     assert(st_MMDeviceVecs.size() == st_MMDeviceHookVecs.size());
-    DEBUG_INFO("DEVICE size %d hook size %d\n",st_MMDeviceVecs.size(),st_MMDeviceHookVecs.size());
     for(i=0; i<st_MMDeviceVecs.size(); i++)
     {
-        DEBUG_INFO("device[%d] 0x%p\n",i,st_MMDeviceVecs[i]);
         if(st_MMDeviceVecs[i] == pDevice)
         {
             findidx = i;
-            DEBUG_INFO("find [%d]\n",i);
             break;
         }
     }
@@ -919,14 +930,11 @@ static CIMMDeviceHook* RegisterMMDevice(IMMDevice* pDevice)
         pDevHook = new CIMMDeviceHook(pDevice);
         st_MMDeviceVecs.push_back(pDevice);
         st_MMDeviceHookVecs.push_back(pDevHook);
-        DEBUG_INFO("PUSH[%d] device 0x%p\n",st_MMDeviceVecs.size(),pDevice);
-        __DebugMMDevice();
         assert(pDevHook);
         pDevice->AddRef();
     }
 
     LeaveCriticalSection(&st_MMDevCS);
-    DEBUG_INFO("[%d]pDevice  0x%p => Hook 0x%p\n",findidx,pDevice,pDevHook);
 
     return pDevHook;
 
@@ -959,7 +967,6 @@ static ULONG UnRegisterMMDevice(IMMDevice* pDevice)
     uret = 1;
     if(findidx >= 0)
     {
-        DEBUG_INFO("UnRegister[%d] 0x%p\n",findidx,pDevice);
         uret = pDevice->Release();
     }
 
