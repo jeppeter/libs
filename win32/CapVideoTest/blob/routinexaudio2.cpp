@@ -757,6 +757,54 @@ static ULONG UnRegisterAudioClient(IAudioClient * pAudio)
     return uret;
 }
 
+#define  ENDPOINT_IN()  do{DEBUG_INFO("ENDPOINT IN\n");}while(0)
+#define  ENDPOINT_OUT()
+
+
+class CIMMEndPointHook : public IMMEndpoint
+{
+private:
+    IMMEndpoint* m_ptr;
+public:
+    CIMMEndPointHook(IMMEndpoint* ptr) : m_ptr(ptr) {};
+public:
+    COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
+    {
+        HRESULT hr;
+        ENDPOINT_IN();
+        hr = m_ptr->QueryInterface(riid,ppvObject);
+        ENDPOINT_OUT();
+        return hr;
+    }
+
+    COM_METHOD(ULONG,AddRef)(THIS)
+    {
+        ULONG uret;
+        ENDPOINT_IN();
+        uret = m_ptr->AddRef();
+        ENDPOINT_OUT();
+        return uret;
+    }
+
+    COM_METHOD(ULONG,Release)(THIS)
+    {
+        ULONG uret;
+        ENDPOINT_IN();
+        uret = m_ptr->Release();
+        ENDPOINT_OUT();
+        return uret;
+    }
+
+    COM_METHOD(HRESULT,GetDataFlow)(THIS_  EDataFlow *pDataFlow)
+    {
+        HRESULT hr;
+        ENDPOINT_IN();
+        hr = m_ptr->GetDataFlow(pDataFlow);
+        ENDPOINT_OUT();
+        return hr;
+    }
+
+};
 
 
 #define MMDEVICE_IN() do{DEBUG_INFO("MMDEVICE_IN\n");}while(0)
@@ -780,6 +828,7 @@ public:
             HRESULT rhr,shr;
             rhr = StringFromCLSID(riid,&iidstr);
             shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
+            DEBUG_INFO("rhr 0x%08lx shr 0x%08lx\n",rhr,shr);
             if(SUCCEEDED(rhr) && SUCCEEDED(shr))
             {
                 DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
