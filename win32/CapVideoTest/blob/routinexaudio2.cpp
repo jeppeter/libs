@@ -694,6 +694,10 @@ typedef HRESULT(WINAPI *AudioRenderClientReleaseBuffer_t)(IAudioRenderClient* pR
 static AudioRenderClientGetBuffer_t AudioRenderClientGetBufferNext=NULL;
 static AudioRenderClientReleaseBuffer_t AudioRenderClientReleaseBufferNext=NULL;
 
+static void* st_pGetBuffer=NULL;
+static HANDLE st_hWriteFile=NULL;
+
+
 HRESULT WINAPI AudioRenderClientGetBufferCallBack(IAudioRenderClient* pRender, UINT32 NumFramesRequested,BYTE **ppData)
 {
     HRESULT hr;
@@ -702,6 +706,7 @@ HRESULT WINAPI AudioRenderClientGetBufferCallBack(IAudioRenderClient* pRender, U
     if(SUCCEEDED(hr))
     {
         DEBUG_INFO("Request %d\n",NumFramesRequested);
+        st_pGetBuffer = *ppData;
     }
     return hr;
 }
@@ -710,9 +715,14 @@ HRESULT WINAPI AudioRenderClientReleaseBufferCallBack(IAudioRenderClient* pRende
 {
     HRESULT hr;
     hr = AudioRenderClientReleaseBufferNext(pRender,NumFramesWritten,dwFlags);
-    if(SUCCEEDED(hr))
+    if(SUCCEEDED(hr)  )
     {
         DEBUG_INFO("Release %d flags 0x%08lx\n",NumFramesWritten,dwFlags);
+        if(st_pGetBuffer && !(dwFlags & AUDCLNT_BUFFERFLAGS_SILENT))
+        {
+            DEBUG_BUFFER(st_pGetBuffer,NumFramesWritten > 16 ? 16 : NumFramesWritten);
+        }
+        st_pGetBuffer = NULL;
     }
     return hr;
 }
@@ -1868,6 +1878,7 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
 
 static int InitEnvironMentXAudio2(void)
 {
+	st_hWriteFile = CreateFile(L"z:\\audio.dump",GENERIC_WRITE,0,NULL,OPEN_ALWAYS ,FILE_ATTRIBUTE_NORMAL );
     InitializeCriticalSection(&st_MMDevEnumCS);
     InitializeCriticalSection(&st_MMDevCS);
     InitializeCriticalSection(&st_MMDevCollectionCS);
