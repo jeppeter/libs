@@ -96,7 +96,7 @@ public:
         hr = m_ptr->GetCount(pcDevices);
         if(SUCCEEDED(hr))
         {
-            DEBUG_INFO("count %d\n",*pcDevices);
+            //DEBUG_INFO("count %d\n",*pcDevices);
         }
         MMDEV_COLLECTION_OUT();
         return hr;
@@ -113,7 +113,7 @@ public:
             IMMDevice   *pDevice= *ppDevice;
             pHook = RegisterMMDevice(pDevice);
             *ppDevice = (IMMDevice*)pHook;
-            DEBUG_INFO("item %d device 0x%p hook 0x%p\n",nDevice,pDevice,pHook);
+            //DEBUG_INFO("item %d device 0x%p hook 0x%p\n",nDevice,pDevice,pHook);
         }
         MMDEV_COLLECTION_OUT();
         return hr;
@@ -263,7 +263,7 @@ public:
             IMMDeviceCollection* pCollection=*ppDevices;
             pColHook = RegisterMMDevCollection(pCollection);
             *ppDevices =(IMMDeviceCollection*) pColHook;
-            DEBUG_INFO("dataflow %d statemask %d pointer 0x%p Hook 0x%p\n",dataFlow,dwStateMask,pCollection,pColHook);
+            //DEBUG_INFO("dataflow %d statemask %d pointer 0x%p Hook 0x%p\n",dataFlow,dwStateMask,pCollection,pColHook);
         }
         MMDEVICE_ENUMERRATOR_OUT();
 
@@ -281,7 +281,7 @@ public:
             IMMDevice* pDevice= (IMMDevice*)*ppEndpoint;
             pDevHook = RegisterMMDevice(pDevice);
             *ppEndpoint = (IMMDevice*)pDevice;
-            DEBUG_INFO("put dataflow %d role %d pointer 0x%p Hook 0x%p\n",dataFlow,role,pDevice,pDevHook);
+            //DEBUG_INFO("put dataflow %d role %d pointer 0x%p Hook 0x%p\n",dataFlow,role,pDevice,pDevHook);
 
         }
         MMDEVICE_ENUMERRATOR_OUT();
@@ -299,7 +299,7 @@ public:
             IMMDevice* pDevice=*ppDevice;
             pDevHook = RegisterMMDevice(pDevice);
             *ppDevice = (IMMDevice*)pDevHook;
-            DEBUG_INFO("Get Device %S 0x%p hook 0x%p\n",pwstrId,*ppDevice,pDevHook);
+            //DEBUG_INFO("Get Device %S 0x%p hook 0x%p\n",pwstrId,*ppDevice,pDevHook);
         }
         MMDEVICE_ENUMERRATOR_OUT();
         return hr;
@@ -688,14 +688,108 @@ public:
 
 };
 
+typedef HRESULT(WINAPI *AudioRenderClientGetBuffer_t)(IAudioRenderClient* pRender, UINT32 NumFramesRequested,BYTE **ppData);
+typedef HRESULT(WINAPI *AudioRenderClientReleaseBuffer_t)(IAudioRenderClient* pRender,UINT32 NumFramesWritten,DWORD dwFlags);
+
+static AudioRenderClientGetBuffer_t AudioRenderClientGetBufferNext=NULL;
+static AudioRenderClientReleaseBuffer_t AudioRenderClientReleaseBufferNext=NULL;
+
+HRESULT WINAPI AudioRenderClientGetBufferCallBack(IAudioRenderClient* pRender, UINT32 NumFramesRequested,BYTE **ppData)
+{
+    HRESULT hr;
+
+    hr = AudioRenderClientGetBufferNext(pRender,NumFramesRequested,ppData);
+    if(SUCCEEDED(hr))
+    {
+        DEBUG_INFO("Request %d\n",NumFramesRequested);
+    }
+    return hr;
+}
+
+HRESULT WINAPI AudioRenderClientReleaseBufferCallBack(IAudioRenderClient* pRender,UINT32 NumFramesWritten,DWORD dwFlags)
+{
+    HRESULT hr;
+    hr = AudioRenderClientReleaseBufferNext(pRender,NumFramesWritten,dwFlags);
+    if(SUCCEEDED(hr))
+    {
+        DEBUG_INFO("Release %d flags 0x%08lx\n",NumFramesWritten,dwFlags);
+    }
+    return hr;
+}
+
+static int DetourAudioRenderClientFuncs(IAudioRenderClient* pRender)
+{
+    unsigned long **vptrptr =(unsigned long**)pRender;
+    unsigned long *vptr = *vptrptr;
+
+    DEBUG_INFO("+++++++++++vptr 0x%08lx GetBuffer 0x%08lx ReleaseBuffer 0x%08lx\n",vptr,vptr[3],vptr[4]);
+    AudioRenderClientGetBufferNext =(AudioRenderClientGetBuffer_t) vptr[3];
+    AudioRenderClientReleaseBufferNext = (AudioRenderClientReleaseBuffer_t) vptr[4];
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((PVOID*)&AudioRenderClientGetBufferNext,AudioRenderClientGetBufferCallBack);
+    DetourAttach((PVOID*)&AudioRenderClientReleaseBufferNext,AudioRenderClientReleaseBufferCallBack);
+    DetourTransactionCommit();
+
+    return 0;
+
+}
+
+
+typedef HRESULT(WINAPI *AudioClientGetService_t)(IAudioClient* pThis,REFIID riid,void **ppv);
+
+static AudioClientGetService_t AudioClientGetServiceNext= NULL;
+
+HRESULT WINAPI AudioClientGetServiceCallBack(IAudioClient* pThis,REFIID riid,void **ppv)
+{
+    HRESULT hr;
+    static int st_DetourRenderFunc=0;
+    hr = AudioClientGetServiceNext(pThis,riid,ppv);
+    if(riid == __uuidof(IAudioRenderClient) && SUCCEEDED(hr))
+    {
+        DEBUG_INFO("|||||||||| CALL render client\n");
+        if(st_DetourRenderFunc == 0)
+        {
+            IAudioRenderClient *pRender = (IAudioRenderClient*)*ppv;
+            DetourAudioRenderClientFuncs(pRender);
+            st_DetourRenderFunc = 1;
+        }
+    }
+    DEBUG_INFO("{{}}Call GetService return 0x%08lx\n",hr);
+    return hr;
+}
+
+int SetDetourAudioClient(IAudioClient* pAudio)
+{
+    unsigned long ** vptrptr= (unsigned long**)pAudio;
+    unsigned long* vptr = *vptrptr;
+    DEBUG_INFO("pAudio 0x%p\n",pAudio);
+    DEBUG_INFO("vptr = 0x%08lx vptr[14] 0x%08lx\n",vptr,vptr[14]);
+    AudioClientGetServiceNext = (AudioClientGetService_t) vptr[14];
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((PVOID*)&AudioClientGetServiceNext,AudioClientGetServiceCallBack);
+    DetourTransactionCommit();
+
+    return 0;
+}
+
 
 static CIAudioClientHook* RegisterAudioClient(IAudioClient * pAudio)
 {
     CIAudioClientHook* pAudioHook=NULL;
     int findidx = -1;
     unsigned int i;
+    static int st_DetouredAudioClient=0;
 
     EnterCriticalSection(&st_AudioClientCS);
+    if(st_DetouredAudioClient == 0)
+    {
+        SetDetourAudioClient(pAudio);
+        st_DetouredAudioClient = 1;
+    }
 
     assert(st_AudioClientHookVecs.size() ==  st_AudioClientVecs.size());
     for(i=0; i<st_AudioClientVecs.size() ; i++)
@@ -828,10 +922,10 @@ public:
             HRESULT rhr,shr;
             rhr = StringFromCLSID(riid,&iidstr);
             shr = OleRegGetUserType(riid,USERCLASSTYPE_FULL,&pstr);
-            DEBUG_INFO("rhr 0x%08lx shr 0x%08lx\n",rhr,shr);
+            //DEBUG_INFO("rhr 0x%08lx shr 0x%08lx\n",rhr,shr);
             if(SUCCEEDED(rhr) && SUCCEEDED(shr))
             {
-                DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
+                //DEBUG_INFO("(%S) => (%S)\n",iidstr,pstr);
             }
         }
         MMDEVICE_OUT();
@@ -879,9 +973,9 @@ public:
             {
                 CIAudioClientHook* pAudioHook=NULL;
                 IAudioClient* pAudio=(IAudioClient*)*ppInterface;
-                pAudioHook = new CIAudioClientHook(pAudio);
+                pAudioHook = RegisterAudioClient(pAudio);
                 *ppInterface = (IAudioClient*) pAudioHook;
-                DEBUG_INFO("dwClsCtx 0x%x audioclient 0x%p hook 0x%p\n",dwClsCtx,pAudio,pAudioHook);
+                //DEBUG_INFO("dwClsCtx 0x%x audioclient 0x%p hook 0x%p\n",dwClsCtx,pAudio,pAudioHook);
             }
         }
         MMDEVICE_OUT();
@@ -964,7 +1058,7 @@ static CIMMDeviceEnumeratorHook* RegisterEnumerator(IMMDeviceEnumerator* pEnumer
 
     if(findidx < 0)
     {
-        DEBUG_INFO("0x%p uret %d\n",pEnumHook,uret);
+        //DEBUG_INFO("0x%p uret %d\n",pEnumHook,uret);
     }
 
     return pEnumHook;
@@ -1746,15 +1840,15 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
         shr = StringFromCLSID(rclsid,&clsstr);
         if(SUCCEEDED(rhr) && SUCCEEDED(shr))
         {
-            DEBUG_INFO("classid (%S) (%S)\n",clsstr,pstr);
+            //DEBUG_INFO("classid (%S) (%S)\n",clsstr,pstr);
         }
         if(rclsid == __uuidof(XAudio2_Debug))
         {
-            DEBUG_INFO("XAudio2_Debug Interface\n");
+            //DEBUG_INFO("XAudio2_Debug Interface\n");
         }
         else if(rclsid == __uuidof(XAudio2))
         {
-            DEBUG_INFO("XAudio2 Interface\n");
+            //DEBUG_INFO("XAudio2 Interface\n");
         }
         else if(rclsid == __uuidof(MMDeviceEnumerator))
         {
@@ -1762,10 +1856,10 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
             CIMMDeviceEnumeratorHook* pEnumHook=NULL;
             pEnumHook = RegisterEnumerator(pEnumerator);
 
-            DEBUG_INFO("find enumerator 0x%p hook 0x%p\n",pEnumerator,pEnumHook);
+            //DEBUG_INFO("find enumerator 0x%p hook 0x%p\n",pEnumerator,pEnumHook);
             assert(pEnumHook);
             *ppv = (LPVOID)pEnumHook;
-            DEBUG_INFO("IMMDeviceEnumerator interface\n");
+            //DEBUG_INFO("IMMDeviceEnumerator interface\n");
         }
 
     }
@@ -1807,7 +1901,7 @@ int RoutineDetourXAudio2(void)
     DetourTransactionCommit();
 
 
-    DEBUG_INFO("xaudio2\n");
+    //DEBUG_INFO("xaudio2\n");
     return 0;
 }
 

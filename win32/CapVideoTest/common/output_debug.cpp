@@ -38,7 +38,7 @@ extern "C" void DebugOutString(const char* file,const char* func,int lineno,cons
     pLine = new char[2000];
     pWhole = new char[4000];
 
-    _snprintf_s(pLine,2000,1999,"%s:AAA%sAAA:%d\t",file,func,lineno);
+    _snprintf_s(pLine,2000,1999,"%s:Function(%s):%d\t",file,func,lineno);
     va_start(ap,fmt);
     _vsnprintf_s(pFmt,2000,1999,fmt,ap);
     strcpy_s(pWhole,4000,pLine);
@@ -63,7 +63,7 @@ extern "C" void DebugBuffer(const char* file,const char* func,int lineno,unsigne
     pCur = pLine;
     formedlen = 0;
 
-    ret = _snprintf_s(pCur,fmtlen-formedlen,fmtlen-formedlen-1,"[%s:AAA%sAAA:%d]\tbuffer %p (%d)",file,func,lineno,pBuffer,buflen);
+    ret = _snprintf_s(pCur,fmtlen-formedlen,fmtlen-formedlen-1,"[%s:Function(%s):%d]\tbuffer %p (%d)",file,func,lineno,pBuffer,buflen);
     pCur += ret;
     formedlen += ret;
 
