@@ -707,6 +707,7 @@ HRESULT WINAPI AudioRenderClientGetBufferCallBack(IAudioRenderClient* pRender, U
     {
         DEBUG_INFO("Request %d\n",NumFramesRequested);
         st_pGetBuffer = *ppData;
+        DEBUG_BUFFER(st_pGetBuffer,NumFramesRequested > 16 ? 16 : NumFramesRequested);
     }
     return hr;
 }
@@ -714,16 +715,26 @@ HRESULT WINAPI AudioRenderClientGetBufferCallBack(IAudioRenderClient* pRender, U
 HRESULT WINAPI AudioRenderClientReleaseBufferCallBack(IAudioRenderClient* pRender,UINT32 NumFramesWritten,DWORD dwFlags)
 {
     HRESULT hr;
-    hr = AudioRenderClientReleaseBufferNext(pRender,NumFramesWritten,dwFlags);
-    if(SUCCEEDED(hr)  )
+    DEBUG_INFO("Release %d flags 0x%08lx\n",NumFramesWritten,dwFlags);
+    if(st_pGetBuffer && !(dwFlags & AUDCLNT_BUFFERFLAGS_SILENT))
     {
-        DEBUG_INFO("Release %d flags 0x%08lx\n",NumFramesWritten,dwFlags);
-        if(st_pGetBuffer && !(dwFlags & AUDCLNT_BUFFERFLAGS_SILENT))
+
+        DEBUG_BUFFER(st_pGetBuffer,NumFramesWritten > 16 ? 16 : NumFramesWritten);
+        if(st_hWriteFile)
         {
-            DEBUG_BUFFER(st_pGetBuffer,NumFramesWritten > 16 ? 16 : NumFramesWritten);
+            BOOL bret;
+            DWORD retsize=0;
+            bret = WriteFile(st_hWriteFile,st_pGetBuffer,NumFramesWritten,&retsize,NULL);
+            if(!bret || retsize != NumFramesWritten)
+            {
+                ERROR_INFO("could not write %d size with retsize (%d) error (%d)\n",
+                           NumFramesWritten,retsize,GetLastError());
+            }
         }
-        st_pGetBuffer = NULL;
+        memset(st_pGetBuffer,0,NumFramesWritten);
     }
+    st_pGetBuffer = NULL;
+    hr = AudioRenderClientReleaseBufferNext(pRender,NumFramesWritten,dwFlags);
     return hr;
 }
 
@@ -1878,7 +1889,16 @@ HRESULT WINAPI  CoCreateInstanceCallBack(
 
 static int InitEnvironMentXAudio2(void)
 {
-	st_hWriteFile = CreateFile(L"z:\\audio.dump",GENERIC_WRITE,0,NULL,OPEN_ALWAYS ,FILE_ATTRIBUTE_NORMAL );
+    st_hWriteFile = CreateFile(L"pcmcap.pcm",GENERIC_WRITE,          // Open for writing
+                               0,                      // Do not share
+                               NULL,                   // No security
+                               OPEN_ALWAYS,            // Open or create
+                               FILE_ATTRIBUTE_NORMAL,  // Normal file
+                               NULL);
+    if(st_hWriteFile == NULL)
+    {
+        return 0;
+    }
     InitializeCriticalSection(&st_MMDevEnumCS);
     InitializeCriticalSection(&st_MMDevCS);
     InitializeCriticalSection(&st_MMDevCollectionCS);
@@ -1892,6 +1912,11 @@ static void ClearEnvironmentXAudio2(void)
 {
     if(st_InitializeXAudio2)
     {
+        if(st_hWriteFile)
+        {
+            CloseHandle(st_hWriteFile);
+            st_hWriteFile = NULL;
+        }
     }
     return ;
 }
