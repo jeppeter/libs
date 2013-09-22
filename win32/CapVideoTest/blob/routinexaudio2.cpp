@@ -491,6 +491,19 @@ class CIAudioClientHook;
 #define  AUDIO_CLIENT_IN() do{DEBUG_INFO("AUDIO CLIENT IN\n");}while(0)
 #define  AUDIO_CLIENT_OUT()
 
+
+void DebugWAVEFORMATEX(const char* file,int line,WAVEFORMATEX* pFormat)
+{
+	DEBUG_INFO("At %s:%d\n",file,line);
+	DEBUG_INFO("wFormatTag        : 0x%04x (%d)\n",pFormat->wFormatTag,pFormat->wFormatTag);
+	DEBUG_INFO("nChannels         : %d\n",pFormat->nChannels);
+	DEBUG_INFO("nSamplesPerSec    : 0x%x (%d)\n",pFormat->nSamplesPerSec,pFormat->nSamplesPerSec);
+	DEBUG_INFO("nAvgBytesPerSec   : 0x%x (%d)\n",pFormat->nAvgBytesPerSec,pFormat->nAvgBytesPerSec);
+	DEBUG_INFO("nBlockAlign       : 0x%x (%d)\n",pFormat->nBlockAlign,pFormat->nBlockAlign);
+	DEBUG_INFO("wBitsPerSample    : 0x%x (%d)\n",pFormat->wBitsPerSample,pFormat->wBitsPerSample);
+	DEBUG_INFO("cbSize            : 0x%x (%d)\n",pFormat->cbSize,pFormat->cbSize);
+}
+
 static std::vector<IAudioClient*> st_AudioClientVecs;
 static std::vector<CIAudioClientHook*> st_AudioClientHookVecs;
 static CRITICAL_SECTION st_AudioClientCS;
@@ -505,6 +518,7 @@ private:
     IAudioClient *m_ptr;
 public:
     CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
+	
 public:
     COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
     {
@@ -608,6 +622,10 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->GetMixFormat(ppDeviceFormat);
+		if (SUCCEEDED(hr))
+		{
+			
+		}
         AUDIO_CLIENT_OUT();
         return hr;
     }
