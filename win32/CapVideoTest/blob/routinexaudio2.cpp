@@ -577,6 +577,10 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->Initialize(ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid);
+		if (SUCCEEDED(hr))
+		{
+			DebugWAVEFORMATEX(__FILE__,__LINE__,(WAVEFORMATEX*)pFormat);
+		}
         AUDIO_CLIENT_OUT();
         return hr;
     }
@@ -624,7 +628,8 @@ public:
         hr = m_ptr->GetMixFormat(ppDeviceFormat);
 		if (SUCCEEDED(hr))
 		{
-			
+			WAVEFORMATEX* pFormat= (*ppDeviceFormat);
+			DebugWAVEFORMATEX(__FILE__,__LINE__,pFormat);
 		}
         AUDIO_CLIENT_OUT();
         return hr;
