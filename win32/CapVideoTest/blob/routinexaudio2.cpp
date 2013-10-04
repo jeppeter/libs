@@ -494,14 +494,14 @@ class CIAudioClientHook;
 
 void DebugWAVEFORMATEX(const char* file,int line,WAVEFORMATEX* pFormat)
 {
-	DEBUG_INFO("At %s:%d\n",file,line);
-	DEBUG_INFO("wFormatTag        : 0x%04x (%d)\n",pFormat->wFormatTag,pFormat->wFormatTag);
-	DEBUG_INFO("nChannels         : %d\n",pFormat->nChannels);
-	DEBUG_INFO("nSamplesPerSec    : 0x%x (%d)\n",pFormat->nSamplesPerSec,pFormat->nSamplesPerSec);
-	DEBUG_INFO("nAvgBytesPerSec   : 0x%x (%d)\n",pFormat->nAvgBytesPerSec,pFormat->nAvgBytesPerSec);
-	DEBUG_INFO("nBlockAlign       : 0x%x (%d)\n",pFormat->nBlockAlign,pFormat->nBlockAlign);
-	DEBUG_INFO("wBitsPerSample    : 0x%x (%d)\n",pFormat->wBitsPerSample,pFormat->wBitsPerSample);
-	DEBUG_INFO("cbSize            : 0x%x (%d)\n",pFormat->cbSize,pFormat->cbSize);
+    DEBUG_INFO("At %s:%d\n",file,line);
+    DEBUG_INFO("wFormatTag        : 0x%04x (%d)\n",pFormat->wFormatTag,pFormat->wFormatTag);
+    DEBUG_INFO("nChannels         : %d\n",pFormat->nChannels);
+    DEBUG_INFO("nSamplesPerSec    : 0x%x (%d)\n",pFormat->nSamplesPerSec,pFormat->nSamplesPerSec);
+    DEBUG_INFO("nAvgBytesPerSec   : 0x%x (%d)\n",pFormat->nAvgBytesPerSec,pFormat->nAvgBytesPerSec);
+    DEBUG_INFO("nBlockAlign       : 0x%x (%d)\n",pFormat->nBlockAlign,pFormat->nBlockAlign);
+    DEBUG_INFO("wBitsPerSample    : 0x%x (%d)\n",pFormat->wBitsPerSample,pFormat->wBitsPerSample);
+    DEBUG_INFO("cbSize            : 0x%x (%d)\n",pFormat->cbSize,pFormat->cbSize);
 }
 
 static std::vector<IAudioClient*> st_AudioClientVecs;
@@ -518,7 +518,7 @@ private:
     IAudioClient *m_ptr;
 public:
     CIAudioClientHook(IAudioClient *ptr) : m_ptr(ptr) {};
-	
+
 public:
     COM_METHOD(HRESULT,QueryInterface)(THIS_ REFIID riid,void **ppvObject)
     {
@@ -577,10 +577,10 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->Initialize(ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid);
-		if (SUCCEEDED(hr))
-		{
-			DebugWAVEFORMATEX(__FILE__,__LINE__,(WAVEFORMATEX*)pFormat);
-		}
+        if(SUCCEEDED(hr))
+        {
+            DebugWAVEFORMATEX(__FILE__,__LINE__,(WAVEFORMATEX*)pFormat);
+        }
         AUDIO_CLIENT_OUT();
         return hr;
     }
@@ -626,11 +626,11 @@ public:
         HRESULT hr;
         AUDIO_CLIENT_IN();
         hr = m_ptr->GetMixFormat(ppDeviceFormat);
-		if (SUCCEEDED(hr))
-		{
-			WAVEFORMATEX* pFormat= (*ppDeviceFormat);
-			DebugWAVEFORMATEX(__FILE__,__LINE__,pFormat);
-		}
+        if(SUCCEEDED(hr))
+        {
+            WAVEFORMATEX* pFormat= (*ppDeviceFormat);
+            DebugWAVEFORMATEX(__FILE__,__LINE__,pFormat);
+        }
         AUDIO_CLIENT_OUT();
         return hr;
     }
@@ -761,20 +761,67 @@ HRESULT WINAPI AudioRenderClientReleaseBufferCallBack(IAudioRenderClient* pRende
     return hr;
 }
 
+typedef unsigned long  ptr_type_t;
+
+static int DetourVirtualFuncTable(CRITICAL_SECTION* pCS,int* pChanged,void**ppNextFunc,void*pCallBackFunc,void* pObject,int virtfuncnum,const char* pTypeName)
+{
+    int ret =0;
+    int i;
+    EnterCriticalSection(pCS);
+    if(pChanged && *pChanged == 0)
+    {
+        /*now to make sure */
+        ptr_type_t** vptrptr = (ptr_type_t **)pObject;
+        ptr_type_t* vptr = *vptrptr;
+        for(i=0; i<=virtfuncnum; i++)
+        {
+            DEBUG_INFO("[%s]0x%p virtfuncnum[%d] 0x%p\n",pTypeName,pObject,i,vptr[i]);
+        }
+
+        DEBUG_INFO("\n");
+        assert(ppNextFunc && *ppNextFunc == NULL);
+        DEBUG_INFO("[%s]0x%p virtfuncnum[%d]ppNextFunc 0x%p 0x%p\n",pTypeName,pObject,virtfuncnum,ppNextFunc,*ppNextFunc);
+        *ppNextFunc =(void*) vptr[virtfuncnum];
+        DEBUG_INFO("*ppNextFunc 0x%p CallBackFunc 0x%p\n",*ppNextFunc,pCallBackFunc);
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(ppNextFunc,pCallBackFunc);
+        DetourTransactionCommit();
+        *pChanged = 1;
+        ret = 1;
+        DEBUG_INFO("\n");
+    }
+    LeaveCriticalSection(pCS);
+    return ret;
+}
+
+
 static int DetourAudioRenderClientFuncs(IAudioRenderClient* pRender)
 {
     unsigned long **vptrptr =(unsigned long**)pRender;
     unsigned long *vptr = *vptrptr;
+    static int st_InitedDetoured=0;
+    static CRITICAL_SECTION st_InitRenderCS;
+    static int st_CallRenderGetBufferDetoured=0;
+    static int st_CallRenderReleaseBufferDetoured=0;
 
-    DEBUG_INFO("+++++++++++vptr 0x%08lx GetBuffer 0x%08lx ReleaseBuffer 0x%08lx\n",vptr,vptr[3],vptr[4]);
-    AudioRenderClientGetBufferNext =(AudioRenderClientGetBuffer_t) vptr[3];
-    AudioRenderClientReleaseBufferNext = (AudioRenderClientReleaseBuffer_t) vptr[4];
+    if(st_InitedDetoured == 0)
+    {
+        InitializeCriticalSection(&st_InitRenderCS);
+        st_InitedDetoured = 1;
+    }
 
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach((PVOID*)&AudioRenderClientGetBufferNext,AudioRenderClientGetBufferCallBack);
-    DetourAttach((PVOID*)&AudioRenderClientReleaseBufferNext,AudioRenderClientReleaseBufferCallBack);
-    DetourTransactionCommit();
+    //DEBUG_INFO("+++++++++++vptr 0x%08lx GetBuffer 0x%08lx ReleaseBuffer 0x%08lx\n",vptr,vptr[3],vptr[4]);
+    //AudioRenderClientGetBufferNext =(AudioRenderClientGetBuffer_t) vptr[3];
+    //AudioRenderClientReleaseBufferNext = (AudioRenderClientReleaseBuffer_t) vptr[4];
+    DetourVirtualFuncTable(&st_InitRenderCS,&st_CallRenderGetBufferDetoured,(void**)&AudioRenderClientGetBufferNext,AudioRenderClientGetBufferCallBack,pRender,3,"AudioRenderClient");
+    DetourVirtualFuncTable(&st_InitRenderCS,&st_CallRenderReleaseBufferDetoured,(void**)&AudioRenderClientReleaseBufferNext,AudioRenderClientReleaseBufferCallBack,pRender,4,"AudioRenderClient");
+
+    //DetourTransactionBegin();
+    //DetourUpdateThread(GetCurrentThread());
+    //DetourAttach((PVOID*)&AudioRenderClientGetBufferNext,AudioRenderClientGetBufferCallBack);
+    //DetourAttach((PVOID*)&AudioRenderClientReleaseBufferNext,AudioRenderClientReleaseBufferCallBack);
+    //DetourTransactionCommit();
 
     return 0;
 
