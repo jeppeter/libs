@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vminstall", "vminstall.vcproj", "{98595E08-FF82-432B-B168-C5627344D68A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9} = {52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bzswin", "..\..\..\..\sysprogs\bzslib\bzswin\bzswin.vcproj", "{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bzscmn", "..\..\..\..\sysprogs\bzslib\bzscmn\bzscmn.vcproj", "{7C57B250-1244-4154-B697-3E39F9AAEEE6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release (VisualDDK)|Win32 = Release (VisualDDK)|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98595E08-FF82-432B-B168-C5627344D68A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{98595E08-FF82-432B-B168-C5627344D68A}.Debug|Win32.Build.0 = Debug|Win32
+		{98595E08-FF82-432B-B168-C5627344D68A}.Release (VisualDDK)|Win32.ActiveCfg = Release (VisualDDK)|Win32
+		{98595E08-FF82-432B-B168-C5627344D68A}.Release (VisualDDK)|Win32.Build.0 = Release (VisualDDK)|Win32
+		{98595E08-FF82-432B-B168-C5627344D68A}.Release|Win32.ActiveCfg = Release|Win32
+		{98595E08-FF82-432B-B168-C5627344D68A}.Release|Win32.Build.0 = Release|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.ActiveCfg = Debug (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.Build.0 = Debug (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (VisualDDK)|Win32.ActiveCfg = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (VisualDDK)|Win32.Build.0 = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.ActiveCfg = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.Build.0 = Release (static CRT)|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Debug|Win32.Build.0 = Debug|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Release (VisualDDK)|Win32.ActiveCfg = Release|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Release (VisualDDK)|Win32.Build.0 = Release|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Release|Win32.ActiveCfg = Release|Win32
+		{7C57B250-1244-4154-B697-3E39F9AAEEE6}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

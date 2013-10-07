@@ -1,0 +1,13 @@
+LIBRARY	"kdvm"
+
+EXPORTS
+    KdD0Transition
+    KdD3Transition
+    KdDebuggerInitialize0
+    KdDebuggerInitialize1
+	KdReceivePacket
+    KdRestore
+    KdSave
+    KdSendPacket
+
+	KdVMGetActiveCallCount

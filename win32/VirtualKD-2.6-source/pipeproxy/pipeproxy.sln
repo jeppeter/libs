@@ -1,0 +1,89 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pipeproxy", "pipeproxy.vcproj", "{DD3E5651-41BA-481F-8C58-162AF93DCA90}"
+	ProjectSection(ProjectDependencies) = postProject
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9} = {52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bzswin", "..\..\..\..\sysprogs\bzslib\bzswin\bzswin.vcproj", "{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug (ANSI)|Win32 = Debug (ANSI)|Win32
+		Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I) = Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		Debug (ANSI)|x64 = Debug (ANSI)|x64
+		Debug|Win32 = Debug|Win32
+		Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I) = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		Debug|x64 = Debug|x64
+		Release (ANSI)|Win32 = Release (ANSI)|Win32
+		Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I) = Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		Release (ANSI)|x64 = Release (ANSI)|x64
+		Release (static CRT)|Win32 = Release (static CRT)|Win32
+		Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I) = Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		Release (static CRT)|x64 = Release (static CRT)|x64
+		Release|Win32 = Release|Win32
+		Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I) = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug (ANSI)|Win32.ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug (ANSI)|Win32.Build.0 = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug (ANSI)|x64.ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug|Win32.Build.0 = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Debug|x64.ActiveCfg = Debug|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (ANSI)|Win32.ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (ANSI)|Win32.Build.0 = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (ANSI)|x64.ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (static CRT)|Win32.ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (static CRT)|Win32.Build.0 = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release (static CRT)|x64.ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release|Win32.ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release|Win32.Build.0 = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Win32
+		{DD3E5651-41BA-481F-8C58-162AF93DCA90}.Release|x64.ActiveCfg = Release|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|Win32.ActiveCfg = Debug (ANSI)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|Win32.Build.0 = Debug (ANSI)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Debug (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|x64.ActiveCfg = Debug (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (ANSI)|x64.Build.0 = Debug (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.Build.0 = Debug|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|x64.ActiveCfg = Debug|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|x64.Build.0 = Debug|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|Win32.ActiveCfg = Release (ANSI)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|Win32.Build.0 = Release (ANSI)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Release (ANSI)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|x64.ActiveCfg = Release (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (ANSI)|x64.Build.0 = Release (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|Win32.ActiveCfg = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|Win32.Build.0 = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Release (static CRT)|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|x64.ActiveCfg = Release (static CRT)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release (static CRT)|x64.Build.0 = Release (static CRT)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.ActiveCfg = Release|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.Build.0 = Release|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|x64.ActiveCfg = Release|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

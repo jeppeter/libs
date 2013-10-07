@@ -1,0 +1,9 @@
+LIBRARY	"VBoxDD0"
+
+EXPORTS
+    VBoxDevicesRegister = unused
+    VBoxDriversRegister = unused
+    VBoxUsbRegister = unused
+    g_abEfiThunkBinary = unused
+    g_cbEfiThunkBinary = unused
+    

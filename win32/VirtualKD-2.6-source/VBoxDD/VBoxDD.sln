@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VBoxDD", "VBoxDD.vcproj", "{83394D8B-BD4C-4644-86F8-C3A4764DD811}"
+	ProjectSection(ProjectDependencies) = postProject
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9} = {52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bzswin", "..\..\..\..\sysprogs\bzslib\bzswin\bzswin.vcproj", "{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug (Proxy mode)|Win32 = Debug (Proxy mode)|Win32
+		Debug (Proxy mode)|x64 = Debug (Proxy mode)|x64
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug (Proxy mode)|Win32.ActiveCfg = Debug (Proxy mode)|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug (Proxy mode)|Win32.Build.0 = Debug (Proxy mode)|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug (Proxy mode)|x64.ActiveCfg = Debug (Proxy mode)|x64
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug (Proxy mode)|x64.Build.0 = Debug (Proxy mode)|x64
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug|Win32.ActiveCfg = Debug|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug|Win32.Build.0 = Debug|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug|x64.ActiveCfg = Debug|x64
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Debug|x64.Build.0 = Debug|x64
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Release|Win32.ActiveCfg = Release|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Release|Win32.Build.0 = Release|Win32
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Release|x64.ActiveCfg = Release|x64
+		{83394D8B-BD4C-4644-86F8-C3A4764DD811}.Release|x64.Build.0 = Release|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (Proxy mode)|Win32.ActiveCfg = Debug|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (Proxy mode)|x64.ActiveCfg = Debug (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug (Proxy mode)|x64.Build.0 = Debug (ANSI)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|Win32.Build.0 = Debug|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|x64.ActiveCfg = Debug|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Debug|x64.Build.0 = Debug|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.ActiveCfg = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|Win32.Build.0 = Release (static CRT)|Win32
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|x64.ActiveCfg = Release (static CRT)|x64
+		{52A8644C-BF0C-4A6B-BEB5-18275E2E78F9}.Release|x64.Build.0 = Release (static CRT)|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

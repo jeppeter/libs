@@ -1,0 +1,9 @@
+LIBRARY	"VBoxDD"
+
+EXPORTS
+    VBoxDevicesRegister = _VBoxDevicesRegister
+    VBoxDriversRegister = VBoxDD0.VBoxDriversRegister
+    VBoxUsbRegister = VBoxDD0.VBoxUsbRegister
+    g_abEfiThunkBinary = VBoxDD0.g_abEfiThunkBinary
+    g_cbEfiThunkBinary = VBoxDD0.g_cbEfiThunkBinary
+    
