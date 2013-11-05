@@ -367,7 +367,7 @@ void CCapVideoTestDlg::OnTimer(UINT nIDEvent)
             m_hBmp = NULL;
         }
 
-        //m_hBmp = CaptureForegroundWindow(FALSE);
+        //m_hBmp = CaptureForegroundWindow(TRUE);
 		m_hBmp = CaptureDesktop();
 
         this->PostMessage(WM_PAINT);

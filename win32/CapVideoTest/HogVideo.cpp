@@ -5,6 +5,7 @@
 #include "HogVideo.h"
 #include <dshow.h>
 #include <string.h>
+#include <output_debug.h>
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -127,6 +128,8 @@ void CHogVideo::SetVideo(LPCTSTR szFilename)
 
 bool CHogVideo::Hog()
 {
+	DEBUG_INFO("Hog\n");
+	
     if (!m_pGraph && !m_pMediaControl && !m_pVideoWindow)
         return false;
 
@@ -167,6 +170,7 @@ bool CHogVideo::Hog()
 
 bool CHogVideo::UnHog()
 {
+	DEBUG_INFO("UnHog\n");
     if (!m_pMediaControl)
         return false;
 
