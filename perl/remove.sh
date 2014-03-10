@@ -140,3 +140,12 @@ RemoveDpkg friendly-recovery
 RemoveDpkg busybox-static
 RemoveDpkg  dosfstools
 RemoveDpkg gir1.2-glib-2.0
+RemoveDpkg  installation-report 
+RemoveDpkg libept1.4.12 
+RemoveDpkg libfribidi0:amd64
+RemoveDpkg libgc1c2:amd64
+RemoveDpkg libgcr-base-3-1:amd64
+RemoveDpkg libgck-1-0:amd64
+RemoveDpkg libgcr-3-common
+RemoveDpkg libwhoopsie0
+RemoveDpkg libxslt1.1:amd64
