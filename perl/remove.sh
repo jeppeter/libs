@@ -132,3 +132,11 @@ RemoveDpkg libcurl3:amd64
 RemoveDpkg libevent-2.0-5:amd64
 RemoveDpkg accountsservice
 RemoveDpkg  libaccountsservice0
+RemoveDpkg aptitude-common
+RemoveDpkg apport-symptoms
+RemoveDpkg biosdevname
+RemoveDpkg command-not-found-data
+RemoveDpkg friendly-recovery
+RemoveDpkg busybox-static
+RemoveDpkg  dosfstools
+RemoveDpkg gir1.2-glib-2.0
