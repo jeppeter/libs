@@ -149,3 +149,14 @@ RemoveDpkg libgck-1-0:amd64
 RemoveDpkg libgcr-3-common
 RemoveDpkg libwhoopsie0
 RemoveDpkg libxslt1.1:amd64
+RemoveDpkg libgirepository-1.0-1
+RemoveDpkg libgpm2:amd64 
+RemoveDpkg libpipeline1:amd64
+RemoveDpkg libpolkit-gobject-1-0:amd64
+RemoveDpkg libreadline5:amd64
+RemoveDpkg libcwidget3
+RemoveDpkg libsigc++-2.0-0c2a:amd64
+RemoveDpkg linux-headers-generic
+RemoveDpkg linux-headers-3.11.0-12-generic
+RemoveDpkg linux-headers-3.11.0-12
+RemoveDpkg lshw
