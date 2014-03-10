@@ -3,29 +3,38 @@
 RemoveDpkg()
 {
         _pkg=$1
-        dpkg --remove $_pkg
+        /bin/echo -n "Remove $_pkg"
+        _output=`(dpkg --remove $_pkg ) 2>&1`
         _res=$?
         if [ $_res -ne 0  ]
         then
-                echo "remove ($_pkg) Error($_res)" >&2
+                /bin/echo -e '\e[31m[FAILED]\e[0m' >&2
+                /bin/echo "result:"
+                /bin/echo -e '\033[34m$_res\033[0m' >&2
                 exit 3
         fi
 
-        dpkg --purge $_pkg
+        /bin/echo -e '\e[32m[SUCCESS]\e[0m'
+
+        _output=`(dpkg --purge $_pkg) 2>&1`
 }
 
 RemoveDpkgMul()
 {
 	_pkgs=$*
-	dpkg --remove $_pkgs
+    /bin/echo -n "Remove $_pkgs"
+    _output=`(dpkg --remove $_pkgs ) 2>&1`
 	_res=$?
 	if [ $_res -ne 0 ]
 	then
-		echo "remove ($_pkgs) Error($_res)" >&2
-		exit 3
+        /bin/echo -e '\e[31m[FAILED]\e[0m' >&2
+        /bin/echo "result:"
+        /bin/echo -e '\033[34m$_res\033[0m' >&2
+        exit 3
 	fi
+    /bin/echo -e '\e[32m[SUCCESS]\e[0m'
 
-	dpkg --purge $_pkgs
+        _output=`(dpkg --purge $_pkgs) 2>&1`
 }
 
 RemoveDir()
@@ -188,3 +197,4 @@ RemoveDpkg libisccfg90
 RemoveDpkg libdns99
 RemoveDpkg libisccc90
 RemoveDpkg libisc95
+RemoveDpkgMul  emacs emacs23 emacs23-bin-common emacs23-common emacs23-common-non-dfsg emacsen-common gconf-service gconf-service-backend  gconf2-common libcroco3 libfribidi0 libgconf-2-4 libgd3 libgif4 libgpm2 libice6 liblockfile1 libm17n-0 libotf0 librsvg2-2  librsvg2-common libsm6 libvpx1 libxpm4 libxt6 m17n-contrib m17n-db x11-common
