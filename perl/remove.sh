@@ -175,3 +175,16 @@ RemoveDpkg python-pam
 RemoveDpkg python-pkg-resources
 RemoveDpkg python-twisted-bin
 RemoveDpkg ssh-import-id
+RemoveDpkg  python-requests
+RemoveDpkg python-urllib3
+RemoveDpkg python-six
+
+
+# remove dns utils
+RemoveDpkg dnsutils
+RemoveDpkg bind9-host
+RemoveDpkg libbind9-90
+RemoveDpkg libisccfg90
+RemoveDpkg libdns99
+RemoveDpkg libisccc90
+RemoveDpkg libisc95
