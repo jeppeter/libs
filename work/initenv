@@ -1,0 +1,33 @@
+#! /bin/sh
+
+StartInitEnv()
+{
+	
+	_md=`/bin/mount | grep  '/var/cache'`
+	if [ -z "$_md" ]
+	then
+		echo "not mount /var/cache"
+		mount -t tmpfs /var/cache -o rw,nosuid,nodev,noexec,noatime,size=5120k,mode=755
+	else
+		echo "mount /var/cache"
+	fi
+	
+	if [ ! -f /var/cache/mtab ]
+	then
+		 echo "make mtab"
+		 /bin/mount > /var/cache/mtab
+	fi
+}
+
+case "$1" in
+	start|restart)
+		StartInitEnv
+		;;
+	stop)
+		;;
+	*)
+		echo "Usage initenv start|stop" >&2
+		exit 3
+		;;
+esac
+		
