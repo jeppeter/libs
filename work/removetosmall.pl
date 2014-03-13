@@ -24,11 +24,32 @@ sub ErrorExit($$)
 	exit($e);
 }
 
+sub IsStringCmpNoSuffix($$$)
+{
+	my ($astr,$bstr,$suffix)=@_;
+
+	if ($astr eq $bstr ||
+		$astr.$suffix eq $bstr  ||
+		$astr eq $bstr.$suffix)
+	{
+		return 0;
+	}
+
+	if ($astr gt $bstr)
+	{
+		return 1;
+	}
+
+	return -1;	
+
+}
+
+
 
 sub FindInArray($@)
 {
 	my ($elem,@arr)=@_;
-	my ($i,$j,$k);
+	my ($i,$j,$k,$cmp);
 
 	$i = 0;
 	$j = scalar(@arr);
@@ -43,8 +64,13 @@ sub FindInArray($@)
 	{
 		if ($i == ($j -1))
 		{
-			if ($elem eq "$arr[$i]" ||
-				$elem eq "$arr[$j]")
+			$cmp = IsStringCmpNoSuffix($elem,$arr[$i],":amd64");
+			if ($cmp == 0)
+			{
+				return 1;
+			}
+			$cmp = IsStringCmpNoSuffix($elem,$arr[$j],":amd64");
+			if ($cmp == 0)
 			{
 				return 1;
 			}
@@ -57,11 +83,13 @@ sub FindInArray($@)
 			return 0;
 		}
 
-		if ($elem gt "$arr[$k]")
+		$cmp = IsStringCmpNoSuffix($elem,$arr[$k],":amd64");
+
+		if ($cmp > 0)
 		{
 			$i = $k;
 		}
-		elsif ($elem lt "$arr[$k]")
+		elsif ($cmp < 0)
 		{
 			$j = $k;
 		}
@@ -135,6 +163,33 @@ sub ReadArray($)
 	return @rarr;
 }
 
+sub ReadArrayCmd($)
+{
+	my ($fn)= @_;
+	my ($fh,$l,@arr);
+	my (@rarr);
+
+	open($fh," $fn | ") || ErrorExit(3,"could not open($fn)");
+
+	while(<$fh>)
+	{
+		$l = $_;
+		chomp($l);
+		$l =~ s/^\s+//;
+		$l =~ s/\s+$//;
+		@arr = split(/[\s]+/,$l);
+		if (scalar(@arr) > 0)
+		{
+			push(@rarr,@arr);
+		}
+	}
+
+	close($fh);
+	undef($fh);
+
+	return @rarr;
+}
+
 sub ArrayEqual($$)
 {
 	my ($aref,$bref)=@_;
@@ -170,18 +225,15 @@ sub ArrayEqual($$)
 
 my (@remainpkgs,@allpkgs);
 my ($maxtimes,$i,$j);
-my ($remainfile,$allfile,$pn);
+my ($remainfile,$allfile,$pn,$output);
+my ($curdpkgscmd)="dpkg -l | grep -e \'^ii\' | awk \'{print \$2}\'";
+my ($res,$lasti,$hasinstall);
 
-if (@ARGV < 2)
-{
-	ErrorExit(3,"$0 remainfile allfile");
-}
 
-$remainfile = shift @ARGV;
-$allfile = shift @ARGV;
+$remainfile = @ARGV >= 1 ?  shift @ARGV : "-";
 
 @remainpkgs = SortArray(ReadArray($remainfile));
-@allpkgs = SortArray(ReadArray($allfile));
+@allpkgs = SortArray(ReadArrayCmd($curdpkgscmd));
 
 
 
@@ -192,8 +244,7 @@ for($i=0;$i<$maxtimes;$i++)
 {
 	my (@leftpkgs);
 	my (@oldpkgs)=@allpkgs;
-	my ($hasremove,$len,$output,@nextpkgs);
-	my ($res);
+	my ($hasremove,$len,@nextpkgs);
 
 	if (ArrayEqual(\@remainpkgs,\@allpkgs))
 	{
@@ -216,7 +267,6 @@ for($i=0;$i<$maxtimes;$i++)
 			{
 				print STDOUT "\e[31m[FAILED]\e[0m\n";
 				push(@nextpkgs,$pn);
-
 			}
 			else
 			{
@@ -247,21 +297,59 @@ if(ArrayEqual(\@allpkgs,\@remainpkgs)==0)
 		if (FindInArray($pn,@remainpkgs)==0)
 		{
 			print STDOUT "Not Removed ($pn)\n";
+			exit(3);
 		}		
 	}
 
-	for ($i=0;$i<scalar(@remainpkgs);$i++)
-	{
-		$pn = $remainpkgs[$i];
-		if (FindInArray($pn,@allpkgs)==0)
+	$i = 0;
+	$j = 0;
+	$lasti = 0;	
+	$hasinstall = 0;
+	while ($i<scalar(@remainpkgs))
+	{		
+		if ($j > (scalar(@remainpkgs) * 2))
 		{
-			print STDOUT "More Removed ($pn)\n";
+			ErrorExit(3,"try check more than ($j) times");
+		}
+		$j ++;
+		$pn = $remainpkgs[$i];
+		if (FindInArray($pn,@allpkgs)==0 )
+		{
+			$hasinstall ++;
+			if ($lasti == $i)
+			{
+				ErrorExit(3,"last time not install ($pn) succ");
+			}
+			print STDOUT "Install($pn)";			
+			$output = `apt-get -y  install $pn 2>&1`;
+			$res = $?;
+			if ($res != 0)
+			{
+				print STDOUT "\e[31m[FAILED]\e[0m\n";
+				exit(3);
+			}
+			print STDOUT "\e[32m[SUCCESS]\e[0m\n";
+			@allpkgs = SortArray(ReadArrayCmd($curdpkgscmd));
+			$lasti = $i;
+		}
+		else
+		{
+			$i ++;
 		}
 	}
 
-	print STDOUT "Not equal\n";
-
-	exit(3);
+	if ($hasinstall)
+	{
+		for ($i=0;$i<scalar(@allpkgs);$i++)
+		{
+			$pn = $allpkgs[$i];
+			if (FindInArray($pn,@remainpkgs)==0)
+			{
+				print STDOUT "Reinstalled ($pn)\n";
+				exit(3);
+			}
+		}
+	}
 }
 
 print STDOUT "All Success\n";

@@ -382,7 +382,7 @@ libasound2-plugins
 libgomp1
 libfftw3-single3
 libgstreamer0.10-0
-liborc-0.4-0
+liborc-0.4-0:amd64
 iso-codes
 libgstreamer-plugins-base0.10-0
 x11-common
@@ -398,3 +398,6 @@ pulseaudio
 pulseaudio-utils
 pulseaudio-module-x11
 rtkit
+linux-sound-base
+alsa-base
+alsa-utils
