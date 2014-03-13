@@ -233,10 +233,9 @@ my ($res,$lasti,$hasinstall);
 $remainfile = @ARGV >= 1 ?  shift @ARGV : "-";
 
 @remainpkgs = SortArray(ReadArray($remainfile));
+
+
 @allpkgs = SortArray(ReadArrayCmd($curdpkgscmd));
-
-
-
 
 $maxtimes=scalar(@allpkgs);
 
@@ -246,6 +245,7 @@ for($i=0;$i<$maxtimes;$i++)
 	my (@oldpkgs)=@allpkgs;
 	my ($hasremove,$len,@nextpkgs);
 
+	@allpkgs = SortArray(ReadArrayCmd($curdpkgscmd));
 	if (ArrayEqual(\@remainpkgs,\@allpkgs))
 	{
 		last;
@@ -288,6 +288,9 @@ for($i=0;$i<$maxtimes;$i++)
 		last;
 	}
 }
+
+@allpkgs = SortArray(ReadArrayCmd($curdpkgscmd));
+
 
 if(ArrayEqual(\@allpkgs,\@remainpkgs)==0)
 {
