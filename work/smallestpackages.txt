@@ -401,3 +401,4 @@ rtkit
 linux-sound-base
 alsa-base
 alsa-utils
+nano

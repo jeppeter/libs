@@ -145,6 +145,10 @@ sub ReadArray($)
 	{
 		$l = $_;
 		chomp($l);
+		if ($l =~ m/^#/o)
+		{
+			next;
+		}
 		$l =~ s/^\s+//;
 		$l =~ s/\s+$//;
 		@arr = split(/[\s]+/,$l);
@@ -175,6 +179,10 @@ sub ReadArrayCmd($)
 	{
 		$l = $_;
 		chomp($l);
+		if ($l =~ m/^#/o)
+		{
+			next;
+		}
 		$l =~ s/^\s+//;
 		$l =~ s/\s+$//;
 		@arr = split(/[\s]+/,$l);
