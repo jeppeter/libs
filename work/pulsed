@@ -9,6 +9,14 @@ CONNECT_UNIX_SOCK="/run/user/1000/pulse/cli"
 AMIXER=/usr/bin/amixer
 PULSEAUDIO=/usr/bin/pulseaudio
 SLEEP=/bin/sleep
+LOGFILE=/tmp/pulsedinfo
+ECHO=/bin/echo
+PGREP=/usr/bin/pgrep
+# we should need for the root user
+log_msg(){
+    $ECHO $* >>$LOGFILE
+}
+
 pulseaudio_post_start(){
 	  # first to start for the unix of cli
 	  pkill -USR2 pulseaudio
@@ -17,25 +25,32 @@ pulseaudio_post_start(){
 	  $AMIXER  -q cset $REAR_BOOST_VOLUME 100%,100%
 	  $AMIXER  -q cset $LINE_BOOST_VOLUME 100%,100%
 	  $AMIXER  -q cset $CAPTURE_VOLUME 100%,100%
-	  
 	  # now test for the unix set
 	  if [ ! -S  "$CONNECT_UNIX_SOCK" ]
 	  then
-	  	/bin/echo "($CONNECT_UNIX_SOCK) not socket" >&2
+	  	log_msg "($CONNECT_UNIX_SOCK) not socket"
 	  	$PULSEAUDIO -k
 	  	exit 3
 	  fi
 }
 
+pulseaudio_stop(){
+	su -c "$PULSEAUDIO -k"
+}
+
+
 pulseaudio_start(){
-	$PULSEAUDIO --exit-idle-time=-1 -D
+	pulseaudio_stop
+	su -c "$PULSEAUDIO --exit-idle-time=-1 -D"
 	$SLEEP 1
+	pid=`$PGREP pulseaudio`
+	if [ -z "$pid" ]
+	then
+	      log_msg "can not run $PULSEAUDIO succ"
+	fi
 	pulseaudio_post_start
 }
 
-pulseaudio_stop(){
-	$PULSEAUDIO -k
-}
 
 case "$1" in
 	start|stop)
