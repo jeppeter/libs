@@ -1,0 +1,52 @@
+#! /bin/sh
+
+REAR_MIC_CON="numid=19"
+REAR_BOOST_VOLUME="numid=26"
+LINE_BOOST_VOLUME="numid=27"
+CAPTURE_VOLUME="numid=21"
+ALSA_HW="hw:0"
+CONNECT_UNIX_SOCK="/run/user/1000/pulse/cli"
+AMIXER=/usr/bin/amixer
+PULSEAUDIO=/usr/bin/pulseaudio
+SLEEP=/bin/sleep
+pulseaudio_post_start(){
+	  # first to start for the unix of cli
+	  pkill -USR2 pulseaudio
+	  # now to set the rear mic source
+	  $AMIXER  -q cset $REAR_MIC_CON 1
+	  $AMIXER  -q cset $REAR_BOOST_VOLUME 100%,100%
+	  $AMIXER  -q cset $LINE_BOOST_VOLUME 100%,100%
+	  $AMIXER  -q cset $CAPTURE_VOLUME 100%,100%
+	  
+	  # now test for the unix set
+	  if [ ! -S  "$CONNECT_UNIX_SOCK" ]
+	  then
+	  	/bin/echo "($CONNECT_UNIX_SOCK) not socket" >&2
+	  	$PULSEAUDIO -k
+	  	exit 3
+	  fi
+}
+
+pulseaudio_start(){
+	$PULSEAUDIO --exit-idle-time=-1 -D
+	$SLEEP 1
+	pulseaudio_post_start
+}
+
+pulseaudio_stop(){
+	$PULSEAUDIO -k
+}
+
+case "$1" in
+	start|stop)
+		pulseaudio_${1}
+		;;
+	restart)
+	  pulseaudio_stop
+	  pulseaudio_start
+	  ;;
+	*)
+		echo "Usage: /etc/init.d/pulsed {start|stop|restart}"
+		exit 1
+		;;
+esac
