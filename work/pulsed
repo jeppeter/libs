@@ -5,7 +5,7 @@ REAR_BOOST_VOLUME="numid=26"
 LINE_BOOST_VOLUME="numid=27"
 CAPTURE_VOLUME="numid=21"
 ALSA_HW="hw:0"
-CONNECT_UNIX_SOCK="/run/user/1000/pulse/cli"
+CONNECT_UNIX_SOCK="/run/user/0/pulse/cli"
 AMIXER=/usr/bin/amixer
 PULSEAUDIO=/usr/bin/pulseaudio
 SLEEP=/bin/sleep
@@ -29,7 +29,7 @@ pulseaudio_post_start(){
 	  if [ ! -S  "$CONNECT_UNIX_SOCK" ]
 	  then
 	  	log_msg "($CONNECT_UNIX_SOCK) not socket"
-	  	$PULSEAUDIO -k
+	  	su -c "$PULSEAUDIO -k"
 	  	exit 3
 	  fi
 }
