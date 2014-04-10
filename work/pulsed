@@ -1,10 +1,5 @@
 #! /bin/sh
 
-REAR_MIC_CON="numid=19"
-REAR_BOOST_VOLUME="numid=26"
-LINE_BOOST_VOLUME="numid=27"
-CAPTURE_VOLUME="numid=21"
-ALSA_HW="hw:0"
 CONNECT_UNIX_SOCK="/run/user/0/pulse/cli"
 AMIXER=/usr/bin/amixer
 PULSEAUDIO=/usr/bin/pulseaudio
@@ -12,31 +7,158 @@ SLEEP=/bin/sleep
 LOGFILE=/tmp/pulsedinfo
 ECHO=/bin/echo
 PGREP=/usr/bin/pgrep
+PACTL=/usr/bin/pactl
+NC=/bin/nc
+GREP=/bin/grep
+AWK=/usr/bin/awk
 # we should need for the root user
 log_msg(){
     $ECHO $* >>$LOGFILE
 }
 
+pulseaudio_stop(){
+	su -c "$PULSEAUDIO -k"
+}
+
+set_amixer_value(){
+     _name=$1
+     _id=$2
+     _value=$3
+
+     if [ -z "$_value" ]
+     then
+     	log_msg "($_name) not set"
+     else
+        log_msg "$_name($_id) = $_value"
+     	$AMIXER -q cset $_id $_value
+     fi
+}
+
+
 pulseaudio_post_start(){
+  	pkill -USR2 pulseaudio
+		MASTER_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Master Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		MASTER_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Master Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		HEADPHONE_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Headphone Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		PCM_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'PCM Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		FRONT_MIC_BOOST_VOLUME=`$AMIXER contents | $GREP -e 'Front Mic Boost Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		FRONT_MIC_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Front Mic Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		FRONT_MIC_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Front Mic Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		FRONT_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Front Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		FRONT_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Front Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`		
+		SURROUND_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Surround Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		SURROUND_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Surround Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		CENTER_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Center Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		CENTER_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Center Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		LFE_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'LFE Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		LFE_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'LFE Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		LINE_BOOST_VOLUME=`$AMIXER contents | $GREP -e 'Line Boost Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		LINE_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Line Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		LINE_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Line Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		CAPTURE_SWITCH=`$AMIXER contents | $GREP -e 'Capture Switch' | $GREP -e numid | $GREP -v 'index=1' | $AWK -F, '{print $1}'`
+		CAPTURE_SWITCH_1=`$AMIXER contents | $GREP -e 'Capture Switch' | $GREP -e numid | $GREP -e 'index=1' | $AWK -F, '{print $1}'`
+		CAPTURE_VOLUME=`$AMIXER contents | $GREP -e 'Capture Volume' | $GREP -e numid | $GREP -v 'Digital' | $GREP -v 'index=1' | $AWK -F, '{print $1}'`
+		CAPTURE_VOLUME_1=`$AMIXER contents | $GREP -e 'Capture Volume' | $GREP -e numid |$GREP -v 'Digital' | $GREP -e 'index=1' | $AWK -F, '{print $1}'`
+		AUTO_MUTE_MODE=`$AMIXER contents | $GREP -e 'Auto-Mute Mode' | $GREP -e numid  | $AWK -F, '{print $1}'`
+		DIGITAL_CAPTURE_VOLUME=`$AMIXER contents | $GREP -e 'Digital Capture Volume' | $GREP -e numid  | $AWK -F, '{print $1}'`
+		INPUT_SOURCE=`$AMIXER contents | $GREP -e 'Input Source' | $GREP -e numid | $GREP -v 'index=1' | $AWK -F, '{print $1}'`
+		INPUT_SOURCE_1=`$AMIXER contents | $GREP -e 'Input Source' | $GREP -e numid | $GREP -e 'index=1' | $AWK -F, '{print $1}'`		
+		REAR_MIC_BOOST_VOLUME=`$AMIXER contents | $GREP -e 'Rear Mic Boost Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		REAR_MIC_BOOST_SWITCH=`$AMIXER contents | $GREP -e 'Rear Mic Boost Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		SIDE_PLAYBACK_SWITCH=`$AMIXER contents | $GREP -e 'Side Playback Switch' | $GREP -e numid | $AWK -F, '{print $1}'`
+		SIDE_PLAYBACK_VOLUME=`$AMIXER contents | $GREP -e 'Side Playback Volume' | $GREP -e numid | $AWK -F, '{print $1}'`
+		ALSA_HW="hw:0"
 	  # first to start for the unix of cli
-	  pkill -USR2 pulseaudio
+	  _count=0
+	  while [ $_count -le 5 ]
+	  do
+	  	if [ -S "$CONNECT_UNIX_SOCK" ]
+	  	then
+	  	     break
+	  	fi
+	  	pkill -USR2 pulseaudio
+	  	_count=`expr $_count + 1`
+	  	$SLEEP 1
+	  done
 	  # now to set the rear mic source
-	  $AMIXER  -q cset $REAR_MIC_CON 1
-	  $AMIXER  -q cset $REAR_BOOST_VOLUME 100%,100%
-	  $AMIXER  -q cset $LINE_BOOST_VOLUME 100%,100%
-	  $AMIXER  -q cset $CAPTURE_VOLUME 100%,100%
 	  # now test for the unix set
 	  if [ ! -S  "$CONNECT_UNIX_SOCK" ]
 	  then
 	  	log_msg "($CONNECT_UNIX_SOCK) not socket"
-	  	su -c "$PULSEAUDIO -k"
+	  	pulseaudio_stop
 	  	exit 3
 	  fi
+	  $NC -U $CONNECT_UNIX_SOCK <<EOF
+	  set-card-profile alsa_card.pci-0000_00_14.2  output:analog-surround-71+input:analog-stereo
+		load-module module-remap-sink sink_name=front_out remix=no master=alsa_output.pci-0000_00_14.2.analog-surround-71 channels=2 master_channel_map=front-left,front-right channel_map=front-left,front-right
+		load-module module-remap-sink sink_name=rear_out remix=no master=alsa_output.pci-0000_00_14.2.analog-surround-71 channels=2 master_channel_map=rear-left,rear-right   channel_map=front-left,front-right
+		load-module module-remap-sink sink_name=side_out remix=no master=alsa_output.pci-0000_00_14.2.analog-surround-71 channels=2 master_channel_map=side-left,side-right   channel_map=front-left,front-right
+		load-module module-remap-sink sink_name=center_out remix=no master=alsa_output.pci-0000_00_14.2.analog-surround-71 channels=2 master_channel_map=front-center,lfe   channel_map=front-left,front-right
+		load-module module-remap-source source_name=left2_in remix=no master=alsa_input.pci-0000_00_14.2.analog-stereo channels=2 master_channel_map=front-left,front-left   channel_map=front-left,front-right
+		load-module module-remap-source source_name=right2_in remix=no master=alsa_input.pci-0000_00_14.2.analog-stereo channels=2 master_channel_map=front-right,front-right   channel_map=front-left,front-right
+		load-module module-alsa-source device=hw:0,2
+		load-module module-remap-source source_name=fleft2_in remix=no master=alsa_input.hw_0_2 channels=2 master_channel_map=front-left,front-left channel_map=front-left,front-right
+		load-module module-remap-source source_name=fright2_in remix=no master=alsa_input.hw_0_2 channels=2 master_channel_map-front-right,front-right channel_map=front-left,front-right
+		set-sink-volume alsa_output.pci-0000_00_14.2.analog-surround-71 65537
+		set-sink-mute alsa_output.pci-0000_00_14.2.analog-surround-71 0
+		load-module module-alsa-volume sink_name=front_out total_volume=100%
+		load-module module-alsa-volume sink_name=rear_out total_volume=100%
+		load-module module-alsa-volume sink_name=center_out total_volume=100%
+		load-module module-alsa-volume sink_name=side_out total_volume=100%
+		set-sink-mute front_out 0
+		set-sink-mute rear_out 0
+		set-sink-mute center_out 0
+		set-sink-mute side_out 0
+		set-source-volume alsa_input.pci-0000_00_14.2.analog-stereo 65537
+		set-source-mute alsa_input.pci-0000_00_14.2.analog-stereo 0
+		set-source-volume alsa_input.hw_0_2 65537
+		set-source-mute alsa_input.hw_0_2 0
+		load-module module-alsa-volume source_name=left2_in total_volume=100%
+		set-source-mute left2_in 0
+		load-module module-alsa-volume source_name=right2_in total_volume=100%
+		set-source-mute right2_in 0
+		load-module module-alsa-volume source_name=fleft2_in total_volume=100%
+		set-source-mute fleft2_in 0
+		load-module module-alsa-volume source_name=fright2_in total_volume=100%
+		set-source-mute fright2_in 0
+		unload-module module-alsa-volume
+EOF
+
+		set_amixer_value  "MASTER_PLAYBACK_SWITCH"         $MASTER_PLAYBACK_SWITCH            "on"
+		set_amixer_value  "MASTER_PLAYBACK_VOLUME"         $MASTER_PLAYBACK_VOLUME            "100%"
+		set_amixer_value  "HEADPHONE_PLAYBACK_VOLUME"      $HEADPHONE_PLAYBACK_VOLUME         "100%"
+		set_amixer_value  "PCM_PLAYBACK_VOLUME"            $PCM_PLAYBACK_VOLUME               "100%"
+		set_amixer_value  "FRONT_MIC_BOOST_VOLUME"         $FRONT_MIC_BOOST_VOLUME            "100%"
+		set_amixer_value  "FRONT_MIC_PLAYBACK_SWITCH"      $FRONT_MIC_PLAYBACK_SWITCH         "on"
+		set_amixer_value  "FRONT_MIC_PLAYBACK_VOLUME"      $FRONT_MIC_PLAYBACK_VOLUME         "100%"
+		set_amixer_value  "FRONT_PLAYBACK_SWITCH"          $FRONT_PLAYBACK_SWITCH             "on"
+		set_amixer_value  "FRONT_PLAYBACK_VOLUME"          $FRONT_PLAYBACK_VOLUME             "100%"
+		set_amixer_value  "SURROUND_PLAYBACK_SWITCH"       $SURROUND_PLAYBACK_SWITCH          "on"
+		set_amixer_value  "SURROUND_PLAYBACK_VOLUME"       $SURROUND_PLAYBACK_VOLUME          "100%"
+		set_amixer_value  "CENTER_PLAYBACK_SWITCH"         $CENTER_PLAYBACK_SWITCH            "on"
+		set_amixer_value  "CENTER_PLAYBACK_VOLUME"         $CENTER_PLAYBACK_VOLUME            "100%"
+		set_amixer_value  "LFE_PLAYBACK_SWITCH"            $LFE_PLAYBACK_SWITCH               "on"
+		set_amixer_value  "LFE_PLAYBACK_VOLUME"            $LFE_PLAYBACK_VOLUME               "100%"
+		set_amixer_value  "LINE_BOOST_VOLUME"              $LINE_BOOST_VOLUME                 "100%"
+		set_amixer_value  "LINE_PLAYBACK_SWITCH"           $LINE_PLAYBACK_SWITCH              "on"
+		set_amixer_value  "LINE_PLAYBACK_VOLUME"           $LINE_PLAYBACK_VOLUME              "100%"
+		set_amixer_value  "CAPTURE_SWITCH"                 $CAPTURE_SWITCH                    "on"
+		set_amixer_value  "CAPTURE_SWITCH_1"               $CAPTURE_SWITCH_1                  "on"
+		set_amixer_value  "CAPTURE_VOLUME"                 $CAPTURE_VOLUME                    "100%"
+		set_amixer_value  "CAPTURE_VOLUME_1"               $CAPTURE_VOLUME_1                  "100%"  
+		set_amixer_value  "AUTO_MUTE_MODE"                 $AUTO_MUTE_MODE                    "1"
+		set_amixer_value  "DIGITAL_CAPTURE_VOLUME"         $DIGITAL_CAPTURE_VOLUME            "100%"
+		# for rear micro phone
+		set_amixer_value  "INPUT_SOURCE"                   $INPUT_SOURCE                      "1"
+		# for front micro phone
+		set_amixer_value  "INPUT_SOURCE_1"                 $INPUT_SOURCE_1                    "0"
+		set_amixer_value  "REAR_MIC_BOOST_VOLUME"          $REAR_MIC_BOOST_VOLUME             "100%"
+		set_amixer_value  "REAR_MIC_BOOST_SWITCH"          $REAR_MIC_BOOST_SWITCH             "on"
+		set_amixer_value  "SIDE_PLAYBACK_SWITCH"           $SIDE_PLAYBACK_SWITCH              "on"
+		set_amixer_value  "SIDE_PLAYBACK_VOLUME"           $SIDE_PLAYBACK_VOLUME              "100%"	
+	   
 }
 
-pulseaudio_stop(){
-	su -c "$PULSEAUDIO -k"
-}
 
 
 pulseaudio_start(){
@@ -47,6 +169,7 @@ pulseaudio_start(){
 	if [ -z "$pid" ]
 	then
 	      log_msg "can not run $PULSEAUDIO succ"
+	      exit 3
 	fi
 	pulseaudio_post_start
 }
