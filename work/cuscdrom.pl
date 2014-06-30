@@ -40,6 +40,49 @@ sub run_cmd($)
 
 }
 
+sub relative_path($$)
+{
+	my ($basedir,$dir)=@_;
+	my ($babs,$dabs);
+	my (@darr,@barr);
+	my ($curidx,$i,$relpath);
+
+	$babs=`readlink -f $basedir`;
+	$dabs=`readlink -f $dir`;
+	chomp($dabs);
+	chomp($babs);
+
+	# now we should find split the kernel
+	@darr = split(/\//,$dabs);
+	@barr = split(/\//,$babs);
+
+	$curidx = 0;
+	while($curidx < scalar(@darr) && 
+		$curidx < scalar(@barr))
+	{
+		if ($darr[$curidx] ne $barr[$curidx])
+		{
+			last;
+		}
+		$curidx ++;
+	}
+
+	$relpath = "";
+	for ($i=$curidx;$i< scalar(@darr);$i++)
+	{
+		$relpath .= "../";
+	}
+
+	for ($i=$curidx;$i < scalar(@barr);$i++)
+	{
+		$relpath .= $barr[$i];
+		$relpath .= "/";
+	}
+
+	return $relpath;
+}
+
+
 
 sub usage($$)
 {
@@ -225,7 +268,7 @@ sub make_manifest($$)
 	run_cmd($cmd);
 
 	$cmd = SUDO_PREFIX;
-	$cmd .= "chroot $squashdir dpkg-query -W --showformat='\${Package} \${Version}\n' ";
+	$cmd .= "chroot $squashdir dpkg-query -W --showformat='\${Package} \${Version}' ";
 	$cmd .= " | ";
 	$cmd .= SUDO_PREFIX;
 	$cmd .= " tee $nisoinstdir/filesystem.manifest >/dev/null";
@@ -250,19 +293,22 @@ sub make_size($$)
 sub make_iso($$)
 {
 	my ($nisodir,$name)=@_;
-	my ($cmd,$fname,$fdir,$oname);
+	my ($cmd,$fname,$fdir,$oname,$odir,$rdir);
 	$fname=`readlink -f $name`;
-	chomp($fname);
+	chomp($fname);	
 	$fdir=`readlink -f $nisodir`;
 	chomp($fdir);
 	$oname=`basename $name`;
 	chomp($oname);
+	$odir=`dirname $fname`;
+	chomp($odir);
+	$rdir = relative_path($odir,$fdir);
 # sudo mkisofs -D -r -V "bignte-produce-cdrom" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ../ubuntu-14.04-server-amd64-bingte.iso .
 	$cmd = "cd $nisodir && ";
 	$cmd .= SUDO_PREFIX;
 	$cmd .= "mkisofs -D -r -V \"cdrom\" -cache-inodes -J -l";
 	$cmd .= " -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table";
-	$cmd .= " -o ../$oname .";
+	$cmd .= " -o $rdir/$oname .";
 	run_cmd($cmd);
 	return ;
 	
