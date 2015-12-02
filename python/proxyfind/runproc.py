@@ -75,6 +75,24 @@ class ProxyRun(threading.Thread):
 			return (self.__etime - self.__stime)
 		return 0xffffffff
 
+	def stop_running(self):		
+		if self.__p is not None:
+			cnt = 0
+			pids = [self.__p.pid]			
+			while self.isAlive():
+				cnt += 1
+				try:
+					for curpid in pids:
+						ctypes.windll.kernel32.GenerateConsoleCtrlEvent(0,curpid)
+					time.sleep(0.3)
+				except OSError as e:
+					pass
+				except:
+					pass
+			self.__exitcode = self.__p.poll()
+			del self.__p
+			self.__p = None
+		return
 
 
 def main():
@@ -83,11 +101,17 @@ def main():
 		sys.exit(4)
 	prun = ProxyRun(sys.argv[1],sys.argv[2])
 	prun.start()
-	time.sleep(0.3)
-	while True:
-		if prun.is_exited():
-			break
-		time.sleep(0.4)
-	sys.stdout.write('in (%s) get (%s) time (%d)\n'%())
+	try:
+		time.sleep(0.3)
+		while True:
+			if prun.is_exited():
+				break
+			time.sleep(0.4)
+		sys.stdout.write('in (%s) get (%s) time (%d)\n'%(sys.argv[1],sys.argv[2],prun.get_time()))
+	except:
+		prun.stop_running()
+		sys.stdout.write('run error\n')
 
+if __name__ == '__main__':
+	main()
 
