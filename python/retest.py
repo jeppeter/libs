@@ -8,23 +8,23 @@ import logging
 def match(restr,instr):
 	expr = re.compile(restr)	
 	if expr.match(instr):
-		print '%s match %s'%(instr,restr)
+		print '(%s) match (%s)'%(instr,restr)
 	else:
-		print '%s not match %s'%(instr,restr)
+		print '(%s) not match (%s)'%(instr,restr)
 	return
 
 def findall(restr,instr):
 	expr = re.compile(restr)
 	m =  expr.findall(instr)
 	if m :
-		s = '%s match (%s)\n'%(instr,restr)
+		s = '(%s) match (%s)\n'%(instr,restr)
 		i = 0
 		for cm in m:
 			s += '\t[%d] %s\n'%(i,cm)
 			i += 1
 		print '%s'%(s)
 	else:
-		print '%s no more for %s'%(instr,restr)
+		print '(%s) no more for (%s)'%(instr,restr)
 	return
 
 
@@ -67,7 +67,6 @@ def main():
 		findall(args.strs[0],args.strs[1])
 	else:
 		Usage(3,'unrecognize %s'%(args.command),parser)
-
 	return
 
 
